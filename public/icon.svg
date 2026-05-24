@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Hồng HSK4 Studio">
+  <defs>
+    <linearGradient id="seal" x1="24" y1="18" x2="104" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d95d67"/>
+      <stop offset="1" stop-color="#9f2734"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#172033" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#fffaf3"/>
+  <path d="M31 32h66M31 64h66M31 96h66M32 31v66M64 26v76M96 31v66" stroke="#f1c6bd" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="43" fill="url(#seal)" filter="url(#shadow)"/>
+  <circle cx="64" cy="64" r="34" fill="none" stroke="#fff7ed" stroke-width="2" stroke-opacity="0.52"/>
+  <text x="64" y="80" text-anchor="middle" font-family="'Noto Sans CJK SC','Microsoft YaHei UI','Microsoft YaHei',sans-serif" font-size="54" font-weight="900" fill="#fff7ed">红</text>
+  <path d="M31 101c17 9 49 10 66-1" fill="none" stroke="#0f766e" stroke-width="7" stroke-linecap="round"/>
+</svg>

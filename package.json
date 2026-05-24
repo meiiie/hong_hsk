@@ -1,0 +1,39 @@
+{
+  "name": "hong-hsk4-studio",
+  "version": "0.1.0",
+  "description": "Mobile-first HSK4 4A/4B review PWA for Vietnamese learners.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://hsk4.holilihu.online/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/meiiie/hong_hsk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/meiiie/hong_hsk/issues"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc && vite build",
+    "check": "tsc --noEmit",
+    "test": "npm run check && npm run build && npm run test:harness",
+    "test:harness": "node scripts/run_harness.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "preview:cf": "npm run build && wrangler pages dev dist --port 8788",
+    "deploy:cf": "npm run build && wrangler pages deploy dist --project-name hong-hsk4-studio --branch main",
+    "docker:build": "docker build -t hong-hsk4-studio:local .",
+    "docker:run": "docker run --rm -p 8080:80 hong-hsk4-studio:local"
+  },
+  "dependencies": {
+    "hanzi-writer": "^3.7.3",
+    "lucide": "^1.16.0",
+    "read-excel-file": "^9.0.10",
+    "write-excel-file": "^4.0.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4",
+    "wrangler": "^4.94.0"
+  }
+}

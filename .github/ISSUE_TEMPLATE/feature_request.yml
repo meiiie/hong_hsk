@@ -1,0 +1,23 @@
+name: Đề xuất tính năng
+description: Đề xuất cải thiện học tập, UX/UI, thi thử hoặc dữ liệu
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Nhu cầu học tập
+      description: Người học đang gặp khó khăn gì?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Giải pháp mong muốn
+    validations:
+      required: true
+  - type: textarea
+    id: mobile
+    attributes:
+      label: Lưu ý mobile
+      description: Nếu dùng trên điện thoại, thao tác nào cần nhanh/gọn hơn?

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Hồng HSK4 Studio">
+  <defs>
+    <linearGradient id="seal" x1="23" y1="19" x2="105" y2="109" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d95d67"/>
+      <stop offset="1" stop-color="#9f2734"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" fill="#fffaf3"/>
+  <path d="M25 31h78M25 64h78M25 97h78M31 25v78M64 20v88M97 25v78" stroke="#f1c6bd" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="44" fill="url(#seal)"/>
+  <circle cx="64" cy="64" r="34" fill="none" stroke="#fff7ed" stroke-width="2" stroke-opacity="0.52"/>
+  <text x="64" y="80" text-anchor="middle" font-family="'Noto Sans CJK SC','Microsoft YaHei UI','Microsoft YaHei',sans-serif" font-size="54" font-weight="900" fill="#fff7ed">红</text>
+  <path d="M29 102c18 8 51 9 70-1" fill="none" stroke="#0f766e" stroke-width="7" stroke-linecap="round"/>
+</svg>

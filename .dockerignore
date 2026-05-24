@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.wrangler
+.codex-worktrees
+.codex-artifacts
+artifacts
+*.log
+vite-*.log
+npm-debug.log*
+Dockerfile
+docker-compose*.yml
+docs/**/*.blend
+docs/**/*.blend1

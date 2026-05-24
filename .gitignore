@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.wrangler/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
+vite-*.log
+npm-debug.log*
+artifacts/
+__pycache__/
+*.py[cod]
+
+# Local experiments from earlier 3D/game prototypes; not part of hong_hsk.
+docs/spider-mech-reference/
+docs/air-mech-reference/
+docs/anime-air-mech-reference/
+public/assets/models/
+public/models/
+scripts/blender_*.py
+scripts/build_anime_air_mech_blender.py
+scripts/blender_create_spider_mech.py
+tests/verify_game.py

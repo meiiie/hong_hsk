@@ -1,0 +1,34 @@
+name: Sửa dữ liệu HSK4
+description: Báo nghĩa tiếng Việt, pinyin, ví dụ hoặc thứ tự bài cần sửa
+title: "[Data]: "
+labels: ["data-quality"]
+body:
+  - type: input
+    id: lesson
+    attributes:
+      label: Bài
+      placeholder: "Ví dụ: Bài 03 / 4A"
+    validations:
+      required: true
+  - type: input
+    id: hanzi
+    attributes:
+      label: Từ Hán
+      placeholder: "Ví dụ: 爱情"
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Dữ liệu hiện tại
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Đề xuất sửa
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Nguồn kiểm chứng
+      description: Ghi sách/bài học/nguồn bạn dùng để đối chiếu nếu có.

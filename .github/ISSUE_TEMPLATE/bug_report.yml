@@ -1,0 +1,38 @@
+name: Báo lỗi
+description: Lỗi UI, dữ liệu, ôn tập, thi thử hoặc deploy
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Lỗi là gì?
+      description: Mô tả ngắn gọn điều đang sai.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Cách tái hiện
+      placeholder: |
+        1. Vào màn...
+        2. Bấm...
+        3. Thấy...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong muốn
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Thiết bị chính
+      options:
+        - Điện thoại
+        - Máy tính
+        - Cả hai
+    validations:
+      required: true

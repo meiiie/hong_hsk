@@ -1,0 +1,24 @@
+{
+  "name": "Hồng HSK4 Studio",
+  "short_name": "Hồng HSK4",
+  "description": "Không gian luyện HSK4 cho Hồng: học theo bài 4A/4B, gõ chữ Hán, luyện nét và thi thử.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f6fb",
+  "theme_color": "#9f2734",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
