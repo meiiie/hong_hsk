@@ -21,8 +21,8 @@ export function renderAppShell({ activeView, sidebarCollapsed, state, stats, con
           <div class="brand">
             <div class="brand-mark">红</div>
             <div class="brand-copy">
-              <strong>Hồng HSK4 Studio</strong>
-              <span>4A/4B</span>
+              <strong>Hồng HSK4</strong>
+              <span>Studio 4A/4B</span>
             </div>
             <button
               class="sidebar-toggle"

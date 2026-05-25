@@ -12,6 +12,16 @@ Do not switch the whole product back to green. The issue was that the first code
 - Motion: 160-220ms, ease-out, opacity/width transitions only. No bounce, no 3D, no particle effects.
 - Accessibility: honor `prefers-reduced-motion`, keep focus-visible rings, and keep labels available through `aria-label`/`title` when collapsed.
 
+## Micro Spec
+
+- Expanded sidebar width: 248px.
+- Collapsed rail width: 76px, with 48px icon-only hit targets.
+- Sidebar radius: 8px for brand, nav items, rail controls, and progress card.
+- Navigation item: 48px height, 14px label, 18px icon, 12px icon-label gap.
+- Navigation weight: 500 by default, 600 when active.
+- Active indicator: 2px left inset line with blush background; red is reserved for active accents, CTA, and brand mark.
+- Brand lockup: `Hồng HSK4` as the title and `Studio 4A/4B` as the meta line to avoid wrapping or clipped text.
+
 ## Library Decision
 
 No new animation or CSS framework was added for this pass. CSS variables and native transitions are enough for this interaction and keep the PWA light. Reconsider libraries only when the app needs a complex sequenced animation:

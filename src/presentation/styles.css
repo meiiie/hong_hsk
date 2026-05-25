@@ -32,8 +32,15 @@
   --amber-soft: #fff4d7;
   --focus-ring: rgba(159, 39, 52, 0.24);
   --shadow: 0 18px 50px rgba(88, 43, 39, 0.1);
-  --sidebar-expanded: 232px;
-  --sidebar-collapsed: 74px;
+  --sidebar-expanded: 248px;
+  --sidebar-collapsed: 76px;
+  --sidebar-radius: 8px;
+  --sidebar-item-size: 48px;
+  --sidebar-item-gap: 6px;
+  --sidebar-icon-size: 18px;
+  --sidebar-label-size: 0.875rem;
+  --sidebar-label-weight: 500;
+  --sidebar-label-active-weight: 600;
   --sidebar-paper: #fffaf7;
   --sidebar-paper-soft: #fff4f1;
   --sidebar-red-top: #a32433;
@@ -117,7 +124,7 @@ button:disabled {
   top: 0;
   overflow: hidden;
   height: 100vh;
-  padding: 14px;
+  padding: 16px;
   border-right: 1px solid rgba(127, 29, 42, 0.22);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), transparent 180px),
@@ -167,10 +174,10 @@ button:disabled {
   gap: 12px;
   align-items: center;
   justify-content: space-between;
-  min-height: 62px;
-  padding: 9px;
+  min-height: 68px;
+  padding: 10px;
   border: 1px solid rgba(255, 247, 237, 0.18);
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius);
   background:
     radial-gradient(circle at 20% 0%, rgba(217, 93, 103, 0.36), transparent 42%),
     linear-gradient(180deg, var(--sidebar-red-top) 0%, var(--sidebar-red-mid) 100%);
@@ -186,8 +193,8 @@ button:disabled {
   overflow: hidden;
   min-width: 0;
   flex: 1;
-  max-width: 132px;
-  max-height: 44px;
+  max-width: 150px;
+  max-height: 48px;
   transition:
     max-width var(--motion-medium) var(--ease-out),
     max-height var(--motion-medium) var(--ease-out),
@@ -199,9 +206,10 @@ button:disabled {
   position: relative;
   display: grid;
   place-items: center;
+  flex: 0 0 44px;
   width: 44px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius);
   color: #fff7ed;
   background:
     linear-gradient(135deg, #d95d67 0%, #9f2734 58%, #7f1d2a 100%);
@@ -228,14 +236,16 @@ button:disabled {
 
 .brand strong {
   color: #fffaf3;
-  font-size: 0.92rem;
+  font-size: 1rem;
+  font-weight: 700;
   letter-spacing: 0;
-  line-height: 1.2;
+  line-height: 1.18;
 }
 
 .brand span {
   color: rgba(255, 247, 237, 0.72);
-  font-size: 0.76rem;
+  font-size: 0.78rem;
+  font-weight: 500;
   line-height: 1.35;
 }
 
@@ -295,11 +305,11 @@ button:disabled {
 .sidebar-kicker {
   display: block;
   overflow: hidden;
-  margin: 2px 10px -4px;
+  margin: 2px 10px -3px;
   max-width: 160px;
   max-height: 18px;
   color: var(--brand);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -313,21 +323,22 @@ button:disabled {
 
 .nav {
   display: grid;
-  gap: 5px;
+  gap: var(--sidebar-item-gap);
 }
 
 .nav button {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 11px;
-  min-height: 46px;
-  padding: 0 11px;
+  gap: 12px;
+  min-height: var(--sidebar-item-size);
+  padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius);
   color: #46343b;
   background: transparent;
-  font-weight: 700;
+  font-size: var(--sidebar-label-size);
+  font-weight: var(--sidebar-label-weight);
   text-align: left;
   transition:
     background var(--motion-fast) var(--ease-standard),
@@ -337,6 +348,8 @@ button:disabled {
 }
 
 .nav button .icon {
+  width: var(--sidebar-icon-size);
+  height: var(--sidebar-icon-size);
   color: var(--brand-strong);
   transition: color var(--motion-fast) var(--ease-standard);
 }
@@ -362,9 +375,10 @@ button:disabled {
   color: var(--brand-strong);
   border-color: rgba(159, 39, 52, 0.18);
   background: linear-gradient(90deg, var(--brand-soft), #fff9f6);
+  font-weight: var(--sidebar-label-active-weight);
   box-shadow:
-    inset 3px 0 0 var(--brand),
-    0 8px 18px rgba(88, 43, 39, 0.08);
+    inset 2px 0 0 var(--brand),
+    0 6px 16px rgba(88, 43, 39, 0.07);
 }
 
 .nav button.active .icon {
@@ -377,7 +391,7 @@ button:disabled {
   max-height: 168px;
   padding: 12px;
   border: 1px solid rgba(159, 39, 52, 0.12);
-  border-radius: 8px;
+  border-radius: var(--sidebar-radius);
   background:
     linear-gradient(180deg, #fffdfb, var(--sidebar-paper-soft));
   box-shadow:
@@ -482,7 +496,7 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed .sidebar {
-  padding-inline: 10px;
+  padding-inline: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.9), transparent 145px),
     linear-gradient(180deg, var(--sidebar-paper) 0%, #f7eeea 100%);
@@ -496,8 +510,9 @@ button:disabled {
 .app-shell.sidebar-collapsed .brand {
   flex-direction: row;
   justify-content: flex-start;
+  width: var(--sidebar-item-size);
   min-height: 74px;
-  padding: 8px 6px;
+  padding: 8px 3px;
   background:
     radial-gradient(circle at 35% 0%, rgba(217, 93, 103, 0.34), transparent 42%),
     linear-gradient(180deg, var(--sidebar-red-top), var(--sidebar-red-mid));
@@ -524,8 +539,9 @@ button:disabled {
 .app-shell.sidebar-collapsed .sidebar-card {
   display: grid;
   place-items: center;
-  min-height: 42px;
-  max-height: 42px;
+  width: var(--sidebar-item-size);
+  min-height: var(--sidebar-item-size);
+  max-height: var(--sidebar-item-size);
   margin: auto 0 54px;
   padding: 0;
   border: 0;
@@ -565,6 +581,7 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed .brand-mark {
+  flex-basis: 42px;
   width: 42px;
   height: 42px;
 }
@@ -574,8 +591,8 @@ button:disabled {
   bottom: 13px;
   left: 50%;
   z-index: 2;
-  width: 42px;
-  height: 36px;
+  width: var(--sidebar-item-size);
+  height: 38px;
   border-color: rgba(159, 39, 52, 0.18);
   color: var(--brand);
   background: linear-gradient(180deg, #fffdfb, var(--sidebar-paper-soft));
@@ -591,12 +608,13 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed .nav {
-  gap: 7px;
+  gap: 8px;
 }
 
 .app-shell.sidebar-collapsed .nav button {
   justify-content: center;
-  min-height: 44px;
+  width: var(--sidebar-item-size);
+  min-height: var(--sidebar-item-size);
   padding: 0;
   color: var(--brand-strong);
 }
