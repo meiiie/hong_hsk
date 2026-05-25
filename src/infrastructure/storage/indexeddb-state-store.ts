@@ -1,8 +1,8 @@
-import type { AppState, Attempt, ReviewState, VocabItem } from "./types";
-import { createInitialState } from "./seed";
-import { normalizeLocale } from "./i18n";
-import { enrichVietnameseMeanings } from "./data-enrichment";
-import { HSK4_EXCEL_SOURCE, createExcelCourseItems } from "./hsk4-excel-vocab";
+import { createInitialState } from "../../application/bootstrap/initial-state";
+import { enrichVietnameseMeanings } from "../../application/vocab/data-enrichment";
+import { HSK4_EXCEL_SOURCE, createExcelCourseItems } from "../../domain/hsk4/hsk4-excel-vocab";
+import { normalizeLocale } from "../../domain/locale";
+import type { AppState, Attempt, ReviewState, VocabItem } from "../../domain/types";
 
 // Keep the legacy IndexedDB name so existing learners do not lose local progress after the product rename.
 const DB_NAME = "hsk4-review-pwa";

@@ -1,4 +1,4 @@
-import type { VocabItem } from "./types";
+import type { VocabItem } from "../types";
 
 export type ExamSection = "listening" | "reading" | "writing";
 

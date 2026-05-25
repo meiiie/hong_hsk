@@ -9,7 +9,7 @@ This follows the idea that the harness matters as much as the model: context fil
 | Layer | Files | Purpose |
 | --- | --- | --- |
 | Context | `AGENTS.md`, `CLAUDE.md`, `docs/agent-context/*` | Give agents and teammates the same project map and rules. |
-| Static checks | `npm run context:check`, `npm run check` | Validate context files and TypeScript. |
+| Static checks | `npm run context:check`, `npm run architecture:check`, `npm run check` | Validate context files, source-layer boundaries, and TypeScript. |
 | Build | `npm run build` | Ensure Vite production output compiles. |
 | Browser harness | `npm run test:harness` | Verify desktop/mobile learning and mock-exam workflows. |
 | CI | `.github/workflows/ci.yml` | Run the full test stack on PRs and `main`. |
@@ -28,6 +28,7 @@ This expands to:
 
 ```bash
 npm run context:check
+npm run architecture:check
 npm run check
 npm run build
 npm run test:harness
@@ -67,6 +68,7 @@ Mobile/mock:
 - It does not validate official HSK licensing.
 - It does not guarantee Cloudflare deploy unless `CLOUDFLARE_API_TOKEN` is configured.
 - It does not replace human mobile UX review on a real phone.
+- It does not prove the current architecture is final; it only prevents obvious inward/outward dependency violations.
 
 ## CI/CD Contract
 

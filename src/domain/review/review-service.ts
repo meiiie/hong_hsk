@@ -5,8 +5,8 @@ import type {
   ReviewState,
   StudyMode,
   VocabItem,
-} from "./types";
-import { addDays, planDay, toDateKey } from "./date-utils";
+} from "../types";
+import { addDays, planDay, toDateKey } from "../../shared/date-utils";
 import { gradeQuality, nextEase, nextInterval } from "./review-policy";
 
 const HANZI_PUNCTUATION = /[\s,.;:!?，。！？、；：“”"'‘’（）()\[\]{}《》〈〉\-—_]/g;

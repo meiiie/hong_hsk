@@ -1,6 +1,6 @@
-import { HSK4_VI_GLOSSARY } from "./hsk4-vi-glossary";
-import { HSK4_EXCEL_NOTE, HSK4_EXCEL_VI_MEANINGS } from "./hsk4-excel-vocab";
-import type { VocabItem } from "./types";
+import type { VocabItem } from "../../domain/types";
+import { HSK4_EXCEL_NOTE, HSK4_EXCEL_VI_MEANINGS } from "../../domain/hsk4/hsk4-excel-vocab";
+import { HSK4_VI_GLOSSARY } from "../../domain/hsk4/hsk4-vi-glossary";
 
 export const VI_TRANSLATION_QA_NOTE = "Nghĩa Việt nháp tự bổ sung, cần kiểm chứng với giáo trình.";
 export const VI_WORKBOOK_NOTE = HSK4_EXCEL_NOTE;

@@ -1,6 +1,5 @@
-import type { LocaleCode, ReviewStatus, StudyMode } from "./types";
-
-export const DEFAULT_LOCALE: LocaleCode = "vi";
+import type { LocaleCode, ReviewStatus, StudyMode } from "../domain/types";
+import { normalizeLocale } from "../domain/locale";
 
 const STUDY_MODE_LABELS: Record<LocaleCode, Record<StudyMode, string>> = {
   vi: {
@@ -44,10 +43,6 @@ const BOOK_LABELS: Record<LocaleCode, Record<string, string>> = {
     Custom: "Custom",
   },
 };
-
-export function normalizeLocale(value: unknown): LocaleCode {
-  return value === "en" ? "en" : DEFAULT_LOCALE;
-}
 
 export function studyModeLabel(mode: StudyMode, locale: LocaleCode): string {
   return STUDY_MODE_LABELS[normalizeLocale(locale)][mode];

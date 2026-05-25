@@ -46,6 +46,7 @@ Useful targeted commands:
 
 ```bash
 npm run context:check
+npm run architecture:check
 npm run check
 npm run build
 npm run test:harness

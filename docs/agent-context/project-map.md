@@ -14,27 +14,31 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `public/_headers` | Cloudflare Pages security headers. |
 | `docs/agent-context/` | Shared agent memory, harness, rules, and deploy notes. |
 | `docs/architecture/technology-review-2026-05-26.md` | Researched technology decision record and comparable project notes. |
+| `src/README.md` | Source-layer dependency map and DDD-lite boundaries. |
 
 ## Source Modules
 
 | Module | Responsibility |
 | --- | --- |
-| `src/main.ts` | App shell, views, UI state, event wiring. |
-| `src/styles.css` | Mobile-first UI, design tokens, layout, states. |
-| `src/types.ts` | Domain types for vocab, review, attempts, settings. |
-| `src/seed.ts` | Lesson names and seed data fallback. |
-| `src/hsk4-excel-vocab.ts` | Imported/curated HSK4 Excel vocabulary source. |
-| `src/hsk4-targets.ts` | Target counts for HSK4 data quality messaging. |
-| `src/hsk4-vi-glossary.ts` | Vietnamese glossary fallback/enrichment. |
-| `src/data-enrichment.ts` | Vietnamese meaning quality and draft detection. |
-| `src/import-export.ts` | Excel/CSV/JSON import and export. |
-| `src/storage.ts` | IndexedDB/local persistence. |
-| `src/review-policy.ts` | SRS constants and recall quality calculation. |
-| `src/review.ts` | Review queue, answer checking, attempts, stats. |
-| `src/hanzi-trainer.ts` | Hanzi Writer integration for stroke practice. |
-| `src/mock-exam.ts` | HSK4 mock exam generation and scoring. |
-| `src/i18n.ts` | Vietnamese/English UI labels. |
-| `src/icons.ts` | Lucide icon wrappers. |
+| `src/main.ts` | Thin composition entrypoint. |
+| `src/app/hsk-app.ts` | App shell, views, UI state, and event wiring. |
+| `src/domain/types.ts` | Domain types for vocab, review, attempts, settings. |
+| `src/domain/locale.ts` | Locale normalization shared by UI and persistence. |
+| `src/domain/hsk4/hsk4-excel-vocab.ts` | Imported/curated HSK4 Excel vocabulary source. |
+| `src/domain/hsk4/hsk4-vi-glossary.ts` | Vietnamese glossary fallback/enrichment. |
+| `src/domain/review/review-policy.ts` | SRS constants and recall quality calculation. |
+| `src/domain/review/review-service.ts` | Review queue, answer checking, attempts, stats. |
+| `src/domain/exam/mock-exam.ts` | HSK4 mock exam generation and scoring. |
+| `src/domain/hsk4/hsk4-targets.ts` | Target counts for HSK4 data quality messaging. |
+| `src/application/bootstrap/initial-state.ts` | Lesson names and initial app state. |
+| `src/application/vocab/data-enrichment.ts` | Vietnamese meaning quality and draft detection. |
+| `src/infrastructure/storage/indexeddb-state-store.ts` | IndexedDB/local persistence. |
+| `src/infrastructure/import-export/workbook-io.ts` | Excel/CSV/JSON import and export. |
+| `src/infrastructure/hanzi/hanzi-stroke-trainer.ts` | Hanzi Writer integration for stroke practice. |
+| `src/presentation/styles.css` | Mobile-first UI, design tokens, layout, states. |
+| `src/presentation/i18n.ts` | Vietnamese/English UI labels. |
+| `src/presentation/icons.ts` | Lucide icon wrappers. |
+| `src/shared/date-utils.ts` | Date-key and review-plan date helpers. |
 
 ## Test And Harness Files
 
@@ -42,6 +46,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | --- | --- |
 | `scripts/run_harness.mjs` | Starts/reuses Vite dev server and runs browser checks. |
 | `scripts/check_agent_context.mjs` | Validates the agent context map and key workflow assumptions. |
+| `scripts/check_architecture.mjs` | Enforces DDD-lite source-layer dependency rules. |
 | `tests/verify_hsk_pwa.py` | Desktop learning flow, answer reveal/hide, stroke trainer, wrong-list check. |
 | `tests/verify_hsk_mobile_mock.py` | Data load, mock exam, and mobile viewport checks. |
 | `tests/requirements.txt` | Python browser-test dependency pin range. |

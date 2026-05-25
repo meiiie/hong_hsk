@@ -1,7 +1,7 @@
-import type { AppState, VocabItem } from "./types";
-import { toDateKey } from "./date-utils";
-import { HSK4_REVIEW_POLICY } from "./review-policy";
-import { createExcelCourseItems } from "./hsk4-excel-vocab";
+import type { AppState, VocabItem } from "../../domain/types";
+import { createExcelCourseItems } from "../../domain/hsk4/hsk4-excel-vocab";
+import { HSK4_REVIEW_POLICY } from "../../domain/review/review-policy";
+import { toDateKey } from "../../shared/date-utils";
 
 export const APP_STATE_VERSION = 1;
 

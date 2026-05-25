@@ -1,10 +1,10 @@
 import { readSheet } from "read-excel-file/browser";
 import writeExcelFile, { type SheetData } from "write-excel-file/browser";
-import type { AppState, BookCode, ReviewState, VocabItem } from "./types";
-import { LESSON_TITLES } from "./seed";
-import { addDays, toDateKey } from "./date-utils";
-import { enrichVietnameseMeanings } from "./data-enrichment";
-import { createExcelCourseItems } from "./hsk4-excel-vocab";
+import { LESSON_TITLES } from "../../application/bootstrap/initial-state";
+import { enrichVietnameseMeanings } from "../../application/vocab/data-enrichment";
+import { createExcelCourseItems } from "../../domain/hsk4/hsk4-excel-vocab";
+import type { AppState, BookCode, ReviewState, VocabItem } from "../../domain/types";
+import { addDays, toDateKey } from "../../shared/date-utils";
 
 type RawRow = Record<string, string>;
 

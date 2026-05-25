@@ -1,4 +1,4 @@
-import type { BookCode, VocabItem } from "./types";
+import type { BookCode, VocabItem } from "../types";
 
 // Generated from the user-provided workbook HSK4_GiaoTrinhChuan_20_bai_on_1_thang.xlsx.
 // Keep this file deterministic so the bundled PWA can load the verified Vietnamese meanings offline.

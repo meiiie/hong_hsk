@@ -76,13 +76,16 @@ flowchart LR
 
 Các module chính:
 
-- `src/review-policy.ts`: hằng số lịch ôn và thuật toán tăng khoảng cách.
-- `src/review.ts`: chấm đáp án, tạo attempt, xếp hàng học.
-- `src/hanzi-trainer.ts`: tích hợp Hanzi Writer và dữ liệu nét.
-- `src/mock-exam.ts`: sinh đề thi thử HSK4 mô phỏng.
-- `src/import-export.ts`: nhập/xuất Excel, CSV, JSON.
-- `src/storage.ts`: IndexedDB/local state.
-- `src/i18n.ts`: nhãn tiếng Việt/Anh.
+- `src/README.md`: quy tắc DDD-lite/Clean Architecture cho source tree.
+- `src/main.ts` và `src/app/hsk-app.ts`: entrypoint mỏng và app shell.
+- `src/domain/review/review-policy.ts`: hằng số lịch ôn và thuật toán tăng khoảng cách.
+- `src/domain/review/review-service.ts`: chấm đáp án, tạo attempt, xếp hàng học.
+- `src/domain/hsk4/hsk4-excel-vocab.ts`: dữ liệu từ vựng HSK4 4A/4B đã nạp.
+- `src/infrastructure/hanzi/hanzi-stroke-trainer.ts`: tích hợp Hanzi Writer và dữ liệu nét.
+- `src/domain/exam/mock-exam.ts`: sinh đề thi thử HSK4 mô phỏng.
+- `src/infrastructure/import-export/workbook-io.ts`: nhập/xuất Excel, CSV, JSON.
+- `src/infrastructure/storage/indexeddb-state-store.ts`: IndexedDB/local state.
+- `src/presentation/i18n.ts`: nhãn tiếng Việt/Anh.
 
 ## Chạy Local
 
@@ -118,10 +121,11 @@ npm test
 `npm test` chạy:
 
 1. Agent/context harness check.
-2. TypeScript check.
-3. Vite production build.
-4. Harness Playwright trên desktop và mobile viewport.
-5. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
+2. Architecture boundary check cho DDD-lite source tree.
+3. TypeScript check.
+4. Vite production build.
+5. Harness Playwright trên desktop và mobile viewport.
+6. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
 
 Ảnh kiểm thử được ghi vào `artifacts/` khi chạy local/CI.
 

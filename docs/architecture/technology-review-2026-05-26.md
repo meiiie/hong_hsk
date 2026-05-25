@@ -18,8 +18,11 @@ Keep the current stack for now:
 - Hanzi Writer for stroke animation and stroke-order quiz logic.
 - Cloudflare Pages direct upload through GitHub Actions.
 - Python Playwright harness for mobile and desktop end-to-end verification.
+- DDD-lite / Clean Architecture source layout under `src/domain`, `src/application`, `src/infrastructure`, `src/presentation`, and `src/shared`.
 
 Do not reset the project to a backend, SQLite/D1, Next.js, Unity, or native app yet. The current product is used by one learner, mostly on mobile, and the hard problems are data quality, review logic, mobile UX, and exam realism, not server scale.
+
+The source dependency rule is documented in `src/README.md`: domain code stays browser-adapter-free, infrastructure owns IndexedDB/Excel/Hanzi adapters, and `src/app` composes the workflows.
 
 ## Source Review
 

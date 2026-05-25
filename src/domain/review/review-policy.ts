@@ -1,4 +1,4 @@
-import type { ReviewQuality, ReviewState } from "./types";
+import type { ReviewQuality, ReviewState } from "../types";
 
 export const HSK4_REVIEW_POLICY = {
   dailyNewTarget: 30,

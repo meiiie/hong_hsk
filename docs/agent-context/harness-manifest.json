@@ -4,6 +4,7 @@
   "requiredFiles": [
     "AGENTS.md",
     "CLAUDE.md",
+    "src/README.md",
     "docs/agent-context/README.md",
     "docs/agent-context/collaboration-rules.md",
     "docs/agent-context/project-map.md",
@@ -14,12 +15,14 @@
     ".github/workflows/ci.yml",
     ".github/workflows/deploy-cloudflare-pages.yml",
     "scripts/run_harness.mjs",
+    "scripts/check_architecture.mjs",
     "scripts/check_agent_context.mjs",
     "tests/verify_hsk_pwa.py",
     "tests/verify_hsk_mobile_mock.py"
   ],
   "requiredPackageScripts": [
     "context:check",
+    "architecture:check",
     "check",
     "build",
     "test:harness",
