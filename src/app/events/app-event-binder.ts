@@ -3,6 +3,7 @@ import type { StudyMode } from "../../domain/types";
 
 export interface AppEventHandlers {
   navigate(view: View): void;
+  toggleSidebar(): void;
   startStudy(mode: StudyMode): void;
   selectLesson(lesson: number): void | Promise<void>;
   submitAnswer(): void | Promise<void>;
@@ -43,6 +44,10 @@ export function bindAppEvents(root: HTMLElement, handlers: AppEventHandlers): vo
 }
 
 function bindNavigation(root: HTMLElement, handlers: AppEventHandlers): void {
+  root.querySelector<HTMLButtonElement>("[data-sidebar-toggle]")?.addEventListener("click", () => {
+    handlers.toggleSidebar();
+  });
+
   root.querySelectorAll<HTMLButtonElement>("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       handlers.navigate(button.dataset.view as View);

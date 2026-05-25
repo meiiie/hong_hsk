@@ -5,24 +5,35 @@ import { escapeHtml } from "./view-helpers";
 
 interface AppShellViewModel {
   activeView: View;
+  sidebarCollapsed: boolean;
   state: AppState;
   stats: DashboardStats;
   content: string;
 }
 
-export function renderAppShell({ activeView, state, stats, content }: AppShellViewModel): string {
+export function renderAppShell({ activeView, sidebarCollapsed, state, stats, content }: AppShellViewModel): string {
   const learnedPercent = stats.totalItems > 0 ? Math.min(100, Math.round((stats.learned / stats.totalItems) * 100)) : 0;
 
   return `
-    <div class="app-shell">
+    <div class="app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
       <aside class="sidebar" aria-label="Không gian học HSK4">
         <div class="sidebar-inner">
           <div class="brand">
             <div class="brand-mark">红</div>
             <div class="brand-copy">
-              <strong>Hồng HSK4</strong>
-              <span>Studio 4A/4B</span>
+              <strong>Hồng HSK4 Studio</strong>
+              <span>4A/4B</span>
             </div>
+            <button
+              class="sidebar-toggle"
+              data-sidebar-toggle
+              type="button"
+              aria-label="${sidebarCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}"
+              aria-expanded="${sidebarCollapsed ? "false" : "true"}"
+              title="${sidebarCollapsed ? "Mở rộng" : "Thu gọn"}"
+            >
+              ${icon(sidebarCollapsed ? "chevronRight" : "chevronLeft")}
+            </button>
           </div>
           <span class="sidebar-kicker">Luyện tập</span>
           <nav class="nav" aria-label="Điều hướng">
@@ -78,7 +89,7 @@ function navButton(activeView: View, view: View, label: string, iconName: IconNa
   const isActive = activeView === view;
 
   return `
-    <button class="${isActive ? "active" : ""}" data-view="${view}" ${isActive ? 'aria-current="page"' : ""}>
+    <button class="${isActive ? "active" : ""}" data-view="${view}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${isActive ? 'aria-current="page"' : ""}>
       ${icon(iconName)}
       <span>${escapeHtml(label)}</span>
     </button>

@@ -19,12 +19,15 @@ import { formatExamTime } from "../domain/exam/mock-exam";
 import { computeStats } from "../domain/review/review-service";
 import { clamp } from "../shared/number-utils";
 
+const SIDEBAR_COLLAPSED_KEY = "hong-hsk4-sidebar-collapsed";
+
 class HskApp {
   private state!: AppState;
   private activeView: View = "dashboard";
   private readonly study = new StudyWorkflow();
   private readonly mockExam = new MockExamWorkflow();
   private examClockId: number | undefined;
+  private sidebarCollapsed = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -33,6 +36,7 @@ class HskApp {
 
   async init(): Promise<void> {
     this.state = await this.dependencies.stateStore.load();
+    this.sidebarCollapsed = loadSidebarCollapsed();
     registerServiceWorker();
     this.render();
   }
@@ -41,6 +45,7 @@ class HskApp {
     const stats = computeStats(this.state);
     this.root.innerHTML = renderAppShell({
       activeView: this.activeView,
+      sidebarCollapsed: this.sidebarCollapsed,
       state: this.state,
       stats,
       content: this.renderActiveView(),
@@ -101,6 +106,7 @@ class HskApp {
   private bindEvents(): void {
     bindAppEvents(this.root, {
       navigate: (view) => this.navigate(view),
+      toggleSidebar: () => this.toggleSidebar(),
       startStudy: (mode) => this.startStudy(mode),
       selectLesson: (lesson) => this.selectLesson(lesson),
       submitAnswer: () => this.submitAnswer(),
@@ -136,6 +142,16 @@ class HskApp {
     this.activeView = view;
     if (view !== "study") {
       this.study.clear();
+    }
+    this.render();
+  }
+
+  private toggleSidebar(): void {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+    try {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, this.sidebarCollapsed ? "1" : "0");
+    } catch {
+      // Ignore private-browsing/storage failures; the visual toggle still works for this render cycle.
     }
     this.render();
   }
@@ -336,4 +352,12 @@ export function mountHskApp(dependencies: HskAppDependencies): void {
   }
 
   void new HskApp(root, dependencies).init();
+}
+
+function loadSidebarCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
