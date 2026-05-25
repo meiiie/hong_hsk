@@ -6,10 +6,10 @@ Hong HSK4 Studio uses a DDD-lite / Clean Architecture layout. The goal is clear 
 
 | Layer | Path | Owns |
 | --- | --- | --- |
-| Composition | `src/main.ts`, `src/app/` | App startup, app-level orchestration, and the current view controller. |
+| Composition | `src/main.ts`, `src/app/` | App startup, app-level orchestration, event binding, and workflow view composition. |
 | Domain | `src/domain/` | Pure HSK/review/exam concepts: vocab types, review policy, review queue, mock exam generation and scoring. |
 | Application | `src/application/` | Use-case glue that combines domain rules with project data, such as initial state and vocabulary enrichment. |
-| Infrastructure | `src/infrastructure/` | Browser and third-party adapters: IndexedDB, Excel import/export, Hanzi Writer, bundled HSK4 data files. |
+| Infrastructure | `src/infrastructure/` | Browser and third-party adapters: IndexedDB, Excel import/export, Hanzi Writer. |
 | Presentation | `src/presentation/` | UI-facing resources: CSS, icons, labels, and locale helpers. |
 | Shared | `src/shared/` | Small dependency-free utilities used across layers. |
 
@@ -29,6 +29,22 @@ domain -> shared only
 
 Domain modules should not import infrastructure, browser storage, Hanzi Writer, or presentation code. When a future change needs sync/accounts/backend, add adapters under `infrastructure/` first and keep the domain model stable.
 
+## App Layer Split
+
+`src/app/hsk-app.ts` is now the stateful controller: it owns current view, study queue, mock exam session, event binding, persistence calls, and adapter orchestration.
+
+Workflow rendering lives under `src/app/views/`:
+
+- `dashboard-view.ts`: daily overview, data readiness, queue preview.
+- `study-view.ts`: recall card, answer feedback, stroke lab shell, per-card review detail.
+- `lesson-views.ts`: lesson browser and wrong-word table.
+- `mock-exam-view.ts`: exam intro, runner, question rendering, result rendering.
+- `plan-view.ts`: 30-day plan and schedule settings.
+- `data-view.ts`: import/export panels and data-health report.
+- `view-helpers.ts`: small HTML helpers shared by the view modules.
+
+This split keeps render functions mostly pure while the controller keeps side effects in one place.
+
 ## Current Intentional Compromise
 
-`src/app/hsk-app.ts` still contains a large view controller. That is intentional for this refactor: the first step is stable boundaries and import paths. Split this file later by workflow (`study`, `lessons`, `wrong-words`, `mock-exam`, `data`) after behavior tests are stronger.
+`src/app/hsk-app.ts` still contains event binding and command handlers in one class. That is intentional for now: the view workflows have been separated first, and the next low-risk split is extracting event binding/commands after adding stronger unit tests around review and mock-exam behavior.

@@ -21,7 +21,16 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | Module | Responsibility |
 | --- | --- |
 | `src/main.ts` | Thin composition entrypoint. |
-| `src/app/hsk-app.ts` | App shell, views, UI state, and event wiring. |
+| `src/app/hsk-app.ts` | Stateful app controller, event wiring, persistence calls, study queue, and mock exam session orchestration. |
+| `src/app/app-types.ts` | App-only view/data-health/feedback types. |
+| `src/app/service-worker.ts` | Service worker registration. |
+| `src/app/views/dashboard-view.ts` | Daily overview, data readiness, and queue preview rendering. |
+| `src/app/views/study-view.ts` | Study card, answer feedback, stroke lab shell, and review detail rendering. |
+| `src/app/views/lesson-views.ts` | Lesson browser and wrong-word rendering. |
+| `src/app/views/mock-exam-view.ts` | Mock exam intro, runner, question, and result rendering. |
+| `src/app/views/plan-view.ts` | 30-day plan rendering. |
+| `src/app/views/data-view.ts` | Import/export and data-health rendering. |
+| `src/app/views/view-helpers.ts` | Shared HTML/view helpers for app views. |
 | `src/domain/types.ts` | Domain types for vocab, review, attempts, settings. |
 | `src/domain/locale.ts` | Locale normalization shared by UI and persistence. |
 | `src/domain/hsk4/hsk4-excel-vocab.ts` | Imported/curated HSK4 Excel vocabulary source. |
