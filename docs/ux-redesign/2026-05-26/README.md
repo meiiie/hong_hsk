@@ -1,10 +1,10 @@
 # UX Redesign Exploration - 2026-05-26
 
-Goal: redesign Hong HSK4 Studio as a polished, mobile-first HSK4 learning PWA for Vietnamese learners, then translate the chosen direction into production HTML/CSS components.
+Goal: redesign Hồng HSK4 Studio as a polished, mobile-first HSK4 learning PWA for Vietnamese learners, then translate the chosen direction into production HTML/CSS components.
 
 ## Product Posture
 
-- Primary user: Hong, learning HSK4 mostly on a phone, sometimes desktop.
+- Primary user: Hồng, learning HSK4 mostly on a phone, sometimes desktop.
 - Primary task: daily recall, mistake recovery, stroke practice, and mock exam readiness.
 - UX principle: one main study action per screen, fast thumb navigation, calm visual rhythm, strong readability for Vietnamese, pinyin, and Hanzi.
 
@@ -19,7 +19,8 @@ Goal: redesign Hong HSK4 Studio as a polished, mobile-first HSK4 learning PWA fo
 ## Visual Language
 
 - Tone: focused, premium, calm, education-grade.
-- Palette: ink navy, warm white, jade/teal accent, restrained red for errors, amber for review urgency.
+- Palette: Hồng/seal red is the primary brand color, supported by warm ivory paper, ink navy text, blush surfaces, and jade/teal only as a quiet secondary accent.
+- Brand tokens to preserve from the app/logo: `#9f2734` brand red, `#7f1d2a` deep burgundy, `#d95d67` lifted red, `#fff0f1` blush, `#f8f3ef` warm paper, `#1f2230` ink, `#0f766e` jade secondary.
 - Typography: Vietnamese UI should use a clean sans; Hanzi should use a CJK-capable serif/sans fallback with large optical size and generous line height.
 - Components: large tappable controls, segmented mode switch, bottom sheets/drawers on mobile, rail/table layout on desktop.
 
@@ -38,10 +39,20 @@ Goal: redesign Hong HSK4 Studio as a polished, mobile-first HSK4 learning PWA fo
 - `assets/`: selected generated mockups copied into the project.
 - `notes/implementation-plan.md`: code translation plan after mockup selection.
 - `notes/mockup-review-v1.md`: evaluation notes from the generated north-star boards.
+- `notes/mockup-review-v2-brand-red.md`: corrected review notes for the red-first brand direction.
+- `notes/brand-palette-correction.md`: palette source of truth so future UI work does not drift back to teal-primary.
 - `references.md`: UX/UI references used for the exploration.
 
 ## Generated North-Star Boards
 
+V1 boards are kept as layout references only. Their teal-led palette does not match the actual Hồng HSK4 logo.
+
 ![North star UI board](assets/north-star-ui-board-v1.png)
 
 ![Mobile flow board](assets/mobile-flow-v1.png)
+
+V2 boards should use the corrected red-first brand direction.
+
+![North star UI board v2 brand red](assets/north-star-ui-board-v2-brand-red.png)
+
+![Mobile flow v2 brand red](assets/mobile-flow-v2-brand-red.png)
