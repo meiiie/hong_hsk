@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://hsk4.holilihu.online/"><img alt="Live app" src="https://img.shields.io/badge/live-hsk4.holilihu.online-2f7d68?style=for-the-badge&logo=cloudflarepages&logoColor=white"></a>
+  <a href="https://hsk4.holilihu.online/"><img alt="Live app" src="https://img.shields.io/badge/live-hsk4.holilihu.online-9f2734?style=for-the-badge&logo=cloudflarepages&logoColor=white"></a>
   <a href="https://github.com/meiiie/hong_hsk/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/meiiie/hong_hsk/ci.yml?branch=main&style=for-the-badge&label=CI"></a>
   <img alt="PWA" src="https://img.shields.io/badge/PWA-offline_ready-9f2734?style=for-the-badge">
   <img alt="Stack" src="https://img.shields.io/badge/TypeScript%20%2B%20Vite-2026-1f3154?style=for-the-badge">

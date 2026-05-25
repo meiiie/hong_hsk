@@ -41,6 +41,8 @@ Goal: redesign Hồng HSK4 Studio as a polished, mobile-first HSK4 learning PWA 
 - `notes/mockup-review-v1.md`: evaluation notes from the generated north-star boards.
 - `notes/mockup-review-v2-brand-red.md`: corrected review notes for the red-first brand direction.
 - `notes/brand-palette-correction.md`: palette source of truth so future UI work does not drift back to teal-primary.
+- `notes/resource-inventory.md`: how to use each generated design resource.
+- `prompts/asset-pack.md`: prompt set used to generate the extra UX/UI resources.
 - `references.md`: UX/UI references used for the exploration.
 
 ## Generated North-Star Boards
@@ -56,3 +58,19 @@ V2 boards should use the corrected red-first brand direction.
 ![North star UI board v2 brand red](assets/north-star-ui-board-v2-brand-red.png)
 
 ![Mobile flow v2 brand red](assets/mobile-flow-v2-brand-red.png)
+
+## Design Resource Pack
+
+These boards are implementation references, not source-of-truth text. Real UI copy must still come from the app code.
+
+![GitHub README hero v2](assets/github-readme-hero-v2-brand-red.png)
+
+![OG social preview v2](assets/og-social-preview-v2-brand-red.png)
+
+![Mobile study states](assets/mobile-study-states-v1-brand-red.png)
+
+![Mock exam mode](assets/mock-exam-mode-v1-brand-red.png)
+
+![Component system](assets/component-system-v1-brand-red.png)
+
+![Data operations](assets/data-operations-v1-brand-red.png)

@@ -21,5 +21,8 @@ Biểu tượng dùng chữ **红** vì đây là chữ Hán tương ứng với
 Ảnh concept được tạo bằng built-in `image_gen` theo hướng logo-brand:
 
 - [hong-hsk4-studio-brand-concept.png](./hong-hsk4-studio-brand-concept.png)
+- [hong-hsk4-studio-og-imagegen-source-v2.png](./hong-hsk4-studio-og-imagegen-source-v2.png)
 
 App icon thực tế trong `public/icon.svg` và `public/maskable-icon.svg` được dựng lại bằng SVG để sắc nét, nhẹ và ổn định khi dùng trong PWA.
+
+Open Graph image thực tế nằm ở `public/og-image.png`, kích thước 1200x630 để khớp metadata trong `index.html`. Bản v2 phải giữ đỏ Hồng/seal red làm màu chính; jade chỉ là accent nhỏ cho trạng thái học.
