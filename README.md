@@ -117,12 +117,15 @@ npm test
 
 `npm test` chạy:
 
-1. TypeScript check.
-2. Vite production build.
-3. Harness Playwright trên desktop và mobile viewport.
-4. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
+1. Agent/context harness check.
+2. TypeScript check.
+3. Vite production build.
+4. Harness Playwright trên desktop và mobile viewport.
+5. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
 
 Ảnh kiểm thử được ghi vào `artifacts/` khi chạy local/CI.
+
+Agent và người mới nên bắt đầu từ [AGENTS.md](AGENTS.md), sau đó đọc [docs/agent-context/README.md](docs/agent-context/README.md) để nắm quy tắc làm việc, bản đồ dự án, harness và bước Cloudflare còn lại.
 
 ## Deploy
 
