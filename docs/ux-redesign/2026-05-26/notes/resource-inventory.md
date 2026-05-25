@@ -16,6 +16,8 @@ This folder now contains enough visual material to guide the next production UX/
 - `assets/mock-exam-mode-v1-brand-red.png`: strict HSK4 mock exam direction.
 - `assets/component-system-v1-brand-red.png`: buttons, inputs, chips, navigation, alerts, cards, and typography references.
 - `assets/data-operations-v1-brand-red.png`: import, data quality, lesson coverage, weak words, and planning views.
+- `assets/sidebar-design-lab-v1-soft-red.png`: sidebar-specific open/collapsed/bottom-nav component direction.
+- `assets/sidebar-motion-storyboard-v1.png`: sidebar collapse, hover, active, focus, and reduced-motion storyboard.
 
 ## Usage Rules
 
@@ -23,3 +25,4 @@ This folder now contains enough visual material to guide the next production UX/
 - Preserve the brand hierarchy: red seal and burgundy primary, warm paper background, ink navy text, jade only as a secondary accent.
 - Translate the component board into CSS tokens and reusable presentation helpers before changing individual screens.
 - Validate the final coded UI on mobile first, then tablet/desktop.
+- Prefer CSS tokens and native transitions for navigation motion. Add GSAP/Anime.js only when the interaction cannot be expressed clearly with CSS and app state.

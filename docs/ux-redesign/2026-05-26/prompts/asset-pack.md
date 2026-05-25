@@ -13,6 +13,8 @@ All prompts used built-in `image_gen` and were copied into this workspace after 
 - Mock exam mode: set selection, listening, reading, writing/reorder, submit confirmation.
 - Component system: buttons, navigation, cards, input states, quiz choices, chips, alerts, data cards, typography.
 - Data operations: Excel/CSV import, lesson coverage, weak words, 30-day plan, data quality warnings.
+- Sidebar design lab: open/collapsed/bottom navigation component board with softer red usage.
+- Sidebar motion storyboard: 160-220ms collapse/expand, hover, active, focus, and reduced-motion behavior.
 
 ## Hard Constraints
 

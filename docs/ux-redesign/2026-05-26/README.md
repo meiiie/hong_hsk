@@ -74,3 +74,11 @@ These boards are implementation references, not source-of-truth text. Real UI co
 ![Component system](assets/component-system-v1-brand-red.png)
 
 ![Data operations](assets/data-operations-v1-brand-red.png)
+
+## Sidebar Lab
+
+The first coded sidebar pass was visually too red-heavy. These boards define the softer production direction: warm paper expanded rail, red seal header, red active states, and a burgundy icon-only collapsed rail.
+
+![Sidebar design lab](assets/sidebar-design-lab-v1-soft-red.png)
+
+![Sidebar motion storyboard](assets/sidebar-motion-storyboard-v1.png)

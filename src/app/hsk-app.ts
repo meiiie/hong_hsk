@@ -356,7 +356,11 @@ export function mountHskApp(dependencies: HskAppDependencies): void {
 
 function loadSidebarCollapsed(): boolean {
   try {
-    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+    const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (stored !== null) {
+      return stored === "1";
+    }
+    return window.matchMedia("(min-width: 821px) and (max-width: 1180px)").matches;
   } catch {
     return false;
   }
