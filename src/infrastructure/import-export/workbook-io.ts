@@ -265,17 +265,6 @@ export function exportTemplateCsv(): void {
   downloadBlob(blob, "Hong_HSK4_import_template.csv");
 }
 
-export function mergeItems(existing: VocabItem[], incoming: VocabItem[]): VocabItem[] {
-  const map = new Map(existing.map((item) => [item.id, item]));
-  incoming.forEach((item) => map.set(item.id, item));
-  return Array.from(map.values()).sort((left, right) => {
-    if (left.lesson !== right.lesson) {
-      return left.lesson - right.lesson;
-    }
-    return left.order - right.order;
-  });
-}
-
 export function parseVocabRows(rows: RawRow[], source: string): VocabItem[] {
   const lessonCounters = new Map<number, number>();
 

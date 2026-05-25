@@ -92,6 +92,10 @@ function enforceRule(sourceFile, sourceLayer, targetFile, targetLayer) {
     fail(sourceFile, targetFile, "application must depend on domain/shared, not app/infrastructure/presentation");
   }
 
+  if (sourceLayer === "app" && targetLayer === "infrastructure") {
+    fail(sourceFile, targetFile, "app must use application ports and injected dependencies instead of importing infrastructure directly");
+  }
+
   if (sourceLayer === "infrastructure" && ["app", "presentation"].includes(targetLayer)) {
     fail(sourceFile, targetFile, "infrastructure must not import app or presentation");
   }

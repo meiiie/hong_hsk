@@ -51,6 +51,7 @@ python -m playwright install chromium
 - Due, wrong, lesson, and today queue ordering.
 - Mock exam shape, deterministic generation, scoring, and timer formatting.
 - App workflow state for study sessions, mock exams, settings normalization, and starter-data replacement.
+- Application use cases for typed-answer submission and imported-vocabulary replacement.
 
 ## What The Browser Harness Covers
 

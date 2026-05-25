@@ -8,7 +8,7 @@ Hong HSK4 Studio uses a DDD-lite / Clean Architecture layout. The goal is clear 
 | --- | --- | --- |
 | Composition | `src/main.ts`, `src/app/` | App startup, app-level orchestration, event binding, and workflow view composition. |
 | Domain | `src/domain/` | Pure HSK/review/exam concepts: vocab types, review policy, review queue, mock exam generation and scoring. |
-| Application | `src/application/` | Use-case glue that combines domain rules with project data, such as initial state and vocabulary enrichment. |
+| Application | `src/application/` | Use cases and ports that combine domain rules with project data, such as initial state, answer submission, vocabulary replacement, and adapter contracts. |
 | Infrastructure | `src/infrastructure/` | Browser and third-party adapters: IndexedDB, Excel import/export, Hanzi Writer. |
 | Presentation | `src/presentation/` | UI-facing resources: CSS, icons, labels, and locale helpers. |
 | Shared | `src/shared/` | Small dependency-free utilities used across layers. |
@@ -19,7 +19,6 @@ Preferred dependency direction:
 
 ```txt
 app -> application -> domain
-app -> infrastructure -> application/domain
 app -> presentation
 application -> domain/shared
 infrastructure -> domain/application/shared
@@ -27,7 +26,18 @@ presentation -> domain
 domain -> shared only
 ```
 
-Domain modules should not import infrastructure, browser storage, Hanzi Writer, or presentation code. When a future change needs sync/accounts/backend, add adapters under `infrastructure/` first and keep the domain model stable.
+Domain modules should not import infrastructure, browser storage, Hanzi Writer, or presentation code. App modules should not import infrastructure directly; `src/main.ts` is the composition root that injects infrastructure through application ports. When a future change needs sync/accounts/backend, add adapters under `infrastructure/` first and keep the domain model stable.
+
+## Ports And Adapters
+
+Ports live in `src/application/ports/`:
+
+- `AppStateStore`: load/save/reset local learning state.
+- `VocabularyImporter`: import uploaded vocab and load the bundled 4A/4B reference.
+- `StudyDataExporter`: export backup/template files.
+- `ChineseSpeechPlayer`: play Mandarin audio through a browser adapter.
+
+`src/main.ts` wires those ports to browser adapters in `src/infrastructure/`. This keeps the app controller testable and prevents accidental direct coupling to IndexedDB, Excel libraries, or speech synthesis.
 
 ## App Layer Split
 
@@ -57,6 +67,7 @@ This split keeps render functions mostly pure while the controller keeps side ef
 ## Test Boundaries
 
 - Unit tests under `tests/unit/` cover pure domain behavior: spaced-review policy, answer matching, queue ordering, and mock-exam generation/scoring.
+- Application use-case tests cover answer submission and vocabulary replacement.
 - Browser harness tests under `tests/` cover full user workflows: study, reveal/hide answer, stroke practice, data loading, mobile layout, and mock exam.
 - When adding business rules, prefer a unit test in `tests/unit/` before relying on the browser harness.
 

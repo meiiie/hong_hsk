@@ -1,11 +1,10 @@
-import "../presentation/styles.css";
+import type { HskAppDependencies } from "./app-dependencies";
 import type { View } from "./app-types";
 import { bindAppEvents } from "./events/app-event-binder";
 import { registerServiceWorker } from "./service-worker";
 import { MockExamWorkflow } from "./workflows/mock-exam-workflow";
 import { applySettingInput } from "./workflows/settings-workflow";
 import { StudyWorkflow } from "./workflows/study-workflow";
-import { StrokePracticeWorkflow } from "./workflows/stroke-practice-workflow";
 import { renderAppShell } from "./views/app-shell-view";
 import { renderDashboardView } from "./views/dashboard-view";
 import { getDataHealthStats, renderDataView } from "./views/data-view";
@@ -13,21 +12,11 @@ import { renderLessonsView, renderWrongView } from "./views/lesson-views";
 import { renderMockExamIntro, renderMockExamResults, renderMockExamRunner } from "./views/mock-exam-view";
 import { renderPlanView } from "./views/plan-view";
 import { renderStudyView } from "./views/study-view";
-import { removeStarterItems } from "../application/vocab/item-collection";
+import { submitStudyAnswer as applyStudyAnswer } from "../application/review/submit-study-answer";
+import { replaceStarterVocabulary } from "../application/vocab/replace-vocabulary";
 import type { AppState, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
-import { applyAttempt, computeStats, createAttempt, isCorrectAnswer } from "../domain/review/review-service";
-import {
-  exportCsv,
-  exportJson,
-  exportTemplateCsv,
-  exportWorkbook,
-  importStandardCourseReference,
-  importVocabFile,
-  mergeItems,
-} from "../infrastructure/import-export/workbook-io";
-import { speakChinese } from "../infrastructure/speech/chinese-speech";
-import { loadState, resetState, saveState } from "../infrastructure/storage/indexeddb-state-store";
+import { computeStats } from "../domain/review/review-service";
 import { clamp } from "../shared/number-utils";
 
 class HskApp {
@@ -35,13 +24,15 @@ class HskApp {
   private activeView: View = "dashboard";
   private readonly study = new StudyWorkflow();
   private readonly mockExam = new MockExamWorkflow();
-  private readonly strokePractice = new StrokePracticeWorkflow();
   private examClockId: number | undefined;
 
-  constructor(private readonly root: HTMLElement) {}
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly dependencies: HskAppDependencies,
+  ) {}
 
   async init(): Promise<void> {
-    this.state = await loadState();
+    this.state = await this.dependencies.stateStore.load();
     registerServiceWorker();
     this.render();
   }
@@ -55,7 +46,7 @@ class HskApp {
       content: this.renderActiveView(),
     });
     this.bindEvents();
-    void this.strokePractice.mount(
+    void this.dependencies.strokePractice.mount(
       this.root,
       this.activeView === "study" ? this.study.currentItem() : undefined,
       this.study.strokeCharIndex,
@@ -117,15 +108,15 @@ class HskApp {
       revealAnswer: () => this.revealAnswer(),
       hideAnswer: () => this.hideAnswer(),
       selectStrokeChar: (index) => this.selectStrokeChar(index),
-      runStrokeAction: (action) => this.strokePractice.run(action),
+      runStrokeAction: (action) => this.dependencies.strokePractice.run(action),
       updateSetting: (input) => this.updateSetting(input),
       fileSelected: (fileName) => this.updateFileLabel(fileName),
       importFile: () => this.handleImport(),
       loadReference: () => this.handleLoadReference(),
-      exportTemplateCsv: () => exportTemplateCsv(),
-      exportWorkbook: () => exportWorkbook(this.state),
-      exportCsv: () => exportCsv(this.state),
-      exportJson: () => exportJson(this.state),
+      exportTemplateCsv: () => this.dependencies.dataExporter.exportTemplateCsv(),
+      exportWorkbook: () => this.dependencies.dataExporter.exportWorkbook(this.state),
+      exportCsv: () => this.dependencies.dataExporter.exportCsv(this.state),
+      exportJson: () => this.dependencies.dataExporter.exportJson(this.state),
       resetApp: () => this.handleReset(),
       selectMockSet: (setId) => this.selectMockSet(setId),
       startMockExam: () => this.startMockExam(),
@@ -137,7 +128,7 @@ class HskApp {
       saveExamAnswer: (answer) => this.mockExam.saveAnswer(answer),
       appendExamFragment: (currentValue, fragment) => this.mockExam.appendAnswerFragment(currentValue, fragment),
       clearExamAnswer: () => this.clearExamAnswer(),
-      playAudio: (text) => speakChinese(text),
+      playAudio: (text) => this.dependencies.speechPlayer.play(text),
     });
   }
 
@@ -282,12 +273,12 @@ class HskApp {
       return;
     }
 
-    const inputValue = input.value.trim();
-    const correct = isCorrectAnswer(inputValue, item.hanzi);
-    const attempt = createAttempt(item, inputValue, correct, this.study.mode, this.study.cardLatencyMs());
-    this.state.attempts = [attempt, ...this.state.attempts].slice(0, 5000);
-    this.state.reviews = applyAttempt(this.state.reviews, attempt);
-    this.study.recordFeedback(item.id, inputValue, correct);
+    const result = applyStudyAnswer(this.state, item, input.value, this.study.mode, this.study.cardLatencyMs());
+    if (!result) {
+      return;
+    }
+    this.state = result.state;
+    this.study.recordFeedback(result.itemId, result.input, result.correct);
     await this.persist();
     this.render();
   }
@@ -298,16 +289,16 @@ class HskApp {
     if (!file) {
       return;
     }
-    const items = await importVocabFile(file);
-    this.state.items = mergeItems(removeStarterItems(this.state.items), items);
+    const items = await this.dependencies.vocabularyImporter.importFile(file);
+    this.state = replaceStarterVocabulary(this.state, items);
     await this.persist();
     this.resetLearningWorkflows();
     this.render();
   }
 
   private async handleLoadReference(): Promise<void> {
-    const items = await importStandardCourseReference();
-    this.state.items = mergeItems(removeStarterItems(this.state.items), items);
+    const items = await this.dependencies.vocabularyImporter.loadReference();
+    this.state = replaceStarterVocabulary(this.state, items);
     await this.persist();
     this.resetLearningWorkflows();
     this.render();
@@ -318,7 +309,7 @@ class HskApp {
     if (!confirmed) {
       return;
     }
-    this.state = await resetState();
+    this.state = await this.dependencies.stateStore.reset();
     this.resetLearningWorkflows();
     this.activeView = "dashboard";
     this.render();
@@ -334,15 +325,15 @@ class HskApp {
   }
 
   private async persist(): Promise<void> {
-    await saveState(this.state);
+    await this.dependencies.stateStore.save(this.state);
   }
 }
 
-export function mountHskApp(): void {
+export function mountHskApp(dependencies: HskAppDependencies): void {
   const root = document.querySelector<HTMLElement>("#app");
   if (!root) {
     throw new Error("Không tìm thấy #app");
   }
 
-  void new HskApp(root).init();
+  void new HskApp(root, dependencies).init();
 }

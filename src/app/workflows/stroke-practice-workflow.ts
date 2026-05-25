@@ -1,9 +1,22 @@
 import type { VocabItem } from "../../domain/types";
-import { HanziStrokeTrainer } from "../../infrastructure/hanzi/hanzi-stroke-trainer";
 import { extractHanziChars } from "../views/view-helpers";
 
+export interface StrokeTrainerDriver {
+  mount(
+    target: HTMLElement,
+    character: string,
+    callbacks?: {
+      onStatus?: (status: string, message: string) => void;
+    },
+  ): Promise<void>;
+  animate(): Promise<void>;
+  quiz(): Promise<void>;
+  outlineOnly(): Promise<void>;
+  showAnswer(): Promise<void>;
+}
+
 export class StrokePracticeWorkflow {
-  private readonly trainer = new HanziStrokeTrainer();
+  constructor(private readonly trainer: StrokeTrainerDriver) {}
 
   async mount(root: HTMLElement, item: VocabItem | undefined, strokeCharIndex: number): Promise<void> {
     const target = root.querySelector<HTMLElement>("#stroke-target");

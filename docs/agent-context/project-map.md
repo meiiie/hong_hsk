@@ -22,6 +22,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | --- | --- |
 | `src/main.ts` | Thin composition entrypoint. |
 | `src/app/hsk-app.ts` | Stateful app controller for render orchestration, command handlers, persistence calls, and adapter coordination. |
+| `src/app/app-dependencies.ts` | App dependency contract for injected ports/adapters. |
 | `src/app/app-types.ts` | App-only view/data-health/feedback types. |
 | `src/app/events/app-event-binder.ts` | DOM event binding layer that maps data attributes to typed app handlers. |
 | `src/app/service-worker.ts` | Service worker registration. |
@@ -46,8 +47,11 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/domain/exam/mock-exam.ts` | HSK4 mock exam generation and scoring. |
 | `src/domain/hsk4/hsk4-targets.ts` | Target counts for HSK4 data quality messaging. |
 | `src/application/bootstrap/initial-state.ts` | Lesson names and initial app state. |
+| `src/application/ports/*.ts` | Clean architecture ports for state storage, import/export, and speech playback. |
 | `src/application/vocab/data-enrichment.ts` | Vietnamese meaning quality and draft detection. |
 | `src/application/vocab/item-collection.ts` | Collection helpers for replacing starter/reference vocabulary safely. |
+| `src/application/vocab/replace-vocabulary.ts` | Use case for replacing starter/reference vocabulary with imported data. |
+| `src/application/review/submit-study-answer.ts` | Use case for trimming, checking, logging, and scheduling one typed answer. |
 | `src/infrastructure/storage/indexeddb-state-store.ts` | IndexedDB/local persistence. |
 | `src/infrastructure/import-export/workbook-io.ts` | Excel/CSV/JSON import and export. |
 | `src/infrastructure/hanzi/hanzi-stroke-trainer.ts` | Hanzi Writer integration for stroke practice. |
