@@ -2,6 +2,13 @@ name: Deploy Cloudflare Pages
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -10,10 +17,16 @@ jobs:
   deploy:
     name: Build and deploy to Cloudflare Pages
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -26,6 +39,17 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Check Cloudflare secrets
+        run: |
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Missing CLOUDFLARE_ACCOUNT_ID repository secret."
+            exit 1
+          fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Missing CLOUDFLARE_API_TOKEN repository secret. Create a Cloudflare API token with Cloudflare Pages edit permission, add it as a GitHub Actions secret, then rerun this workflow."
+            exit 1
+          fi
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v4
