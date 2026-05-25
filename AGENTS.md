@@ -17,6 +17,7 @@ Read this file first, then use the linked context files only when relevant. Keep
 - [Agent Context Index](docs/agent-context/README.md)
 - [Collaboration Rules](docs/agent-context/collaboration-rules.md)
 - [Project Map](docs/agent-context/project-map.md)
+- [Technology Review](docs/architecture/technology-review-2026-05-26.md)
 - [Harness](docs/agent-context/harness.md)
 - [Cloudflare Final Step](docs/agent-context/cloudflare-final-step.md)
 - [Current Handoff Notes](docs/agent-context/handoff-notes.md)

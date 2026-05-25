@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-05-25",
+  "lastUpdated": "2026-05-26",
   "requiredFiles": [
     "AGENTS.md",
     "CLAUDE.md",
@@ -8,6 +8,7 @@
     "docs/agent-context/collaboration-rules.md",
     "docs/agent-context/project-map.md",
     "docs/agent-context/harness.md",
+    "docs/architecture/technology-review-2026-05-26.md",
     "docs/agent-context/cloudflare-final-step.md",
     "docs/agent-context/handoff-notes.md",
     ".github/workflows/ci.yml",

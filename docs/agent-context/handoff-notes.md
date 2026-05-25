@@ -1,6 +1,6 @@
 # Handoff Notes
 
-Last updated: 2026-05-25.
+Last updated: 2026-05-26.
 
 ## Current Production
 
@@ -19,11 +19,11 @@ Last updated: 2026-05-25.
   - `cd0a746 Improve Cloudflare deploy workflow`
   - `6cabd5b Automate Pages deploy after CI`
 
-## Open Operational Item
+## Current Operational State
 
-Add `CLOUDFLARE_API_TOKEN` to GitHub Secrets.
+Cloudflare deploy secrets are configured and the production deploy workflow has succeeded. The API token used during setup was exposed in chat, so rotate it before treating this as long-lived production infrastructure.
 
-Until this exists, the deploy workflow will trigger after CI but skip the build/deploy steps.
+The current technology decision is recorded in [Technology Review](../architecture/technology-review-2026-05-26.md): keep the static Vite/TypeScript PWA, IndexedDB, Hanzi Writer, Cloudflare Pages, and Playwright harness for now. Revisit a backend only when sync/accounts or multi-user workflows become real.
 
 ## Preferred Next Workflow
 
@@ -42,6 +42,7 @@ gh pr create --draft --base main --head codex/<task>
 ## Things To Watch
 
 - HSK data count currently documented as `621`; tests and target copy should stay aligned.
+- Keep the 2026-05-26 technology review aligned with major stack, storage, HSK data, exam, or deploy decisions.
 - Do not claim mock exams are official HSK papers.
 - Do not reveal stroke-practice answers during recall by default.
 - Do not add backend/SQLite unless multi-device sync becomes an explicit requirement.

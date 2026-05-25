@@ -13,6 +13,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `wrangler.jsonc` | Cloudflare Pages/Wrangler config. |
 | `public/_headers` | Cloudflare Pages security headers. |
 | `docs/agent-context/` | Shared agent memory, harness, rules, and deploy notes. |
+| `docs/architecture/technology-review-2026-05-26.md` | Researched technology decision record and comparable project notes. |
 
 ## Source Modules
 
