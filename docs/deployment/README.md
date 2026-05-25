@@ -56,7 +56,31 @@ npx wrangler login
 npx wrangler pages project create hong-hsk4-studio --production-branch main
 ```
 
-### Deploy thủ công
+### CI/CD tự động
+
+Repo GitHub `meiiie/hong_hsk` có hai workflow:
+
+- `CI`: chạy trên pull request, push `main` và thủ công. Workflow này typecheck, build, chạy Playwright harness desktop/mobile và audit dependency.
+- `Deploy Cloudflare Pages`: tự chạy sau khi `CI` trên `main` hoàn tất thành công. Workflow checkout đúng commit vừa được CI kiểm tra, build lại `dist`, sau đó chạy `wrangler pages deploy`.
+
+Workflow deploy dùng GitHub Environment `production` với URL `https://hsk4.holilihu.online/` và concurrency `cloudflare-pages-production` để tránh hai deploy production chạy đè nhau.
+
+Secrets cần có trong repository:
+
+```text
+CLOUDFLARE_ACCOUNT_ID
+CLOUDFLARE_API_TOKEN
+```
+
+`CLOUDFLARE_ACCOUNT_ID` đã được set trong GitHub Secrets. `CLOUDFLARE_API_TOKEN` nên tạo trong Cloudflare Dashboard với quyền hẹp nhất đủ dùng:
+
+```text
+Account -> Cloudflare Pages -> Edit
+```
+
+Sau khi thêm token, mỗi lần push lên `main` sẽ tự deploy nếu CI xanh.
+
+### Deploy thủ công từ máy local
 
 ```bash
 npm run deploy:cf

@@ -10,6 +10,7 @@ function spawnLogged(command, args, options = {}) {
   return spawn(command, args, {
     stdio: "inherit",
     shell: false,
+    windowsHide: true,
     ...options,
   });
 }

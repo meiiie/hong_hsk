@@ -126,16 +126,20 @@ npm test
 
 ## Deploy
 
-Deploy thủ công lên Cloudflare Pages:
+Mỗi push lên `main` sẽ chạy CI trước. Khi workflow `CI` xanh, workflow `Deploy Cloudflare Pages` tự build lại artifact production và deploy `dist` lên Cloudflare Pages.
+
+Deploy thủ công vẫn có thể chạy từ tab Actions nếu cần:
 
 ```bash
 npm run deploy:cf
 ```
 
-GitHub Actions có workflow thủ công `Deploy Cloudflare Pages`. Để dùng workflow này, cấu hình repository secrets:
+Để GitHub Actions deploy được, repository cần secrets:
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
+
+`CLOUDFLARE_API_TOKEN` nên là token hẹp quyền, tối thiểu `Account > Cloudflare Pages > Edit`. Không commit token vào repo.
 
 Custom domain production hiện tại là `hsk4.holilihu.online`.
 
