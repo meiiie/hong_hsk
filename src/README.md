@@ -35,6 +35,7 @@ Domain modules should not import infrastructure, browser storage, Hanzi Writer, 
 
 Workflow rendering lives under `src/app/views/`:
 
+- `app-shell-view.ts`: sidebar, topbar, language switcher, route title, and shared app chrome.
 - `dashboard-view.ts`: daily overview, data readiness, queue preview.
 - `study-view.ts`: recall card, answer feedback, stroke lab shell, per-card review detail.
 - `lesson-views.ts`: lesson browser and wrong-word table.
@@ -45,6 +46,12 @@ Workflow rendering lives under `src/app/views/`:
 
 This split keeps render functions mostly pure while the controller keeps side effects in one place.
 
+## Test Boundaries
+
+- Unit tests under `tests/unit/` cover pure domain behavior: spaced-review policy, answer matching, queue ordering, and mock-exam generation/scoring.
+- Browser harness tests under `tests/` cover full user workflows: study, reveal/hide answer, stroke practice, data loading, mobile layout, and mock exam.
+- When adding business rules, prefer a unit test in `tests/unit/` before relying on the browser harness.
+
 ## Current Intentional Compromise
 
-`src/app/hsk-app.ts` still contains event binding and command handlers in one class. That is intentional for now: the view workflows have been separated first, and the next low-risk split is extracting event binding/commands after adding stronger unit tests around review and mock-exam behavior.
+`src/app/hsk-app.ts` still contains event binding and command handlers in one class. That is intentional for now: app shell rendering, workflow views, and core domain behavior have been separated first. The next low-risk split is extracting event binding/commands once those interactions have more browser-level coverage.

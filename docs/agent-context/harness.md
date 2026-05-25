@@ -10,6 +10,7 @@ This follows the idea that the harness matters as much as the model: context fil
 | --- | --- | --- |
 | Context | `AGENTS.md`, `CLAUDE.md`, `docs/agent-context/*` | Give agents and teammates the same project map and rules. |
 | Static checks | `npm run context:check`, `npm run architecture:check`, `npm run check` | Validate context files, source-layer boundaries, and TypeScript. |
+| Unit tests | `npm run test:unit` | Lock the review scheduling, queueing, answer matching, and mock-exam domain behavior. |
 | Build | `npm run build` | Ensure Vite production output compiles. |
 | Browser harness | `npm run test:harness` | Verify desktop/mobile learning and mock-exam workflows. |
 | CI | `.github/workflows/ci.yml` | Run the full test stack on PRs and `main`. |
@@ -30,6 +31,7 @@ This expands to:
 npm run context:check
 npm run architecture:check
 npm run check
+npm run test:unit
 npm run build
 npm run test:harness
 ```
@@ -40,6 +42,14 @@ Install browser-test prerequisites when needed:
 python -m pip install -r tests/requirements.txt
 python -m playwright install chromium
 ```
+
+## What The Unit Tests Cover
+
+- Spaced-review policy boundaries, including wrong-answer recovery and ease caps.
+- Hanzi answer normalization before comparing typed recall with the expected answer.
+- Review-state updates after correct and incorrect attempts.
+- Due, wrong, lesson, and today queue ordering.
+- Mock exam shape, deterministic generation, scoring, and timer formatting.
 
 ## What The Browser Harness Covers
 

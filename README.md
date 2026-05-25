@@ -123,9 +123,10 @@ npm test
 1. Agent/context harness check.
 2. Architecture boundary check cho DDD-lite source tree.
 3. TypeScript check.
-4. Vite production build.
-5. Harness Playwright trên desktop và mobile viewport.
-6. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
+4. Vitest unit test cho review policy, review queue, answer matching và mock exam.
+5. Vite production build.
+6. Harness Playwright trên desktop và mobile viewport.
+7. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
 
 Ảnh kiểm thử được ghi vào `artifacts/` khi chạy local/CI.
 

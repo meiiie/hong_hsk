@@ -17,6 +17,10 @@
     "scripts/run_harness.mjs",
     "scripts/check_architecture.mjs",
     "scripts/check_agent_context.mjs",
+    "tests/unit/factories.ts",
+    "tests/unit/mock-exam.test.ts",
+    "tests/unit/review-policy.test.ts",
+    "tests/unit/review-service.test.ts",
     "tests/verify_hsk_pwa.py",
     "tests/verify_hsk_mobile_mock.py"
   ],
@@ -24,6 +28,7 @@
     "context:check",
     "architecture:check",
     "check",
+    "test:unit",
     "build",
     "test:harness",
     "test",

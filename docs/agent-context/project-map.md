@@ -24,6 +24,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/app/hsk-app.ts` | Stateful app controller, event wiring, persistence calls, study queue, and mock exam session orchestration. |
 | `src/app/app-types.ts` | App-only view/data-health/feedback types. |
 | `src/app/service-worker.ts` | Service worker registration. |
+| `src/app/views/app-shell-view.ts` | Sidebar, topbar, language switcher, and route title shell rendering. |
 | `src/app/views/dashboard-view.ts` | Daily overview, data readiness, and queue preview rendering. |
 | `src/app/views/study-view.ts` | Study card, answer feedback, stroke lab shell, and review detail rendering. |
 | `src/app/views/lesson-views.ts` | Lesson browser and wrong-word rendering. |
@@ -56,6 +57,8 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `scripts/run_harness.mjs` | Starts/reuses Vite dev server and runs browser checks. |
 | `scripts/check_agent_context.mjs` | Validates the agent context map and key workflow assumptions. |
 | `scripts/check_architecture.mjs` | Enforces DDD-lite source-layer dependency rules. |
+| `tests/unit/*.test.ts` | Vitest unit coverage for review policy/service and mock exam domain behavior. |
+| `tests/unit/factories.ts` | Typed factories for deterministic unit tests. |
 | `tests/verify_hsk_pwa.py` | Desktop learning flow, answer reveal/hide, stroke trainer, wrong-list check. |
 | `tests/verify_hsk_mobile_mock.py` | Data load, mock exam, and mobile viewport checks. |
 | `tests/requirements.txt` | Python browser-test dependency pin range. |

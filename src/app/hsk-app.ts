@@ -7,7 +7,8 @@ import { renderLessonsView, renderWrongView } from "./views/lesson-views";
 import { renderMockExamIntro, renderMockExamResults, renderMockExamRunner } from "./views/mock-exam-view";
 import { renderPlanView } from "./views/plan-view";
 import { renderStudyView } from "./views/study-view";
-import { clamp, escapeHtml, extractHanziChars, removeStarterItems } from "./views/view-helpers";
+import { renderAppShell } from "./views/app-shell-view";
+import { clamp, extractHanziChars, removeStarterItems } from "./views/view-helpers";
 import type { AppState, StudyMode, VocabItem } from "../domain/types";
 import { toDateKey } from "../shared/date-utils";
 import {
@@ -22,7 +23,6 @@ import {
 import { applyAttempt, computeStats, createAttempt, isCorrectAnswer, queueForMode } from "../domain/review/review-service";
 import { loadState, resetState, saveState } from "../infrastructure/storage/indexeddb-state-store";
 import { HanziStrokeTrainer } from "../infrastructure/hanzi/hanzi-stroke-trainer";
-import { icon, labelWithIcon, type IconName } from "../presentation/icons";
 import {
   HSK4_MOCK_SETS,
   createMockExam,
@@ -56,77 +56,15 @@ class HskApp {
 
   private render(): void {
     const stats = computeStats(this.state);
-    this.root.innerHTML = `
-      <div class="app-shell">
-        <aside class="sidebar">
-          <div class="brand">
-            <div class="brand-mark">红</div>
-            <div>
-              <strong>Hồng HSK4 Studio</strong>
-              <span>Luyện Hán tự 4A/4B</span>
-            </div>
-          </div>
-          <nav class="nav" aria-label="Điều hướng">
-            ${this.navButton("dashboard", "Tổng quan", "layout")}
-            ${this.navButton("study", "Học hôm nay", "keyboard")}
-            ${this.navButton("lessons", "Theo bài", "book")}
-            ${this.navButton("wrong", "Từ sai", "rotate")}
-            ${this.navButton("mock", "Thi thử", "clipboardList")}
-            ${this.navButton("plan", "Lịch 30 ngày", "calendar")}
-            ${this.navButton("data", "Dữ liệu", "database")}
-          </nav>
-          <div class="sidebar-card">
-            <span>Ngày ${stats.planDay}/30</span>
-            <strong>${stats.learned}/${stats.totalItems}</strong>
-            <small>từ đã chạm ít nhất một lần</small>
-          </div>
-        </aside>
-        <main class="main view-${this.activeView}">
-          <header class="topbar">
-            <div>
-              <h1>${this.titleForView()}</h1>
-            </div>
-            <div class="top-actions">
-              <button class="ghost-button" data-study-mode="today">${labelWithIcon("playCircle", "Bắt đầu ôn")}</button>
-              <button class="primary-button" data-view="data">${labelWithIcon("upload", "Nhập Excel")}</button>
-              <label class="language-switcher">
-                <span>Ngôn ngữ</span>
-                <select data-setting="locale" aria-label="Ngôn ngữ giao diện">
-                  <option value="vi" ${this.state.settings.locale === "vi" ? "selected" : ""}>Tiếng Việt</option>
-                  <option value="en" ${this.state.settings.locale === "en" ? "selected" : ""}>English</option>
-                </select>
-              </label>
-            </div>
-          </header>
-          ${this.renderActiveView()}
-        </main>
-      </div>
-    `;
+    this.root.innerHTML = renderAppShell({
+      activeView: this.activeView,
+      state: this.state,
+      stats,
+      content: this.renderActiveView(),
+    });
     this.bindEvents();
     void this.mountStrokeTrainer();
     this.syncExamClock();
-  }
-
-  private navButton(view: View, label: string, iconName: IconName): string {
-    return `
-      <button class="${this.activeView === view ? "active" : ""}" data-view="${view}">
-        ${icon(iconName)}
-        <span>${escapeHtml(label)}</span>
-      </button>
-    `;
-  }
-
-  private titleForView(): string {
-    const titles: Record<View, string> = {
-      dashboard: "Tổng quan hôm nay",
-      study: "Học hôm nay",
-      lessons: "Theo bài",
-      wrong: "Từ cần sửa",
-      mock: "Thi thử HSK4",
-      plan: "Lịch ôn 30 ngày",
-      data: "Dữ liệu học",
-    };
-    return titles[this.activeView];
   }
 
   private renderActiveView(): string {

@@ -19,7 +19,8 @@
     "check": "tsc --noEmit",
     "architecture:check": "node scripts/check_architecture.mjs",
     "context:check": "node scripts/check_agent_context.mjs",
-    "test": "npm run context:check && npm run architecture:check && npm run check && npm run build && npm run test:harness",
+    "test": "npm run context:check && npm run architecture:check && npm run check && npm run test:unit && npm run build && npm run test:harness",
+    "test:unit": "vitest run",
     "test:harness": "node scripts/run_harness.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "preview:cf": "npm run build && wrangler pages dev dist --port 8788",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "typescript": "^6.0.3",
     "vite": "^8.0.14",
+    "vitest": "^4.1.7",
     "wrangler": "^4.94.0"
   }
 }
