@@ -17,6 +17,7 @@ import { replaceStarterVocabulary } from "../application/vocab/replace-vocabular
 import type { AppState, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
 import { computeStats } from "../domain/review/review-service";
+import { icon } from "../presentation/icons";
 import { clamp } from "../shared/number-utils";
 
 const SIDEBAR_COLLAPSED_KEY = "hong-hsk4-sidebar-collapsed";
@@ -148,12 +149,26 @@ class HskApp {
 
   private toggleSidebar(): void {
     this.sidebarCollapsed = !this.sidebarCollapsed;
+    this.applySidebarState();
     try {
       window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, this.sidebarCollapsed ? "1" : "0");
     } catch {
       // Ignore private-browsing/storage failures; the visual toggle still works for this render cycle.
     }
-    this.render();
+  }
+
+  private applySidebarState(): void {
+    const shell = this.root.querySelector<HTMLElement>(".app-shell");
+    const toggle = this.root.querySelector<HTMLButtonElement>("[data-sidebar-toggle]");
+    shell?.classList.toggle("sidebar-collapsed", this.sidebarCollapsed);
+    if (!toggle) {
+      return;
+    }
+    const label = this.sidebarCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar";
+    toggle.setAttribute("aria-expanded", this.sidebarCollapsed ? "false" : "true");
+    toggle.setAttribute("aria-label", label);
+    toggle.title = this.sidebarCollapsed ? "Mở rộng" : "Thu gọn";
+    toggle.innerHTML = icon(this.sidebarCollapsed ? "chevronRight" : "chevronLeft");
   }
 
   private startStudy(mode: StudyMode): void {
