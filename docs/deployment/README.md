@@ -26,7 +26,7 @@ flowchart LR
   Pages --> PWA["Hồng HSK4 Studio PWA"]
   PWA --> IDB["IndexedDB trên thiết bị"]
   PWA --> Hanzi["hanzi-writer-data qua jsDelivr"]
-  PWA --> CSV["CSV 4A/4B tham khảo qua GitHub raw"]
+  PWA --> DATA["Dữ liệu Excel 20 bài đóng gói"]
 ```
 
 Không thêm backend/SQLite ở giai đoạn này. Với một người dùng, backend chỉ làm tăng chi phí, tăng bề mặt bảo mật và tăng việc vận hành. Nếu sau này cần đồng bộ nhiều thiết bị, khi đó mới thêm API + SQLite/D1 theo domain hiện có.
@@ -103,11 +103,11 @@ Cloudflare Pages đọc `public/_headers` sau khi build. File này cấu hình:
 
 - CSP chỉ cho script/style/app shell từ chính site.
 - Cho phép `connect-src` tới `cdn.jsdelivr.net` để tải dữ liệu nét Hanzi Writer.
-- Cho phép `connect-src` tới `raw.githubusercontent.com` để nạp CSV 4A/4B tham khảo khi người dùng bấm nạp dữ liệu.
+- Không cần `connect-src` tới `raw.githubusercontent.com` cho dữ liệu 4A/4B vì bộ mặc định đã được đóng gói trong app.
 - Chặn iframe bằng `frame-ancestors 'none'` và `X-Frame-Options: DENY`.
 - Tắt quyền camera, microphone, geolocation, payment, USB.
 
-Nếu sau này bỏ nút nạp CSV từ GitHub raw hoặc tự đóng gói dữ liệu trong app, có thể xóa `https://raw.githubusercontent.com` khỏi CSP.
+Nếu sau này thêm lại nguồn dữ liệu ngoài, cần cập nhật CSP `connect-src` theo domain mới.
 
 ## Docker fallback
 

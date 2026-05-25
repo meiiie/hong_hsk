@@ -2,7 +2,8 @@ import { mkdir } from "node:fs/promises";
 import { spawn } from "node:child_process";
 
 const rootUrl = "http://127.0.0.1:5173/";
-const viteBin = process.platform === "win32" ? "npx.cmd" : "npx";
+const nodeBin = process.execPath;
+const viteScript = "node_modules/vite/bin/vite.js";
 const pythonBin = process.env.PYTHON ?? "python";
 
 function spawnLogged(command, args, options = {}) {
@@ -52,7 +53,14 @@ try {
   await waitForServer(rootUrl, 1_500);
   console.log(`Using existing dev server at ${rootUrl}`);
 } catch {
-  server = spawnLogged(viteBin, ["vite", "--host", "127.0.0.1", "--port", "5173", "--strictPort"]);
+  server = spawnLogged(nodeBin, [
+    viteScript,
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "5173",
+    "--strictPort",
+  ]);
 }
 
 const shutdown = () => {

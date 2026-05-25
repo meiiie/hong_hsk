@@ -18,7 +18,7 @@ def main() -> None:
         expect(desktop.get_by_text("Hồng HSK4 Studio")).to_be_visible()
         desktop.locator('[data-view="data"]').first.click()
         desktop.locator("[data-load-reference]").click()
-        expect(desktop.locator(".sidebar-card strong")).to_contain_text("724", timeout=20000)
+        expect(desktop.locator(".sidebar-card strong")).to_contain_text("621", timeout=20000)
         desktop.locator('[data-view="mock"]').first.click()
         expect(desktop.get_by_text("100 câu trong 105 phút")).to_be_visible()
         expect(desktop.get_by_text("Đề A - Tổng hợp chuẩn")).to_be_visible()

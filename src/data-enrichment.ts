@@ -1,13 +1,30 @@
 import { HSK4_VI_GLOSSARY } from "./hsk4-vi-glossary";
+import { HSK4_EXCEL_NOTE, HSK4_EXCEL_VI_MEANINGS } from "./hsk4-excel-vocab";
 import type { VocabItem } from "./types";
 
 export const VI_TRANSLATION_QA_NOTE = "Nghĩa Việt nháp tự bổ sung, cần kiểm chứng với giáo trình.";
+export const VI_WORKBOOK_NOTE = HSK4_EXCEL_NOTE;
 
 export function enrichVietnameseMeanings(items: VocabItem[]): VocabItem[] {
   let changed = false;
   const enriched = items.map((item) => {
     const existingMeaning = item.meaningVi.trim();
     const isDraft = item.note.includes(VI_TRANSLATION_QA_NOTE);
+    const workbookMeaning = HSK4_EXCEL_VI_MEANINGS[item.hanzi]?.trim();
+    if (workbookMeaning && shouldApplyWorkbookMeaning(item, existingMeaning, isDraft)) {
+      const note = mergeNote(removeNote(item.note, VI_TRANSLATION_QA_NOTE), VI_WORKBOOK_NOTE);
+      if (existingMeaning === workbookMeaning && item.note === note) {
+        return item;
+      }
+
+      changed = true;
+      return {
+        ...item,
+        meaningVi: workbookMeaning,
+        note,
+      };
+    }
+
     if (existingMeaning && !isDraft) {
       return item;
     }
@@ -45,4 +62,23 @@ function mergeNote(note: string, addition: string): string {
     return note;
   }
   return note ? `${note} ${addition}` : addition;
+}
+
+function removeNote(note: string, target: string): string {
+  return note.replace(target, "").replace(/\s+/g, " ").trim();
+}
+
+function shouldApplyWorkbookMeaning(
+  item: VocabItem,
+  existingMeaning: string,
+  isDraft: boolean,
+): boolean {
+  if (!existingMeaning || isDraft) {
+    return true;
+  }
+
+  return (
+    item.source.startsWith("HSK Standard Course reference CSV") ||
+    item.source.startsWith("Starter demo")
+  );
 }

@@ -29,6 +29,7 @@ import { bookLabel, reviewStatusLabel, studyModeLabel } from "./i18n";
 import { HSK4_REVIEW_POLICY } from "./review-policy";
 import { countDraftVietnameseMeanings, isDraftVietnameseMeaning } from "./data-enrichment";
 import { HSK4_TARGETS } from "./hsk4-targets";
+import { HSK4_EXCEL_SOURCE } from "./hsk4-excel-vocab";
 import {
   HSK4_MOCK_BLUEPRINT,
   HSK4_MOCK_SPEC,
@@ -350,8 +351,11 @@ class HskApp {
     const hanziChars = extractHanziChars(item.hanzi);
     const selectedChar = hanziChars[Math.min(this.strokeCharIndex, hanziChars.length - 1)] ?? item.hanzi;
     const canUseStroke = Boolean(feedback);
+    const answerVisible = Boolean(feedback);
     const sessionProgress = percent(this.studyIndex + 1, this.studyQueue.length);
     const modeLabel = studyModeLabel(this.studyMode, this.state.settings.locale);
+    const feedbackLabel = feedback?.revealed ? "Đáp án" : feedback?.correct ? "Đúng" : "Sai";
+    const feedbackText = feedback?.revealed ? item.hanzi : `Đáp án: ${item.hanzi}`;
 
     return `
       <section class="study-layout">
@@ -373,7 +377,7 @@ class HskApp {
             <p class="eyebrow">Gõ lại chữ Hán</p>
             <h2>${escapeHtml(displayMeaning(item, this.state.settings.useEnglishFallback))}</h2>
             ${
-              this.state.settings.revealPinyin
+              answerVisible && this.state.settings.revealPinyin
                 ? `<p class="pinyin">${escapeHtml(item.pinyin || "Chưa có pinyin")}</p>`
                 : ""
             }
@@ -418,8 +422,8 @@ class HskApp {
           ${
             feedback
               ? `<div class="feedback ${feedback.correct ? "good" : "bad"}" role="status" aria-live="polite">
-                  <strong>${feedback.correct ? "Đúng" : "Sai"}</strong>
-                  <span>Đáp án: ${escapeHtml(item.hanzi)}</span>
+                  <strong>${feedbackLabel}</strong>
+                  <span>${escapeHtml(feedbackText)}</span>
                 </div>`
               : ""
           }
@@ -922,11 +926,11 @@ class HskApp {
           </label>
           <div class="button-grid">
             <button class="ghost-button" data-template-csv>${labelWithIcon("fileText", "Tải mẫu CSV")}</button>
-            <button class="ghost-button" data-load-reference>${labelWithIcon("database", "Nạp bộ 4A/4B tham khảo từ GitHub")}</button>
+            <button class="ghost-button" data-load-reference>${labelWithIcon("database", "Nạp bộ 20 bài từ Excel")}</button>
           </div>
           <p class="fine-print">
-            Bộ GitHub là dữ liệu OCR/manual, có thể còn lỗi và chủ yếu có nghĩa tiếng Anh.
-            Dùng để dựng khung nhanh, sau đó nên thay bằng nghĩa tiếng Việt đã kiểm chứng.
+            Bộ mặc định được đóng gói từ file Excel ôn 20 bài, gồm nghĩa tiếng Việt và ví dụ đã biên soạn cho người học Việt.
+            Bạn vẫn có thể nhập file riêng để thay thế dữ liệu này.
           </p>
         </article>
 
@@ -937,7 +941,7 @@ class HskApp {
             <button class="primary-button" data-export-xlsx>${labelWithIcon("fileSpreadsheet", "Xuất file Excel")}</button>
             <button class="ghost-button" data-export-csv>${labelWithIcon("download", "Xuất từ vựng CSV")}</button>
             <button class="ghost-button" data-export-json>${labelWithIcon("databaseBackup", "Sao lưu JSON")}</button>
-            <button class="danger-button" data-reset-app>${labelWithIcon("trash", "Xóa dữ liệu demo")}</button>
+            <button class="danger-button" data-reset-app>${labelWithIcon("trash", "Xóa dữ liệu hiện tại")}</button>
           </div>
         </article>
 
@@ -1399,7 +1403,7 @@ class HskApp {
   }
 
   private async handleReset(): Promise<void> {
-    const confirmed = window.confirm("Reset dữ liệu demo và xóa log học trong trình duyệt này?");
+    const confirmed = window.confirm("Reset dữ liệu hiện tại và xóa log học trong trình duyệt này?");
     if (!confirmed) {
       return;
     }
@@ -1522,7 +1526,10 @@ function extractHanziChars(value: string): string[] {
 }
 
 function removeStarterItems(items: VocabItem[]): VocabItem[] {
-  return items.filter((item) => !item.source.startsWith("Starter demo"));
+  return items.filter(
+    (item) =>
+      !item.source.startsWith("Starter demo") && !item.source.startsWith(HSK4_EXCEL_SOURCE),
+  );
 }
 
 function clamp(value: number, min: number, max: number): number {

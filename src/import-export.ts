@@ -4,13 +4,9 @@ import type { AppState, BookCode, ReviewState, VocabItem } from "./types";
 import { LESSON_TITLES } from "./seed";
 import { addDays, toDateKey } from "./date-utils";
 import { enrichVietnameseMeanings } from "./data-enrichment";
+import { createExcelCourseItems } from "./hsk4-excel-vocab";
 
 type RawRow = Record<string, string>;
-
-const STANDARD_COURSE_URLS = [
-  "https://raw.githubusercontent.com/joelypoley/hsk_standard_course_vocab/main/hsk_vocab/HSK%20Standard%20Course%20Vocabulary%20-%20hsk_4a.csv",
-  "https://raw.githubusercontent.com/joelypoley/hsk_standard_course_vocab/main/hsk_vocab/HSK%20Standard%20Course%20Vocabulary%20-%20hsk_4b.csv",
-];
 
 export async function importVocabFile(file: File): Promise<VocabItem[]> {
   const extension = file.name.toLowerCase().split(".").pop();
@@ -26,17 +22,7 @@ export async function importVocabFile(file: File): Promise<VocabItem[]> {
 }
 
 export async function importStandardCourseReference(): Promise<VocabItem[]> {
-  const chunks = await Promise.all(
-    STANDARD_COURSE_URLS.map(async (url) => {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Không tải được dữ liệu: ${response.status}`);
-      }
-      return parseCsv(await response.text());
-    }),
-  );
-
-  return parseVocabRows(chunks.flat(), "HSK Standard Course reference CSV");
+  return createExcelCourseItems();
 }
 
 export async function exportWorkbook(state: AppState): Promise<void> {

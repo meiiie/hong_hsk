@@ -55,7 +55,7 @@ App có thể nạp bộ 4A/4B tham khảo để dựng lộ trình ban đầu. 
 
 Các nguyên tắc đang dùng:
 
-- `724` mục: mốc tham khảo cho giáo trình chuẩn HSK4 4A/4B theo bài 1-20.
+- `621` mục: mốc tham khảo từ file Excel ôn 20 bài giáo trình chuẩn HSK4 4A/4B.
 - `1.200` từ: mốc HSK4 cũ tính lũy kế, gồm nền HSK1-3 và phần HSK4.
 - Nghĩa tiếng Việt tự bổ sung được đánh dấu để duyệt, không xem là bản dịch cuối cùng.
 - Thi thử mô phỏng cấu trúc, thao tác và áp lực thời gian; không phân phối đề/audio chính thức.
@@ -120,7 +120,7 @@ npm test
 1. TypeScript check.
 2. Vite production build.
 3. Harness Playwright trên desktop và mobile viewport.
-4. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 724 mục và thi thử.
+4. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
 
 Ảnh kiểm thử được ghi vào `artifacts/` khi chạy local/CI.
 

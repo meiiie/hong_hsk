@@ -49,7 +49,7 @@ Các hằng số lịch ôn nằm ở `src/review-policy.ts` để dễ kiểm t
 
 ## Mục tiêu dữ liệu
 
-- `724` mục hiện tại là mốc tham khảo cho bộ giáo trình chuẩn HSK4 4A/4B theo bài 1-20.
+- `621` mục hiện tại được đóng gói từ file Excel ôn 20 bài giáo trình chuẩn HSK4 4A/4B.
 - `1.200` từ là mốc ôn thi HSK4 cũ theo cách tính tích lũy; người học vẫn cần xác nhận nền HSK1-3 khoảng 600 từ.
 - App chỉ báo "sẵn sàng học thật" khi vừa đủ mục tiêu dữ liệu, vừa không còn mục thiếu nghĩa Việt hoặc nghĩa Việt nháp.
 - Nếu còn nghĩa tự bổ sung từ nguồn tiếng Anh, app giữ trạng thái `cần duyệt`; không coi đó là bản dịch cuối cùng.
@@ -103,19 +103,18 @@ Trên điện thoại, điều hướng chính chuyển xuống thanh dưới đ
 - `hanzi-writer` và `Make Me a Hanzi`: dữ liệu/animation thứ tự nét chữ Hán.
 - WenBun: tham khảo hướng kết hợp luyện viết, flashcard và spaced repetition trong PWA.
 - Anki/FSRS: tham khảo hướng scheduler hiện đại nếu sau này cần nâng cấp thuật toán ôn.
-- `joelypoley/hsk_standard_course_vocab`: nguồn CSV 4A/4B tham khảo, không xem là dữ liệu chính thức.
+- File Excel ôn 20 bài: nguồn nghĩa tiếng Việt và ví dụ mặc định đóng gói trong app.
 - `drkameleon/complete-hsk-vocabulary`: nguồn đối chiếu danh sách từ HSK cũ/tích lũy.
 - ChineseTest/HSK exam format: đối chiếu cấu trúc HSK4 Nghe/Đọc/Viết và thời lượng.
 - NN/g và WCAG 2.2: định hướng khả dụng, focus, vùng bấm và phản hồi trạng thái.
 
 ## Dữ liệu tham khảo
 
-Nút `Nạp bộ 4A/4B tham khảo từ GitHub` dùng repo `joelypoley/hsk_standard_course_vocab`.
-Repo đó tự ghi dữ liệu được tạo bằng OCR và sửa tay, nên chỉ nên dùng làm khung ban đầu. Với học thật, nên so lại với sách/giáo trình hoặc file Excel bạn đã có.
+Nút `Nạp bộ 20 bài từ Excel` dùng dữ liệu đóng gói trong `src/hsk4-excel-vocab.ts`.
+Bộ này lấy nghĩa tiếng Việt và ví dụ từ file Excel ôn 20 bài để người học có dữ liệu sát mục tiêu học hơn, không cần tải CSV ngoài mạng.
 
-File `src/hsk4-vi-glossary.ts` chứa 720 nghĩa tiếng Việt tự bổ sung từ cột nghĩa tiếng Anh của bộ 4A/4B tham khảo.
-App tự dùng glossary này để điền `Nghĩa Việt` khi dữ liệu nhập vào đang thiếu, nhưng luôn đánh dấu bằng ghi chú kiểm chứng.
-Các nghĩa này chưa được xem là dữ liệu học cuối cùng: cần duyệt từng mục để bảo đảm ngắn, đúng sắc thái, tự nhiên với người Việt và khớp ngữ cảnh giáo trình.
+File `src/hsk4-vi-glossary.ts` vẫn là lớp dự phòng để điền `Nghĩa Việt` khi người dùng nhập dữ liệu khác còn thiếu nghĩa.
+Các nghĩa dự phòng đó vẫn được đánh dấu cần kiểm chứng, còn dữ liệu Excel đóng gói được xem là nguồn mặc định cho app.
 
 ## Kiểm thử đã thực hiện
 

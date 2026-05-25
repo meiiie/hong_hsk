@@ -29,7 +29,7 @@ Kết quả được quy đổi mô phỏng thành 300 điểm: Nghe 100, Đọc
 
 ## Dữ liệu
 
-- Bộ 4A/4B tham khảo trong app lấy từ `joelypoley/hsk_standard_course_vocab`. Repo này tự ghi rõ dữ liệu được tạo bằng OCR và sửa tay, nên app dùng như dữ liệu khởi đầu chứ không coi là nguồn tuyệt đối.
+- Bộ 4A/4B mặc định trong app lấy từ file Excel ôn 20 bài đã đóng gói, gồm nghĩa tiếng Việt và ví dụ tự biên soạn để học.
 - Đối chiếu danh sách HSK cũ/mới có thể dùng `drkameleon/complete-hsk-vocabulary`, nhưng app không tự nhập toàn bộ HSK1-3 vào đề nếu người dùng chưa nạp dữ liệu.
 - Nghĩa tiếng Việt trong `src/hsk4-vi-glossary.ts` là bản tự biên soạn/tự dịch để người Việt học nhanh hơn. Các mục còn bị đánh dấu nháp vẫn cần duyệt tay trước khi coi là bản học cuối.
 

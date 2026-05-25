@@ -1,6 +1,7 @@
 import type { AppState, VocabItem } from "./types";
 import { toDateKey } from "./date-utils";
 import { HSK4_REVIEW_POLICY } from "./review-policy";
+import { createExcelCourseItems } from "./hsk4-excel-vocab";
 
 export const APP_STATE_VERSION = 1;
 
@@ -193,7 +194,7 @@ export function createInitialState(): AppState {
 
   return {
     version: APP_STATE_VERSION,
-    items: createStarterItems(),
+    items: createExcelCourseItems(),
     attempts: [],
     reviews: {},
     settings: {
