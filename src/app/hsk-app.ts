@@ -1,16 +1,22 @@
 import "../presentation/styles.css";
-import type { StudyFeedback, View } from "./app-types";
+import type { View } from "./app-types";
+import { bindAppEvents } from "./events/app-event-binder";
 import { registerServiceWorker } from "./service-worker";
+import { MockExamWorkflow } from "./workflows/mock-exam-workflow";
+import { applySettingInput } from "./workflows/settings-workflow";
+import { StudyWorkflow } from "./workflows/study-workflow";
+import { StrokePracticeWorkflow } from "./workflows/stroke-practice-workflow";
+import { renderAppShell } from "./views/app-shell-view";
 import { renderDashboardView } from "./views/dashboard-view";
 import { getDataHealthStats, renderDataView } from "./views/data-view";
 import { renderLessonsView, renderWrongView } from "./views/lesson-views";
 import { renderMockExamIntro, renderMockExamResults, renderMockExamRunner } from "./views/mock-exam-view";
 import { renderPlanView } from "./views/plan-view";
 import { renderStudyView } from "./views/study-view";
-import { renderAppShell } from "./views/app-shell-view";
-import { clamp, extractHanziChars, removeStarterItems } from "./views/view-helpers";
-import type { AppState, StudyMode, VocabItem } from "../domain/types";
-import { toDateKey } from "../shared/date-utils";
+import { removeStarterItems } from "../application/vocab/item-collection";
+import type { AppState, StudyMode } from "../domain/types";
+import { formatExamTime } from "../domain/exam/mock-exam";
+import { applyAttempt, computeStats, createAttempt, isCorrectAnswer } from "../domain/review/review-service";
 import {
   exportCsv,
   exportJson,
@@ -20,31 +26,17 @@ import {
   importVocabFile,
   mergeItems,
 } from "../infrastructure/import-export/workbook-io";
-import { applyAttempt, computeStats, createAttempt, isCorrectAnswer, queueForMode } from "../domain/review/review-service";
+import { speakChinese } from "../infrastructure/speech/chinese-speech";
 import { loadState, resetState, saveState } from "../infrastructure/storage/indexeddb-state-store";
-import { HanziStrokeTrainer } from "../infrastructure/hanzi/hanzi-stroke-trainer";
-import {
-  HSK4_MOCK_SETS,
-  createMockExam,
-  formatExamTime,
-  type MockExamSet,
-  type MockExamSession,
-} from "../domain/exam/mock-exam";
+import { clamp } from "../shared/number-utils";
 
 class HskApp {
   private state!: AppState;
   private activeView: View = "dashboard";
-  private studyMode: StudyMode = "today";
-  private studyQueue: VocabItem[] = [];
-  private studyIndex = 0;
-  private cardStartedAt = Date.now();
-  private strokeCharIndex = 0;
-  private readonly strokeTrainer = new HanziStrokeTrainer();
-  private mockExam: MockExamSession | undefined;
-  private mockExamIndex = 0;
-  private selectedMockSetId = HSK4_MOCK_SETS[0].id;
+  private readonly study = new StudyWorkflow();
+  private readonly mockExam = new MockExamWorkflow();
+  private readonly strokePractice = new StrokePracticeWorkflow();
   private examClockId: number | undefined;
-  private feedback: StudyFeedback | undefined;
 
   constructor(private readonly root: HTMLElement) {}
 
@@ -63,7 +55,11 @@ class HskApp {
       content: this.renderActiveView(),
     });
     this.bindEvents();
-    void this.mountStrokeTrainer();
+    void this.strokePractice.mount(
+      this.root,
+      this.activeView === "study" ? this.study.currentItem() : undefined,
+      this.study.strokeCharIndex,
+    );
     this.syncExamClock();
   }
 
@@ -90,280 +86,170 @@ class HskApp {
   }
 
   private renderStudy(): string {
-    if (!this.studyQueue.length) {
-      this.studyQueue = queueForMode(this.state, this.studyMode);
-      this.studyIndex = 0;
-      this.cardStartedAt = Date.now();
-    }
-
+    this.study.ensureQueue(this.state);
     return renderStudyView({
       state: this.state,
-      studyMode: this.studyMode,
-      studyQueue: this.studyQueue,
-      studyIndex: this.studyIndex,
-      strokeCharIndex: this.strokeCharIndex,
-      feedback: this.feedback,
+      studyMode: this.study.mode,
+      studyQueue: this.study.queue,
+      studyIndex: this.study.index,
+      strokeCharIndex: this.study.strokeCharIndex,
+      feedback: this.study.feedback,
     });
   }
 
   private renderMockExam(): string {
-    if (!this.mockExam) {
-      return renderMockExamIntro(getDataHealthStats(this.state), this.selectedMockSet());
+    if (!this.mockExam.session) {
+      return renderMockExamIntro(getDataHealthStats(this.state), this.mockExam.selectedSet());
     }
-    if (this.mockExam.submittedAt) {
-      return renderMockExamResults(this.mockExam);
+    if (this.mockExam.session.submittedAt) {
+      return renderMockExamResults(this.mockExam.session);
     }
-    return renderMockExamRunner(this.mockExam, this.mockExamIndex, this.examRemainingMs(this.mockExam));
-  }
-
-  private selectedMockSet(): MockExamSet {
-    return HSK4_MOCK_SETS.find((set) => set.id === this.selectedMockSetId) ?? HSK4_MOCK_SETS[0];
+    return renderMockExamRunner(this.mockExam.session, this.mockExam.index, this.mockExam.remainingMs());
   }
 
   private bindEvents(): void {
-    this.root.querySelectorAll<HTMLButtonElement>("[data-view]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const view = button.dataset.view as View;
-        this.activeView = view;
-        if (view !== "study") {
-          this.clearStudyQueue();
-        }
-        this.render();
-      });
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>("[data-study-mode]").forEach((button) => {
-      button.addEventListener("click", () => {
-        this.studyMode = button.dataset.studyMode as StudyMode;
-        this.activeView = "study";
-        this.clearStudyQueue();
-        this.render();
-        queueMicrotask(() => this.root.querySelector<HTMLInputElement>("#hanzi-input")?.focus());
-      });
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>("[data-lesson]").forEach((button) => {
-      button.addEventListener("click", async () => {
-        this.state.settings.selectedLesson = Number(button.dataset.lesson);
-        await this.persist();
-        this.render();
-      });
-    });
-
-    this.root.querySelector<HTMLFormElement>("[data-answer-form]")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      void this.submitAnswer();
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-next-card]")?.addEventListener("click", () => {
-      this.studyIndex += 1;
-      this.cardStartedAt = Date.now();
-      this.strokeCharIndex = 0;
-      this.feedback = undefined;
-      this.render();
-      queueMicrotask(() => this.root.querySelector<HTMLInputElement>("#hanzi-input")?.focus());
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-reveal-answer]")?.addEventListener("click", () => {
-      const item = this.studyQueue[this.studyIndex];
-      if (item) {
-        this.feedback = { itemId: item.id, input: item.hanzi, correct: true, revealed: true };
-        this.render();
-      }
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-hide-answer]")?.addEventListener("click", () => {
-      if (this.feedback?.revealed) {
-        this.feedback = undefined;
-        this.strokeCharIndex = 0;
-        this.render();
-        queueMicrotask(() => this.root.querySelector<HTMLInputElement>("#hanzi-input")?.focus());
-      }
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-char]").forEach((button) => {
-      button.addEventListener("click", () => {
-        this.strokeCharIndex = Number(button.dataset.strokeChar) || 0;
-        this.render();
-      });
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>("[data-stroke-action]").forEach((button) => {
-      button.addEventListener("click", () => {
-        void this.handleStrokeAction(button.dataset.strokeAction ?? "");
-      });
-    });
-
-    this.root.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[data-setting]").forEach((input) => {
-      input.addEventListener("change", async () => {
-        const key = input.dataset.setting;
-        if (key === "startDate") {
-          this.state.settings.startDate = input.value || toDateKey();
-        }
-        if (key === "dailyNewTarget") {
-          this.state.settings.dailyNewTarget = clamp(Number(input.value), 5, 80);
-        }
-        if (key === "dailyReviewTarget") {
-          this.state.settings.dailyReviewTarget = clamp(Number(input.value), 20, 240);
-        }
-        if (key === "locale") {
-          this.state.settings.locale = input.value === "en" ? "en" : "vi";
-        }
-        if (key === "useEnglishFallback") {
-          this.state.settings.useEnglishFallback = input instanceof HTMLInputElement ? input.checked : false;
-        }
-        await this.persist();
-        this.render();
-      });
-    });
-
-    const fileInput = this.root.querySelector<HTMLInputElement>("#file-import");
-    fileInput?.addEventListener("change", () => {
-      const fileName = fileInput.files?.[0]?.name ?? "Chưa chọn file";
-      const label = this.root.querySelector<HTMLElement>("[data-file-name]");
-      if (label) {
-        label.textContent = fileName;
-      }
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-import-file]")?.addEventListener("click", () => {
-      void this.handleImport();
-    });
-    this.root.querySelector<HTMLButtonElement>("[data-load-reference]")?.addEventListener("click", () => {
-      void this.handleLoadReference();
-    });
-    this.root.querySelector<HTMLButtonElement>("[data-template-csv]")?.addEventListener("click", () => {
-      exportTemplateCsv();
-    });
-    this.root.querySelector<HTMLButtonElement>("[data-export-xlsx]")?.addEventListener("click", () => {
-      void exportWorkbook(this.state);
-    });
-    this.root.querySelectorAll<HTMLButtonElement>("[data-export-csv]").forEach((button) => {
-      button.addEventListener("click", () => exportCsv(this.state));
-    });
-    this.root.querySelector<HTMLButtonElement>("[data-export-json]")?.addEventListener("click", () => {
-      exportJson(this.state);
-    });
-    this.root.querySelector<HTMLButtonElement>("[data-reset-app]")?.addEventListener("click", () => {
-      void this.handleReset();
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>("[data-mock-set]").forEach((button) => {
-      button.addEventListener("click", () => {
-        this.selectedMockSetId = button.dataset.mockSet ?? HSK4_MOCK_SETS[0].id;
-        this.render();
-      });
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-start-mock]")?.addEventListener("click", () => {
-      this.mockExam = createMockExam(this.state.items, this.selectedMockSet());
-      this.mockExamIndex = 0;
-      this.activeView = "mock";
-      this.render();
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-reset-mock]")?.addEventListener("click", () => {
-      this.mockExam = undefined;
-      this.mockExamIndex = 0;
-      this.render();
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-submit-mock]")?.addEventListener("click", () => {
-      if (!this.mockExam) {
-        return;
-      }
-      const unanswered = this.mockExam.questions.length - Object.values(this.mockExam.answers).filter((answer) => answer.trim()).length;
-      const confirmed =
-        unanswered > 0
-          ? window.confirm(`Còn ${unanswered} câu chưa trả lời. Bạn vẫn muốn kết thúc và chấm bài?`)
-          : true;
-      if (!confirmed) {
-        return;
-      }
-      this.mockExam = { ...this.mockExam, submittedAt: Date.now() };
-      this.render();
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-exam-prev]")?.addEventListener("click", () => {
-      this.mockExamIndex = Math.max(0, this.mockExamIndex - 1);
-      this.render();
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-exam-next]")?.addEventListener("click", () => {
-      const lastIndex = Math.max(0, (this.mockExam?.questions.length ?? 1) - 1);
-      this.mockExamIndex = Math.min(lastIndex, this.mockExamIndex + 1);
-      this.render();
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>("[data-exam-answer]").forEach((button) => {
-      button.addEventListener("click", () => {
-        this.saveMockAnswer(button.dataset.examAnswer ?? "");
-        this.render();
-      });
-    });
-
-    this.root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-exam-text]").forEach((input) => {
-      input.addEventListener("input", () => {
-        this.saveMockAnswer(input.value);
-      });
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>("[data-exam-fragment]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const input = this.root.querySelector<HTMLInputElement>("[data-exam-text]");
-        if (!input) {
-          return;
-        }
-        const fragment = button.dataset.examFragment ?? "";
-        input.value = `${input.value}${fragment}`;
-        this.saveMockAnswer(input.value);
-        input.focus();
-      });
-    });
-
-    this.root.querySelector<HTMLButtonElement>("[data-exam-clear]")?.addEventListener("click", () => {
-      this.saveMockAnswer("");
-      this.render();
-    });
-
-    this.root.querySelectorAll<HTMLButtonElement>("[data-play-audio]").forEach((button) => {
-      button.addEventListener("click", () => {
-        this.speakChinese(button.dataset.playAudio ?? "");
-      });
+    bindAppEvents(this.root, {
+      navigate: (view) => this.navigate(view),
+      startStudy: (mode) => this.startStudy(mode),
+      selectLesson: (lesson) => this.selectLesson(lesson),
+      submitAnswer: () => this.submitAnswer(),
+      nextCard: () => this.nextCard(),
+      revealAnswer: () => this.revealAnswer(),
+      hideAnswer: () => this.hideAnswer(),
+      selectStrokeChar: (index) => this.selectStrokeChar(index),
+      runStrokeAction: (action) => this.strokePractice.run(action),
+      updateSetting: (input) => this.updateSetting(input),
+      fileSelected: (fileName) => this.updateFileLabel(fileName),
+      importFile: () => this.handleImport(),
+      loadReference: () => this.handleLoadReference(),
+      exportTemplateCsv: () => exportTemplateCsv(),
+      exportWorkbook: () => exportWorkbook(this.state),
+      exportCsv: () => exportCsv(this.state),
+      exportJson: () => exportJson(this.state),
+      resetApp: () => this.handleReset(),
+      selectMockSet: (setId) => this.selectMockSet(setId),
+      startMockExam: () => this.startMockExam(),
+      resetMockExam: () => this.resetMockExam(),
+      submitMockExam: () => this.submitMockExam(),
+      previousExamQuestion: () => this.previousExamQuestion(),
+      nextExamQuestion: () => this.nextExamQuestion(),
+      chooseExamAnswer: (answer) => this.chooseExamAnswer(answer),
+      saveExamAnswer: (answer) => this.mockExam.saveAnswer(answer),
+      appendExamFragment: (currentValue, fragment) => this.mockExam.appendAnswerFragment(currentValue, fragment),
+      clearExamAnswer: () => this.clearExamAnswer(),
+      playAudio: (text) => speakChinese(text),
     });
   }
 
-  private saveMockAnswer(answer: string): void {
-    if (!this.mockExam) {
-      return;
+  private navigate(view: View): void {
+    this.activeView = view;
+    if (view !== "study") {
+      this.study.clear();
     }
-    const question = this.mockExam.questions[this.mockExamIndex];
-    if (!question) {
-      return;
-    }
-    this.mockExam.answers[question.id] = answer;
+    this.render();
   }
 
-  private speakChinese(text: string): void {
-    if (!text.trim() || !("speechSynthesis" in window)) {
+  private startStudy(mode: StudyMode): void {
+    this.study.start(mode);
+    this.activeView = "study";
+    this.render();
+    this.focusHanziInput();
+  }
+
+  private async selectLesson(lesson: number): Promise<void> {
+    this.state.settings.selectedLesson = clamp(lesson, 1, 20);
+    await this.persist();
+    this.render();
+  }
+
+  private nextCard(): void {
+    this.study.nextCard();
+    this.render();
+    this.focusHanziInput();
+  }
+
+  private revealAnswer(): void {
+    if (this.study.revealCurrentAnswer()) {
+      this.render();
+    }
+  }
+
+  private hideAnswer(): void {
+    if (this.study.hideRevealedAnswer()) {
+      this.render();
+      this.focusHanziInput();
+    }
+  }
+
+  private selectStrokeChar(index: number): void {
+    this.study.selectStrokeChar(index);
+    this.render();
+  }
+
+  private async updateSetting(input: HTMLInputElement | HTMLSelectElement): Promise<void> {
+    applySettingInput(this.state.settings, input);
+    await this.persist();
+    this.render();
+  }
+
+  private updateFileLabel(fileName: string): void {
+    const label = this.root.querySelector<HTMLElement>("[data-file-name]");
+    if (label) {
+      label.textContent = fileName;
+    }
+  }
+
+  private selectMockSet(setId: string): void {
+    this.mockExam.selectSet(setId);
+    this.render();
+  }
+
+  private startMockExam(): void {
+    this.mockExam.start(this.state.items);
+    this.activeView = "mock";
+    this.render();
+  }
+
+  private resetMockExam(): void {
+    this.mockExam.reset();
+    this.render();
+  }
+
+  private submitMockExam(): void {
+    const unanswered = this.mockExam.unansweredCount();
+    const confirmed =
+      unanswered > 0
+        ? window.confirm(`Còn ${unanswered} câu chưa trả lời. Bạn vẫn muốn kết thúc và chấm bài?`)
+        : true;
+    if (!confirmed) {
       return;
     }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "zh-CN";
-    utterance.rate = 0.82;
-    utterance.pitch = 1;
-    const voice = window.speechSynthesis
-      .getVoices()
-      .find((candidate) => candidate.lang.toLowerCase().startsWith("zh"));
-    if (voice) {
-      utterance.voice = voice;
-    }
-    window.speechSynthesis.speak(utterance);
+    this.mockExam.submit();
+    this.render();
+  }
+
+  private previousExamQuestion(): void {
+    this.mockExam.previousQuestion();
+    this.render();
+  }
+
+  private nextExamQuestion(): void {
+    this.mockExam.nextQuestion();
+    this.render();
+  }
+
+  private chooseExamAnswer(answer: string): void {
+    this.mockExam.saveAnswer(answer);
+    this.render();
+  }
+
+  private clearExamAnswer(): void {
+    this.mockExam.saveAnswer("");
+    this.render();
   }
 
   private syncExamClock(): void {
-    const running = this.activeView === "mock" && this.mockExam && !this.mockExam.submittedAt;
+    const running = this.mockExam.isRunning(this.activeView);
     if (!running && this.examClockId !== undefined) {
       window.clearInterval(this.examClockId);
       this.examClockId = undefined;
@@ -373,89 +259,37 @@ class HskApp {
       return;
     }
     this.examClockId = window.setInterval(() => {
-      if (!this.mockExam || this.mockExam.submittedAt) {
+      if (!this.mockExam.session || this.mockExam.session.submittedAt) {
         this.syncExamClock();
         return;
       }
-      const remaining = this.examRemainingMs(this.mockExam);
+      const remaining = this.mockExam.remainingMs();
       const clock = this.root.querySelector<HTMLElement>("[data-exam-clock] span");
       if (clock) {
         clock.textContent = formatExamTime(remaining);
       }
       if (remaining <= 0) {
-        this.mockExam = { ...this.mockExam, submittedAt: Date.now() };
+        this.mockExam.submit();
         this.render();
       }
     }, 1000);
   }
 
-  private examRemainingMs(session: MockExamSession): number {
-    return session.durationMinutes * 60_000 - (Date.now() - session.startedAt);
-  }
-
   private async submitAnswer(): Promise<void> {
-    const item = this.studyQueue[this.studyIndex];
+    const item = this.study.currentItem();
     const input = this.root.querySelector<HTMLInputElement>("#hanzi-input");
     if (!item || !input || !input.value.trim()) {
       return;
     }
 
-    const correct = isCorrectAnswer(input.value, item.hanzi);
-    const attempt = createAttempt(
-      item,
-      input.value.trim(),
-      correct,
-      this.studyMode,
-      Date.now() - this.cardStartedAt,
-    );
+    const inputValue = input.value.trim();
+    const correct = isCorrectAnswer(inputValue, item.hanzi);
+    const attempt = createAttempt(item, inputValue, correct, this.study.mode, this.study.cardLatencyMs());
     this.state.attempts = [attempt, ...this.state.attempts].slice(0, 5000);
     this.state.reviews = applyAttempt(this.state.reviews, attempt);
-    this.feedback = { itemId: item.id, input: input.value.trim(), correct };
+    this.study.recordFeedback(item.id, inputValue, correct);
     await this.persist();
     this.render();
-  }
-
-  private async mountStrokeTrainer(): Promise<void> {
-    if (this.activeView !== "study") {
-      return;
-    }
-    const item = this.studyQueue[this.studyIndex];
-    const target = this.root.querySelector<HTMLElement>("#stroke-target");
-    if (!item || !target) {
-      return;
-    }
-
-    const characters = extractHanziChars(item.hanzi);
-    const character =
-      characters[Math.min(this.strokeCharIndex, characters.length - 1)] ?? item.hanzi.charAt(0);
-    if (!character) {
-      return;
-    }
-
-    await this.strokeTrainer.mount(target, character, {
-      onStatus: (status, message) => {
-        const statusElement = this.root.querySelector<HTMLElement>("#stroke-status");
-        if (statusElement) {
-          statusElement.textContent = message;
-          statusElement.dataset.status = status;
-        }
-      },
-    });
-  }
-
-  private async handleStrokeAction(action: string): Promise<void> {
-    if (action === "animate") {
-      await this.strokeTrainer.animate();
-    }
-    if (action === "quiz") {
-      await this.strokeTrainer.quiz();
-    }
-    if (action === "outline") {
-      await this.strokeTrainer.outlineOnly();
-    }
-    if (action === "show") {
-      await this.strokeTrainer.showAnswer();
-    }
   }
 
   private async handleImport(): Promise<void> {
@@ -467,7 +301,7 @@ class HskApp {
     const items = await importVocabFile(file);
     this.state.items = mergeItems(removeStarterItems(this.state.items), items);
     await this.persist();
-    this.clearStudyQueue();
+    this.resetLearningWorkflows();
     this.render();
   }
 
@@ -475,7 +309,7 @@ class HskApp {
     const items = await importStandardCourseReference();
     this.state.items = mergeItems(removeStarterItems(this.state.items), items);
     await this.persist();
-    this.clearStudyQueue();
+    this.resetLearningWorkflows();
     this.render();
   }
 
@@ -485,17 +319,18 @@ class HskApp {
       return;
     }
     this.state = await resetState();
-    this.clearStudyQueue();
+    this.resetLearningWorkflows();
     this.activeView = "dashboard";
     this.render();
   }
 
-  private clearStudyQueue(): void {
-    this.studyQueue = [];
-    this.studyIndex = 0;
-    this.strokeCharIndex = 0;
-    this.cardStartedAt = Date.now();
-    this.feedback = undefined;
+  private resetLearningWorkflows(): void {
+    this.study.clear();
+    this.mockExam.reset();
+  }
+
+  private focusHanziInput(): void {
+    queueMicrotask(() => this.root.querySelector<HTMLInputElement>("#hanzi-input")?.focus());
   }
 
   private async persist(): Promise<void> {

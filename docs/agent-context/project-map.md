@@ -21,9 +21,14 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | Module | Responsibility |
 | --- | --- |
 | `src/main.ts` | Thin composition entrypoint. |
-| `src/app/hsk-app.ts` | Stateful app controller, event wiring, persistence calls, study queue, and mock exam session orchestration. |
+| `src/app/hsk-app.ts` | Stateful app controller for render orchestration, command handlers, persistence calls, and adapter coordination. |
 | `src/app/app-types.ts` | App-only view/data-health/feedback types. |
+| `src/app/events/app-event-binder.ts` | DOM event binding layer that maps data attributes to typed app handlers. |
 | `src/app/service-worker.ts` | Service worker registration. |
+| `src/app/workflows/study-workflow.ts` | Transient study session state: queue, current card, answer feedback, stroke selection. |
+| `src/app/workflows/mock-exam-workflow.ts` | Mock exam session state: selected set, active paper, question index, answers, timing. |
+| `src/app/workflows/settings-workflow.ts` | Applies typed settings changes from form controls. |
+| `src/app/workflows/stroke-practice-workflow.ts` | Coordinates Hanzi Writer mounting and stroke actions after render. |
 | `src/app/views/app-shell-view.ts` | Sidebar, topbar, language switcher, and route title shell rendering. |
 | `src/app/views/dashboard-view.ts` | Daily overview, data readiness, and queue preview rendering. |
 | `src/app/views/study-view.ts` | Study card, answer feedback, stroke lab shell, and review detail rendering. |
@@ -42,13 +47,16 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/domain/hsk4/hsk4-targets.ts` | Target counts for HSK4 data quality messaging. |
 | `src/application/bootstrap/initial-state.ts` | Lesson names and initial app state. |
 | `src/application/vocab/data-enrichment.ts` | Vietnamese meaning quality and draft detection. |
+| `src/application/vocab/item-collection.ts` | Collection helpers for replacing starter/reference vocabulary safely. |
 | `src/infrastructure/storage/indexeddb-state-store.ts` | IndexedDB/local persistence. |
 | `src/infrastructure/import-export/workbook-io.ts` | Excel/CSV/JSON import and export. |
 | `src/infrastructure/hanzi/hanzi-stroke-trainer.ts` | Hanzi Writer integration for stroke practice. |
+| `src/infrastructure/speech/chinese-speech.ts` | Browser speech synthesis adapter for Chinese playback. |
 | `src/presentation/styles.css` | Mobile-first UI, design tokens, layout, states. |
 | `src/presentation/i18n.ts` | Vietnamese/English UI labels. |
 | `src/presentation/icons.ts` | Lucide icon wrappers. |
 | `src/shared/date-utils.ts` | Date-key and review-plan date helpers. |
+| `src/shared/number-utils.ts` | Dependency-free numeric helpers. |
 
 ## Test And Harness Files
 

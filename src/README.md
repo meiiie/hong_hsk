@@ -31,7 +31,15 @@ Domain modules should not import infrastructure, browser storage, Hanzi Writer, 
 
 ## App Layer Split
 
-`src/app/hsk-app.ts` is now the stateful controller: it owns current view, study queue, mock exam session, event binding, persistence calls, and adapter orchestration.
+`src/app/hsk-app.ts` is now the stateful controller: it owns current view, render orchestration, persistence calls, and adapter coordination.
+
+App workflow code is split by responsibility:
+
+- `events/app-event-binder.ts`: DOM event binding only; it translates data attributes into typed handlers.
+- `workflows/study-workflow.ts`: transient study queue, current card, answer feedback, and stroke-character selection.
+- `workflows/mock-exam-workflow.ts`: selected mock set, active exam session, question index, answer storage, submit/reset, and clock state.
+- `workflows/settings-workflow.ts`: settings form normalization and bounds.
+- `workflows/stroke-practice-workflow.ts`: Hanzi Writer mounting and stroke actions after render.
 
 Workflow rendering lives under `src/app/views/`:
 
@@ -54,4 +62,4 @@ This split keeps render functions mostly pure while the controller keeps side ef
 
 ## Current Intentional Compromise
 
-`src/app/hsk-app.ts` still contains event binding and command handlers in one class. That is intentional for now: app shell rendering, workflow views, and core domain behavior have been separated first. The next low-risk split is extracting event binding/commands once those interactions have more browser-level coverage.
+`src/app/hsk-app.ts` still contains the command handlers that mutate app state and call persistence/export adapters. That is intentional for now: keeping commands near `render()` makes the no-framework PWA easier to trace. If commands grow again, split them into workflow-specific command modules after adding browser coverage for the affected interactions.

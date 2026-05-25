@@ -1,5 +1,4 @@
 import type { AppState, ReviewStatus, VocabItem } from "../../domain/types";
-import { HSK4_EXCEL_SOURCE } from "../../domain/hsk4/hsk4-excel-vocab";
 import { reviewStatusLabel } from "../../presentation/i18n";
 
 export function metric(label: string, value: string, hint: string): string {
@@ -99,20 +98,6 @@ export function displayMeaning(item: VocabItem, useEnglishFallback: boolean): st
 
 export function extractHanziChars(value: string): string[] {
   return Array.from(value).filter((character) => /\p{Script=Han}/u.test(character));
-}
-
-export function removeStarterItems(items: VocabItem[]): VocabItem[] {
-  return items.filter(
-    (item) =>
-      !item.source.startsWith("Starter demo") && !item.source.startsWith(HSK4_EXCEL_SOURCE),
-  );
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) {
-    return min;
-  }
-  return Math.max(min, Math.min(max, Math.round(value)));
 }
 
 export function escapeHtml(value: string): string {
