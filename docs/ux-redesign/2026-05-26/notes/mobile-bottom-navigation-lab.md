@@ -12,6 +12,15 @@ Do not show all seven destinations in the mobile bottom bar. The mobile IA uses 
 - `Thi`: mock exam mode.
 - `Thêm`: opens the tool sheet.
 
+## Mobile Header
+
+Mobile keeps a dedicated red brand header above the content, matching the lab board. It is separate from the desktop sidebar so bottom navigation can stay focused on movement between learning surfaces.
+
+- Red cap with the `红` seal.
+- `Hồng HSK4 Studio` as the primary label.
+- `HSK4 4A/4B` as the secondary label.
+- A small right-side shortcut returns to the overview.
+
 ## Tool Sheet
 
 - `Từ sai`

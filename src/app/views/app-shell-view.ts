@@ -19,6 +19,18 @@ export function renderAppShell({ activeView, sidebarCollapsed, mobileMoreOpen, s
 
   return `
     <div class="app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
+      <header class="mobile-brand-bar" aria-label="Hồng HSK4 Studio">
+        <div class="mobile-brand-lockup">
+          <div class="mobile-brand-mark">红</div>
+          <div>
+            <strong>Hồng HSK4 Studio</strong>
+            <span>HSK4 4A/4B</span>
+          </div>
+        </div>
+        <button type="button" data-view="dashboard" aria-label="Về tổng quan" title="Tổng quan">
+          ${icon("chevronRight")}
+        </button>
+      </header>
       <aside class="sidebar" aria-label="Không gian học HSK4">
         <div class="sidebar-inner">
           <div class="brand" data-motion="sidebar-brand">

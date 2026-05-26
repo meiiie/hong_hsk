@@ -15,7 +15,8 @@ def main() -> None:
 
         desktop = browser.new_page(viewport={"width": 1440, "height": 1000})
         desktop.goto("http://127.0.0.1:5173/", wait_until="networkidle")
-        expect(desktop.get_by_text("Hồng HSK4 Studio")).to_be_visible()
+        expect(desktop.locator(".brand-copy").get_by_text("Hồng HSK4")).to_be_visible()
+        expect(desktop.locator(".nav .mobile-more-trigger")).to_be_hidden()
         desktop.locator('[data-view="data"]').first.click()
         desktop.locator("[data-load-reference]").click()
         expect(desktop.locator(".sidebar-card strong")).to_contain_text("621", timeout=20000)
@@ -42,6 +43,8 @@ def main() -> None:
 
         mobile = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True)
         mobile.goto("http://127.0.0.1:5173/", wait_until="networkidle")
+        expect(mobile.locator(".mobile-brand-bar")).to_be_visible()
+        expect(mobile.locator(".mobile-brand-bar").get_by_text("Hồng HSK4 Studio")).to_be_visible()
         mobile.locator("[data-mobile-more-toggle]").click()
         expect(mobile.get_by_role("dialog", name="Công cụ")).to_be_visible()
         expect(mobile.locator('.mobile-more-list [data-view="plan"]')).to_be_visible()

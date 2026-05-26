@@ -17,7 +17,7 @@ def main() -> None:
         )
 
         page.goto("http://127.0.0.1:5173/", wait_until="networkidle")
-        expect(page.get_by_text("Hồng HSK4 Studio")).to_be_visible()
+        expect(page.locator(".brand-copy").get_by_text("Hồng HSK4")).to_be_visible()
         expect(page.get_by_role("heading", name="Tổng quan hôm nay")).to_be_visible()
         expect(page.get_by_text("Ôn thi HSK4 trên máy tính")).to_have_count(0)
 
