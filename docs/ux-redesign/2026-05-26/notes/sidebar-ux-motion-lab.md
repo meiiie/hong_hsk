@@ -16,7 +16,8 @@ Do not switch the whole product back to green. The issue was that the first code
 
 - Expanded sidebar width: 248px.
 - Collapsed rail width: 76px, with 48px icon-only hit targets.
-- Sidebar radius: 8px for brand, nav items, rail controls, and progress card.
+- Sidebar radius: 8px for nav items, rail controls, and progress card.
+- Brand header: 84px cap, full sidebar width, 48px seal in expanded mode, 44px seal in collapsed mode, soft burgundy gradient, no nested-card border.
 - Navigation item: 48px height, 14px label, 18px icon, 12px icon-label gap.
 - Navigation weight: 500 by default, 600 when active.
 - Active state: stronger flat blush background, red text/icon, 2px left active rail, no full red border, no 3D shadow.

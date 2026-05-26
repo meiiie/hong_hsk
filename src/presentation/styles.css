@@ -126,7 +126,7 @@ button:disabled {
   top: 0;
   overflow: hidden;
   height: 100vh;
-  padding: 16px;
+  padding: 0 16px 16px;
   border-right: 1px solid rgba(127, 29, 42, 0.22);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), transparent 180px),
@@ -167,35 +167,38 @@ button:disabled {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   height: 100%;
 }
 
 .brand {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
   justify-content: space-between;
-  min-height: 68px;
-  padding: 10px;
-  border: 1px solid rgba(255, 247, 237, 0.18);
-  border-radius: var(--sidebar-radius);
+  min-height: 84px;
+  margin: 0 -16px -2px;
+  padding: 16px;
+  border: 0;
+  border-radius: 0;
   background:
-    linear-gradient(180deg, #a52a38 0%, #84202d 100%);
+    linear-gradient(180deg, rgba(255, 247, 237, 0.08) 0%, rgba(255, 247, 237, 0) 44%),
+    linear-gradient(180deg, #a52a38 0%, #8b2431 54%, #7f1d2a 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 10px 22px rgba(127, 29, 42, 0.15);
+    inset 0 1px 0 rgba(255, 247, 237, 0.12),
+    inset 0 -1px 0 rgba(50, 9, 15, 0.2),
+    0 10px 20px rgba(127, 29, 42, 0.11);
   transition:
     background var(--motion-medium) var(--ease-out),
-    border-color var(--motion-medium) var(--ease-out);
+    box-shadow var(--motion-medium) var(--ease-out);
 }
 
 .brand-copy {
   overflow: hidden;
   min-width: 0;
   flex: 1;
-  max-width: 150px;
-  max-height: 48px;
+  max-width: 154px;
+  max-height: 52px;
   transition:
     max-width var(--motion-medium) var(--ease-out),
     max-height var(--motion-medium) var(--ease-out),
@@ -207,25 +210,29 @@ button:disabled {
   position: relative;
   display: grid;
   place-items: center;
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--sidebar-radius);
   color: #fff7ed;
-  background: rgba(255, 247, 237, 0.055);
+  background:
+    linear-gradient(180deg, rgba(217, 93, 103, 0.16), rgba(127, 29, 42, 0.08)),
+    rgba(255, 247, 237, 0.05);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 247, 237, 0.34),
-    0 1px 2px rgba(50, 9, 15, 0.16);
+    inset 0 0 0 1px rgba(255, 247, 237, 0.5),
+    inset 0 0 0 4px rgba(255, 247, 237, 0.045),
+    0 1px 2px rgba(50, 9, 15, 0.14);
   font-family: var(--hanzi-font);
-  font-size: 1.55rem;
+  font-size: 1.7rem;
   font-weight: 900;
+  line-height: 1;
 }
 
 .brand-mark::after {
   position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(255, 247, 237, 0.48);
-  border-radius: 5px;
+  inset: 5px;
+  border: 1px solid rgba(255, 247, 237, 0.56);
+  border-radius: 6px;
   content: "";
 }
 
@@ -236,30 +243,30 @@ button:disabled {
 
 .brand strong {
   color: #fffaf3;
-  font-size: 1rem;
+  font-size: 1.02rem;
   font-weight: 650;
   letter-spacing: 0;
-  line-height: 1.18;
+  line-height: 1.16;
 }
 
 .brand span {
-  color: rgba(255, 247, 237, 0.72);
-  font-size: 0.78rem;
-  font-weight: 450;
-  line-height: 1.35;
+  color: rgba(255, 247, 237, 0.82);
+  font-size: 0.83rem;
+  font-weight: 430;
+  line-height: 1.3;
 }
 
 .sidebar-toggle {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  border: 1px solid rgba(255, 247, 237, 0.18);
+  border: 1px solid rgba(255, 247, 237, 0.2);
   border-radius: 8px;
   color: #fff7ed;
-  background: rgba(255, 247, 237, 0.075);
+  background: rgba(255, 247, 237, 0.07);
   transition:
     background var(--motion-fast) var(--ease-standard),
     border-color var(--motion-fast) var(--ease-standard),
@@ -269,8 +276,8 @@ button:disabled {
 }
 
 .sidebar-toggle:hover {
-  border-color: rgba(255, 247, 237, 0.28);
-  background: rgba(255, 247, 237, 0.13);
+  border-color: rgba(255, 247, 237, 0.32);
+  background: rgba(255, 247, 237, 0.12);
 }
 
 .sidebar-toggle .icon {
@@ -514,7 +521,7 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed .sidebar {
-  padding-inline: 14px;
+  padding: 0 14px 16px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.9), transparent 145px),
     linear-gradient(180deg, var(--sidebar-paper) 0%, #f7eeea 100%);
@@ -522,17 +529,19 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed .sidebar-inner {
-  gap: 11px;
+  gap: 12px;
 }
 
 .app-shell.sidebar-collapsed .brand {
   flex-direction: row;
-  justify-content: flex-start;
-  width: var(--sidebar-item-size);
-  min-height: 74px;
-  padding: 8px 3px;
+  justify-content: center;
+  width: auto;
+  min-height: 84px;
+  margin: 0 -14px 0;
+  padding: 15px 14px;
   background:
-    linear-gradient(180deg, #a52a38 0%, #84202d 100%);
+    linear-gradient(180deg, rgba(255, 247, 237, 0.08) 0%, rgba(255, 247, 237, 0) 44%),
+    linear-gradient(180deg, #a52a38 0%, #8b2431 54%, #7f1d2a 100%);
 }
 
 .app-shell.sidebar-collapsed .brand-copy,
@@ -599,9 +608,10 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed .brand-mark {
-  flex-basis: 42px;
-  width: 42px;
-  height: 42px;
+  flex-basis: 44px;
+  width: 44px;
+  height: 44px;
+  font-size: 1.56rem;
 }
 
 .app-shell.sidebar-collapsed .sidebar-toggle {
