@@ -19,7 +19,8 @@ Do not switch the whole product back to green. The issue was that the first code
 - Sidebar radius: 8px for brand, nav items, rail controls, and progress card.
 - Navigation item: 48px height, 14px label, 18px icon, 12px icon-label gap.
 - Navigation weight: 500 by default, 600 when active.
-- Active indicator: 2px left inset line with blush background; red is reserved for active accents, CTA, and brand mark.
+- Active state: flat blush background, red text/icon, no full red border, no 3D shadow.
+- CTA: 14px label, medium-bold weight, solid brand fill, restrained shadow.
 - Brand lockup: `Hồng HSK4` as the title and `Studio 4A/4B` as the meta line to avoid wrapping or clipped text.
 
 ## Library Decision
