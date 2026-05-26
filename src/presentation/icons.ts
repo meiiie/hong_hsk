@@ -14,6 +14,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Ellipsis,
   FileSpreadsheet,
   FileText,
   Keyboard,
@@ -27,6 +28,7 @@ import {
   Trophy,
   Upload,
   Volume2,
+  X,
   type IconNode,
   createElement,
 } from "lucide";
@@ -45,6 +47,7 @@ const ICONS = {
   database: Database,
   databaseBackup: DatabaseBackup,
   download: Download,
+  ellipsis: Ellipsis,
   eye: Eye,
   eyeOff: EyeOff,
   fileSpreadsheet: FileSpreadsheet,
@@ -60,6 +63,7 @@ const ICONS = {
   trophy: Trophy,
   upload: Upload,
   volume: Volume2,
+  x: X,
 } satisfies Record<string, IconNode>;
 
 export type IconName = keyof typeof ICONS;

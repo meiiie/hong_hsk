@@ -42,6 +42,11 @@ def main() -> None:
 
         mobile = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True)
         mobile.goto("http://127.0.0.1:5173/", wait_until="networkidle")
+        mobile.locator("[data-mobile-more-toggle]").click()
+        expect(mobile.get_by_role("dialog", name="Công cụ")).to_be_visible()
+        expect(mobile.locator('.mobile-more-list [data-view="plan"]')).to_be_visible()
+        mobile.locator('.mobile-more-list [data-view="plan"]').click()
+        expect(mobile.get_by_text("Lịch ôn 30 ngày")).to_be_visible()
         mobile.locator('[data-view="study"]').first.click()
         expect(mobile.locator("#hanzi-input")).to_be_visible()
         mobile.screenshot(path=str(artifacts / "hsk4-mobile-study.png"), full_page=True)

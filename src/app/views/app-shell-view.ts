@@ -6,13 +6,16 @@ import { escapeHtml } from "./view-helpers";
 interface AppShellViewModel {
   activeView: View;
   sidebarCollapsed: boolean;
+  mobileMoreOpen: boolean;
   state: AppState;
   stats: DashboardStats;
   content: string;
 }
 
-export function renderAppShell({ activeView, sidebarCollapsed, state, stats, content }: AppShellViewModel): string {
+export function renderAppShell({ activeView, sidebarCollapsed, mobileMoreOpen, state, stats, content }: AppShellViewModel): string {
   const learnedPercent = stats.totalItems > 0 ? Math.min(100, Math.round((stats.learned / stats.totalItems) * 100)) : 0;
+  const overflowActive = isMobileOverflowView(activeView);
+  const moreActive = mobileMoreOpen || overflowActive;
 
   return `
     <div class="app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
@@ -37,13 +40,27 @@ export function renderAppShell({ activeView, sidebarCollapsed, state, stats, con
           </div>
           <span class="sidebar-kicker">Luyện tập</span>
           <nav class="nav" aria-label="Điều hướng" data-motion="sidebar-nav">
-            ${navButton(activeView, "dashboard", "Tổng quan", "layout")}
-            ${navButton(activeView, "study", "Học hôm nay", "keyboard")}
-            ${navButton(activeView, "lessons", "Theo bài", "book")}
-            ${navButton(activeView, "wrong", "Từ sai", "rotate")}
-            ${navButton(activeView, "mock", "Thi thử", "clipboardList")}
-            ${navButton(activeView, "plan", "Lịch 30 ngày", "calendar")}
-            ${navButton(activeView, "data", "Dữ liệu", "database")}
+            ${navButton(activeView, "dashboard", "Tổng quan", "layout", "primary")}
+            ${navButton(activeView, "study", "Học hôm nay", "keyboard", "primary")}
+            ${navButton(activeView, "lessons", "Theo bài", "book", "primary")}
+            ${navButton(activeView, "wrong", "Từ sai", "rotate", "overflow")}
+            ${navButton(activeView, "mock", "Thi thử", "clipboardList", "primary")}
+            ${navButton(activeView, "plan", "Lịch 30 ngày", "calendar", "overflow")}
+            ${navButton(activeView, "data", "Dữ liệu", "database", "overflow")}
+            <button
+              class="mobile-more-trigger ${moreActive ? "active" : ""}"
+              type="button"
+              data-mobile-more-toggle
+              data-motion="sidebar-nav-item"
+              ${moreActive ? 'data-motion-active="true"' : ""}
+              aria-label="Mở công cụ khác"
+              aria-expanded="${mobileMoreOpen ? "true" : "false"}"
+              aria-haspopup="dialog"
+              title="Thêm"
+            >
+              ${icon("ellipsis")}
+              <span data-mobile-label="Thêm">Thêm</span>
+            </button>
           </nav>
           <div class="sidebar-card" data-motion="sidebar-footer">
             <div class="sidebar-card-head">
@@ -68,6 +85,7 @@ export function renderAppShell({ activeView, sidebarCollapsed, state, stats, con
           </div>
         </div>
       </aside>
+      ${renderMobileMoreMenu(activeView, mobileMoreOpen)}
       <main class="main view-${activeView}">
         <header class="topbar">
           <div>
@@ -91,20 +109,54 @@ export function renderAppShell({ activeView, sidebarCollapsed, state, stats, con
   `;
 }
 
-function navButton(activeView: View, view: View, label: string, iconName: IconName): string {
+function navButton(activeView: View, view: View, label: string, iconName: IconName, mobileNav: "primary" | "overflow"): string {
   const isActive = activeView === view;
 
   return `
-    <button class="${isActive ? "active" : ""}" data-view="${view}" data-motion="sidebar-nav-item" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${isActive ? 'aria-current="page" data-motion-active="true"' : ""}>
+    <button class="${isActive ? "active" : ""}" data-view="${view}" data-mobile-nav="${mobileNav}" data-motion="sidebar-nav-item" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${isActive ? 'aria-current="page" data-motion-active="true"' : ""}>
       ${icon(iconName)}
       <span data-mobile-label="${escapeHtml(shortLabelForView(view))}">${escapeHtml(label)}</span>
     </button>
   `;
 }
 
+function renderMobileMoreMenu(activeView: View, mobileMoreOpen: boolean): string {
+  const hidden = mobileMoreOpen ? "" : "hidden";
+  return `
+    <button class="mobile-more-scrim" type="button" data-mobile-more-close aria-label="Đóng công cụ" ${hidden}></button>
+    <div class="mobile-more-sheet" data-motion="mobile-more-sheet" role="dialog" aria-modal="true" aria-label="Công cụ" ${hidden}>
+      <div class="mobile-more-handle" aria-hidden="true"></div>
+      <div class="mobile-more-head">
+        <strong>Công cụ</strong>
+        <button type="button" data-mobile-more-close aria-label="Đóng công cụ">${icon("x")}</button>
+      </div>
+      <div class="mobile-more-list">
+        ${mobileMoreItem(activeView, "wrong", "Từ sai", "rotate")}
+        ${mobileMoreItem(activeView, "plan", "Lịch 30 ngày", "calendar")}
+        ${mobileMoreItem(activeView, "data", "Dữ liệu", "database")}
+      </div>
+    </div>
+  `;
+}
+
+function mobileMoreItem(activeView: View, view: View, label: string, iconName: IconName): string {
+  const isActive = activeView === view;
+  return `
+    <button class="${isActive ? "active" : ""}" data-view="${view}" ${isActive ? 'aria-current="page"' : ""}>
+      <span class="mobile-more-icon">${icon(iconName)}</span>
+      <span>${escapeHtml(label)}</span>
+      ${icon("chevronRight")}
+    </button>
+  `;
+}
+
+function isMobileOverflowView(view: View): boolean {
+  return view === "wrong" || view === "plan" || view === "data";
+}
+
 function shortLabelForView(view: View): string {
   const labels: Record<View, string> = {
-    dashboard: "Tổng",
+    dashboard: "Ôn",
     study: "Học",
     lessons: "Bài",
     wrong: "Sai",

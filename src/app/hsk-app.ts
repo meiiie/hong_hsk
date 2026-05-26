@@ -31,6 +31,7 @@ class HskApp {
   private examClockId: number | undefined;
   private sidebarCollapsed = false;
   private sidebarMotionState: SidebarMotionState | undefined;
+  private mobileMoreOpen = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -50,6 +51,7 @@ class HskApp {
     const sidebarMotionState: SidebarMotionState = {
       activeView: this.activeView,
       sidebarCollapsed: this.sidebarCollapsed,
+      mobileMoreOpen: this.mobileMoreOpen,
       learned: stats.learned,
       totalItems: stats.totalItems,
       learnedPercent,
@@ -58,6 +60,7 @@ class HskApp {
     this.root.innerHTML = renderAppShell({
       activeView: this.activeView,
       sidebarCollapsed: this.sidebarCollapsed,
+      mobileMoreOpen: this.mobileMoreOpen,
       state: this.state,
       stats,
       content: this.renderActiveView(),
@@ -121,6 +124,8 @@ class HskApp {
     bindAppEvents(this.root, {
       navigate: (view) => this.navigate(view),
       toggleSidebar: () => this.toggleSidebar(),
+      toggleMobileMore: () => this.toggleMobileMore(),
+      closeMobileMore: () => this.closeMobileMore(),
       startStudy: (mode) => this.startStudy(mode),
       selectLesson: (lesson) => this.selectLesson(lesson),
       submitAnswer: () => this.submitAnswer(),
@@ -154,9 +159,23 @@ class HskApp {
 
   private navigate(view: View): void {
     this.activeView = view;
+    this.mobileMoreOpen = false;
     if (view !== "study") {
       this.study.clear();
     }
+    this.render();
+  }
+
+  private toggleMobileMore(): void {
+    this.mobileMoreOpen = !this.mobileMoreOpen;
+    this.render();
+  }
+
+  private closeMobileMore(): void {
+    if (!this.mobileMoreOpen) {
+      return;
+    }
+    this.mobileMoreOpen = false;
     this.render();
   }
 
@@ -194,6 +213,7 @@ class HskApp {
   private startStudy(mode: StudyMode): void {
     this.study.start(mode);
     this.activeView = "study";
+    this.mobileMoreOpen = false;
     this.render();
     this.focusHanziInput();
   }

@@ -22,7 +22,8 @@ Do not switch the whole product back to green. The issue was that the first code
 - Navigation weight: 500 by default, 600 when active.
 - Active state: stronger flat blush background, red text/icon, 2px left active rail, no full red border, no 3D shadow.
 - Footer: compact learner row, one progress bar, three short meta labels, and a short `Ôn ngay` CTA. Avoid stacked stat blocks that make the bottom feel heavy.
-- Mobile bottom bar: fixed grid, no horizontal scrolling, short Vietnamese labels, active state uses blush fill plus a small red indicator.
+- Mobile bottom bar: fixed five-item grid, no horizontal scrolling, `Học / Ôn / Bài / Thi / Thêm`, active state uses blush fill plus a small red indicator.
+- Mobile overflow: `Thêm` opens a bottom sheet for `Từ sai`, `Lịch 30 ngày`, and `Dữ liệu`.
 - CTA: 14px label, medium-bold weight, solid brand fill, restrained shadow.
 - Brand lockup: `Hồng HSK4` as the title and `Studio 4A/4B` as the meta line to avoid wrapping or clipped text.
 

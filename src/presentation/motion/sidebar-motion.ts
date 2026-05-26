@@ -8,6 +8,7 @@ let animeModulePromise: Promise<AnimeModule> | undefined;
 export interface SidebarMotionState {
   activeView: string;
   sidebarCollapsed: boolean;
+  mobileMoreOpen: boolean;
   learned: number;
   totalItems: number;
   learnedPercent: number;
@@ -25,6 +26,7 @@ export function hydrateSidebarMotion(
 
   const isInitialRender = !previous;
   const activeViewChanged = previous?.activeView !== current.activeView;
+  const mobileMoreOpened = current.mobileMoreOpen && previous?.mobileMoreOpen !== true;
   const progressChanged =
     previous?.learned !== current.learned ||
     previous?.totalItems !== current.totalItems ||
@@ -39,6 +41,9 @@ export function hydrateSidebarMotion(
   }
   if (isInitialRender || progressChanged) {
     void animateSidebarProgress(root);
+  }
+  if (mobileMoreOpened) {
+    void animateMobileMoreSheet(root);
   }
 }
 
@@ -134,6 +139,31 @@ async function animateSidebarProgress(root: ParentNode): Promise<void> {
       duration: motionDurations.medium,
       ease: motionEases.standard,
     });
+  });
+}
+
+async function animateMobileMoreSheet(root: ParentNode): Promise<void> {
+  await runWithAnime(async ({ animate }) => {
+    const sheet = root.querySelector<HTMLElement>('[data-motion="mobile-more-sheet"]');
+    if (!sheet) {
+      return;
+    }
+
+    animate(sheet, {
+      opacity: [0, 1],
+      translateY: [18, 0],
+      duration: motionDurations.slow,
+      ease: motionEases.emphasized,
+    });
+
+    const scrim = root.querySelector<HTMLElement>(".mobile-more-scrim");
+    if (scrim) {
+      animate(scrim, {
+        opacity: [0, 1],
+        duration: motionDurations.fast,
+        ease: motionEases.standard,
+      });
+    }
   });
 }
 
