@@ -18,7 +18,7 @@ export function renderAppShell({ activeView, sidebarCollapsed, state, stats, con
     <div class="app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
       <aside class="sidebar" aria-label="Không gian học HSK4">
         <div class="sidebar-inner">
-          <div class="brand">
+          <div class="brand" data-motion="sidebar-brand">
             <div class="brand-mark">红</div>
             <div class="brand-copy">
               <strong>Hồng HSK4</strong>
@@ -36,7 +36,7 @@ export function renderAppShell({ activeView, sidebarCollapsed, state, stats, con
             </button>
           </div>
           <span class="sidebar-kicker">Luyện tập</span>
-          <nav class="nav" aria-label="Điều hướng">
+          <nav class="nav" aria-label="Điều hướng" data-motion="sidebar-nav">
             ${navButton(activeView, "dashboard", "Tổng quan", "layout")}
             ${navButton(activeView, "study", "Học hôm nay", "keyboard")}
             ${navButton(activeView, "lessons", "Theo bài", "book")}
@@ -45,20 +45,26 @@ export function renderAppShell({ activeView, sidebarCollapsed, state, stats, con
             ${navButton(activeView, "plan", "Lịch 30 ngày", "calendar")}
             ${navButton(activeView, "data", "Dữ liệu", "database")}
           </nav>
-          <div class="sidebar-card">
+          <div class="sidebar-card" data-motion="sidebar-footer">
             <div class="sidebar-card-head">
-              <span>Ngày ${stats.planDay}/30</span>
+              <div class="sidebar-user">
+                <span class="sidebar-avatar">H</span>
+                <span>
+                  <span class="sidebar-user-name">Hồng</span>
+                  <small>HSK4 4A/4B</small>
+                </span>
+              </div>
               <strong>${stats.learned}/${stats.totalItems}</strong>
             </div>
-            <div class="sidebar-progress" aria-label="Đã học ${learnedPercent}%">
+            <div class="sidebar-progress" aria-label="Đã học ${learnedPercent}%" data-motion="sidebar-progress">
               <span style="--progress: ${learnedPercent}%"></span>
             </div>
-            <div class="sidebar-stats">
-              <span><b>${stats.learned}</b><small>đã học</small></span>
-              <span><b>${stats.dueToday}</b><small>cần ôn</small></span>
-              <span><b>${stats.streak}</b><small>chuỗi ngày</small></span>
+            <div class="sidebar-card-meta">
+              <span>Ngày ${stats.planDay}/30</span>
+              <span>${stats.dueToday} cần ôn</span>
+              <span>Chuỗi ${stats.streak}</span>
             </div>
-            <button class="sidebar-cta" data-study-mode="today">${labelWithIcon("playCircle", "Bắt đầu ôn")}</button>
+            <button class="sidebar-cta" data-study-mode="today" data-motion="sidebar-start">${labelWithIcon("playCircle", "Ôn ngay")}</button>
           </div>
         </div>
       </aside>
@@ -89,11 +95,24 @@ function navButton(activeView: View, view: View, label: string, iconName: IconNa
   const isActive = activeView === view;
 
   return `
-    <button class="${isActive ? "active" : ""}" data-view="${view}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${isActive ? 'aria-current="page"' : ""}>
+    <button class="${isActive ? "active" : ""}" data-view="${view}" data-motion="sidebar-nav-item" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" ${isActive ? 'aria-current="page" data-motion-active="true"' : ""}>
       ${icon(iconName)}
-      <span>${escapeHtml(label)}</span>
+      <span data-mobile-label="${escapeHtml(shortLabelForView(view))}">${escapeHtml(label)}</span>
     </button>
   `;
+}
+
+function shortLabelForView(view: View): string {
+  const labels: Record<View, string> = {
+    dashboard: "Tổng",
+    study: "Học",
+    lessons: "Bài",
+    wrong: "Sai",
+    mock: "Thi",
+    plan: "Lịch",
+    data: "Dữ liệu",
+  };
+  return labels[view];
 }
 
 function titleForView(view: View): string {

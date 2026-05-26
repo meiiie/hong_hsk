@@ -21,14 +21,16 @@ Do not switch the whole product back to green. The issue was that the first code
 - Navigation item: 48px height, 14px label, 18px icon, 12px icon-label gap.
 - Navigation weight: 500 by default, 600 when active.
 - Active state: stronger flat blush background, red text/icon, 2px left active rail, no full red border, no 3D shadow.
+- Footer: compact learner row, one progress bar, three short meta labels, and a short `Ôn ngay` CTA. Avoid stacked stat blocks that make the bottom feel heavy.
+- Mobile bottom bar: fixed grid, no horizontal scrolling, short Vietnamese labels, active state uses blush fill plus a small red indicator.
 - CTA: 14px label, medium-bold weight, solid brand fill, restrained shadow.
 - Brand lockup: `Hồng HSK4` as the title and `Studio 4A/4B` as the meta line to avoid wrapping or clipped text.
 
 ## Library Decision
 
-No new animation or CSS framework was added for this pass. CSS variables and native transitions are enough for this interaction and keep the PWA light. Reconsider libraries only when the app needs a complex sequenced animation:
+Anime.js is now lazy-loaded as a presentation-only micro-interaction layer under `src/presentation/motion/`. Keep large layout changes such as sidebar width and mobile bottom-bar placement in CSS. Use Anime.js only after render through `data-motion` hooks for short feedback, active-state, progress, and footer entrance animations. Every motion helper must honor `prefers-reduced-motion`.
 
-- Anime.js timeline: good fit for complex, authored UI/stroke sequences.
+- Anime.js timeline: good fit for complex, authored UI/stroke sequences when a future screen needs sequencing.
 - GSAP matchMedia: good fit for large animation systems with responsive/reduced-motion branches.
 - Tailwind CSS v4: useful if the whole project moves to a utility/token workflow, but not worth migrating just for the sidebar.
 

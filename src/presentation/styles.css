@@ -405,14 +405,13 @@ button:disabled {
 .sidebar-card {
   position: relative;
   margin-top: auto;
-  max-height: 160px;
-  padding: 12px 12px 13px;
-  border: 1px solid rgba(88, 43, 39, 0.1);
-  border-radius: var(--sidebar-radius);
-  background: rgba(255, 253, 251, 0.82);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.84),
-    0 8px 18px rgba(88, 43, 39, 0.055);
+  max-height: 148px;
+  padding: 13px 0 0;
+  border: 0;
+  border-top: 1px solid rgba(88, 43, 39, 0.11);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   transition:
     max-height var(--motion-medium) var(--ease-out),
     margin var(--motion-medium) var(--ease-out),
@@ -423,31 +422,72 @@ button:disabled {
 
 .sidebar-card-head {
   display: flex;
-  gap: 8px;
-  align-items: baseline;
+  gap: 10px;
+  align-items: center;
   justify-content: space-between;
 }
 
-.sidebar-card-head span {
-  color: var(--muted);
-  font-size: 0.75rem;
+.sidebar-user {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.sidebar-avatar {
+  display: grid;
+  flex: 0 0 34px;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  color: #fff7ed;
+  background: linear-gradient(135deg, #bd3546 0%, var(--brand) 70%, var(--brand-strong) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 247, 237, 0.28);
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.sidebar-user > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.sidebar-user-name {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.84rem;
   font-weight: 650;
-  line-height: 1.25;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.69rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-card-head strong {
   color: var(--ink);
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .sidebar-progress {
   overflow: hidden;
-  height: 7px;
-  margin: 11px 0 12px;
+  height: 6px;
+  margin: 11px 0 9px;
   border-radius: 999px;
-  background: #ebe1dd;
+  background: #ede3de;
 }
 
 .sidebar-progress span {
@@ -458,32 +498,18 @@ button:disabled {
   background: linear-gradient(90deg, var(--brand), var(--brand-lift));
 }
 
-.sidebar-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
+.sidebar-card-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.sidebar-stats span {
-  min-width: 0;
-}
-
-.sidebar-stats b,
-.sidebar-stats small {
-  display: block;
-}
-
-.sidebar-stats b {
-  color: var(--ink);
-  font-size: 0.98rem;
-  font-weight: 700;
-  line-height: 1.05;
-}
-
-.sidebar-stats small {
+.sidebar-card-meta span {
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.66rem;
+  font-size: 0.67rem;
+  font-weight: 550;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -495,16 +521,16 @@ button:disabled {
   justify-content: center;
   gap: 7px;
   width: 100%;
-  min-height: 40px;
-  margin-top: 12px;
-  border: 1px solid rgba(127, 29, 42, 0.14);
+  min-height: 38px;
+  margin-top: 11px;
+  border: 1px solid rgba(127, 29, 42, 0.12);
   border-radius: 8px;
   color: #fff7ed;
   background: var(--brand);
   font-size: 0.875rem;
   font-weight: 650;
   line-height: 1;
-  box-shadow: 0 6px 14px rgba(159, 39, 52, 0.12);
+  box-shadow: 0 5px 12px rgba(159, 39, 52, 0.1);
   transition:
     transform var(--motion-fast) var(--ease-standard),
     box-shadow var(--motion-fast) var(--ease-standard);
@@ -513,7 +539,7 @@ button:disabled {
 .sidebar-cta:hover {
   transform: translateY(-1px);
   background: var(--brand-strong);
-  box-shadow: 0 9px 18px rgba(159, 39, 52, 0.14);
+  box-shadow: 0 8px 16px rgba(159, 39, 52, 0.12);
 }
 
 .sidebar-cta .icon {
@@ -591,20 +617,20 @@ button:disabled {
 .app-shell.sidebar-collapsed .sidebar-card::before {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border: 1px solid rgba(159, 39, 52, 0.18);
   border-radius: 999px;
   background:
-    linear-gradient(135deg, #d95d67 0%, #9f2734 58%, #7f1d2a 100%);
+    linear-gradient(135deg, #bd3546 0%, #9f2734 62%, #7f1d2a 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 247, 237, 0.32),
-    0 8px 18px rgba(88, 43, 39, 0.14);
+    inset 0 1px 0 rgba(255, 247, 237, 0.3),
+    0 7px 15px rgba(88, 43, 39, 0.11);
   animation: rail-avatar-in 160ms var(--ease-out) 80ms both;
   color: #fff7ed;
   content: "H";
-  font-size: 1rem;
-  font-weight: 850;
+  font-size: 0.94rem;
+  font-weight: 760;
 }
 
 .app-shell.sidebar-collapsed .brand-mark {
@@ -2189,20 +2215,20 @@ meter {
     left: 0;
     z-index: 20;
     height: auto;
-    padding: 8px max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
-    border-top: 1px solid var(--line);
+    padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    border-top: 1px solid rgba(88, 43, 39, 0.1);
     border-right: 0;
     background: rgba(255, 255, 255, 0.96);
     color: var(--ink);
-    box-shadow: 0 -14px 35px rgba(27, 39, 66, 0.12);
+    box-shadow: 0 -12px 30px rgba(27, 39, 66, 0.11);
     backdrop-filter: blur(14px);
     pointer-events: none;
   }
 
   .app-shell.sidebar-collapsed .sidebar {
-    padding: 8px max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
     background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 -14px 35px rgba(27, 39, 66, 0.12);
+    box-shadow: 0 -12px 30px rgba(27, 39, 66, 0.11);
   }
 
   .sidebar::before,
@@ -2223,10 +2249,21 @@ meter {
   }
 
   .nav {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(88, 43, 39, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 253, 251, 0.94);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.86),
+      0 6px 18px rgba(88, 43, 39, 0.07);
+    overscroll-behavior-x: auto;
     scrollbar-width: none;
     pointer-events: auto;
   }
@@ -2236,20 +2273,35 @@ meter {
   }
 
   .nav button {
-    flex: 0 0 76px;
     flex-direction: column;
     justify-content: center;
-    gap: 4px;
-    min-height: 58px;
-    padding: 6px 4px;
-    color: #526071;
+    gap: 3px;
+    min-width: 0;
+    min-height: 56px;
+    padding: 5px 2px 6px;
+    color: #60494f;
     border-color: transparent;
-    border-radius: 10px;
-    font-size: 0.68rem;
-    font-weight: 750;
-    line-height: 1.12;
+    border-radius: 12px;
+    font-size: 0;
+    font-weight: 700;
+    line-height: 1.08;
     text-align: center;
     transform: none;
+  }
+
+  .nav button span {
+    max-width: 100%;
+    color: inherit;
+    font-size: 0;
+    line-height: 1.08;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .nav button span::after {
+    content: attr(data-mobile-label);
+    font-size: 0.61rem;
+    letter-spacing: 0;
   }
 
   .app-shell.sidebar-collapsed .nav button span {
@@ -2260,12 +2312,14 @@ meter {
   }
 
   .app-shell.sidebar-collapsed .nav button {
-    color: #526071;
+    color: #60494f;
     border-color: transparent;
     background: transparent;
   }
 
   .nav button .icon {
+    width: 18px;
+    height: 18px;
     color: #8b6264;
   }
 
@@ -2276,7 +2330,7 @@ meter {
   .nav button:hover,
   .nav button.active {
     color: var(--blue);
-    border-color: #efbcc2;
+    border-color: transparent;
     background: var(--blue-soft);
     box-shadow: none;
     transform: none;
@@ -2288,9 +2342,9 @@ meter {
 
   .nav button.active::after {
     position: absolute;
-    right: 22px;
-    bottom: 3px;
-    left: 22px;
+    right: 16px;
+    bottom: 4px;
+    left: 16px;
     height: 2px;
     border-radius: 999px;
     background: var(--brand);
@@ -2304,7 +2358,7 @@ meter {
   .app-shell.sidebar-collapsed .nav button:hover,
   .app-shell.sidebar-collapsed .nav button.active {
     color: var(--blue);
-    border-color: #efbcc2;
+    border-color: transparent;
     background: var(--blue-soft);
   }
 
@@ -2313,7 +2367,7 @@ meter {
   }
 
   .main {
-    padding: 14px 14px calc(92px + env(safe-area-inset-bottom));
+    padding: 14px 14px calc(88px + env(safe-area-inset-bottom));
   }
 
   .primary-button,
@@ -2505,5 +2559,26 @@ meter {
 
   .exam-hanzi {
     font-size: clamp(2rem, 14vw, 3rem);
+  }
+}
+
+@media (max-width: 380px) {
+  .nav {
+    gap: 1px;
+    padding: 3px;
+  }
+
+  .nav button {
+    min-height: 54px;
+    padding-inline: 1px;
+  }
+
+  .nav button .icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .nav button span::after {
+    font-size: 0.56rem;
   }
 }

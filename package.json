@@ -29,6 +29,7 @@
     "docker:run": "docker run --rm -p 8080:80 hong-hsk4-studio:local"
   },
   "dependencies": {
+    "animejs": "^4.4.1",
     "hanzi-writer": "^3.7.3",
     "lucide": "^1.16.0",
     "read-excel-file": "^9.0.10",

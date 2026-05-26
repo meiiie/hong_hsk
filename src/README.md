@@ -10,7 +10,7 @@ Hong HSK4 Studio uses a DDD-lite / Clean Architecture layout. The goal is clear 
 | Domain | `src/domain/` | Pure HSK/review/exam concepts: vocab types, review policy, review queue, mock exam generation and scoring. |
 | Application | `src/application/` | Use cases and ports that combine domain rules with project data, such as initial state, answer submission, vocabulary replacement, and adapter contracts. |
 | Infrastructure | `src/infrastructure/` | Browser and third-party adapters: IndexedDB, Excel import/export, Hanzi Writer. |
-| Presentation | `src/presentation/` | UI-facing resources: CSS, icons, labels, and locale helpers. |
+| Presentation | `src/presentation/` | UI-facing resources: CSS, icons, labels, locale helpers, and scoped motion helpers. |
 | Shared | `src/shared/` | Small dependency-free utilities used across layers. |
 
 ## Dependency Rule
@@ -61,6 +61,7 @@ Workflow rendering lives under `src/app/views/`:
 - `plan-view.ts`: 30-day plan and schedule settings.
 - `data-view.ts`: import/export panels and data-health report.
 - `view-helpers.ts`: small HTML helpers shared by the view modules.
+- `src/presentation/motion/`: lazy-loaded Anime.js micro-interaction helpers called after render through `data-motion` hooks. Layout transitions stay in CSS.
 
 This split keeps render functions mostly pure while the controller keeps side effects in one place.
 

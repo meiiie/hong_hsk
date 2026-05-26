@@ -18,6 +18,7 @@ import type { AppState, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
 import { computeStats } from "../domain/review/review-service";
 import { icon } from "../presentation/icons";
+import { animateSidebarToggleMotion, hydrateSidebarMotion, type SidebarMotionState } from "../presentation/motion";
 import { clamp } from "../shared/number-utils";
 
 const SIDEBAR_COLLAPSED_KEY = "hong-hsk4-sidebar-collapsed";
@@ -29,6 +30,7 @@ class HskApp {
   private readonly mockExam = new MockExamWorkflow();
   private examClockId: number | undefined;
   private sidebarCollapsed = false;
+  private sidebarMotionState: SidebarMotionState | undefined;
 
   constructor(
     private readonly root: HTMLElement,
@@ -44,6 +46,15 @@ class HskApp {
 
   private render(): void {
     const stats = computeStats(this.state);
+    const learnedPercent = stats.totalItems > 0 ? Math.min(100, Math.round((stats.learned / stats.totalItems) * 100)) : 0;
+    const sidebarMotionState: SidebarMotionState = {
+      activeView: this.activeView,
+      sidebarCollapsed: this.sidebarCollapsed,
+      learned: stats.learned,
+      totalItems: stats.totalItems,
+      learnedPercent,
+      dueToday: stats.dueToday,
+    };
     this.root.innerHTML = renderAppShell({
       activeView: this.activeView,
       sidebarCollapsed: this.sidebarCollapsed,
@@ -58,6 +69,8 @@ class HskApp {
       this.study.strokeCharIndex,
     );
     this.syncExamClock();
+    hydrateSidebarMotion(this.root, sidebarMotionState, this.sidebarMotionState);
+    this.sidebarMotionState = sidebarMotionState;
   }
 
   private renderActiveView(): string {
@@ -150,6 +163,13 @@ class HskApp {
   private toggleSidebar(): void {
     this.sidebarCollapsed = !this.sidebarCollapsed;
     this.applySidebarState();
+    animateSidebarToggleMotion(this.root, this.sidebarCollapsed);
+    if (this.sidebarMotionState) {
+      this.sidebarMotionState = {
+        ...this.sidebarMotionState,
+        sidebarCollapsed: this.sidebarCollapsed,
+      };
+    }
     try {
       window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, this.sidebarCollapsed ? "1" : "0");
     } catch {
