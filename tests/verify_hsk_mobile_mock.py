@@ -45,6 +45,7 @@ def main() -> None:
         mobile.goto("http://127.0.0.1:5173/", wait_until="networkidle")
         expect(mobile.locator(".mobile-brand-bar")).to_be_visible()
         expect(mobile.locator(".mobile-brand-bar").get_by_text("Hồng HSK4 Studio")).to_be_visible()
+        expect(mobile.locator(".mobile-brand-bar").get_by_role("button")).to_have_count(0)
         mobile.locator("[data-mobile-more-toggle]").click()
         expect(mobile.get_by_role("dialog", name="Công cụ")).to_be_visible()
         expect(mobile.locator('.mobile-more-list [data-view="plan"]')).to_be_visible()

@@ -19,7 +19,8 @@ Mobile keeps a dedicated red brand header above the content, matching the lab bo
 - Red cap with the `红` seal.
 - `Hồng HSK4 Studio` as the primary label.
 - `HSK4 4A/4B` as the secondary label.
-- A small right-side shortcut returns to the overview.
+- No right-side shortcut in the header; navigation belongs in the bottom bar so the header stays quiet.
+- The main content sheet overlaps the bottom of the red cap with rounded top corners.
 
 ## Tool Sheet
 

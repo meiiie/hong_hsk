@@ -2220,12 +2220,12 @@ meter {
   .mobile-brand-bar {
     position: sticky;
     top: 0;
-    z-index: 18;
+    z-index: 16;
     display: flex;
-    min-height: 96px;
+    min-height: 82px;
     align-items: center;
-    justify-content: space-between;
-    padding: calc(14px + env(safe-area-inset-top)) 20px 14px;
+    justify-content: flex-start;
+    padding: calc(10px + env(safe-area-inset-top)) 20px 12px;
     color: #fffaf3;
     background:
       linear-gradient(180deg, rgba(255, 247, 237, 0.08) 0%, rgba(255, 247, 237, 0) 44%),
@@ -2240,17 +2240,17 @@ meter {
     display: inline-flex;
     min-width: 0;
     align-items: center;
-    gap: 13px;
+    gap: 12px;
   }
 
   .mobile-brand-mark {
     position: relative;
     display: grid;
-    flex: 0 0 52px;
+    flex: 0 0 46px;
     place-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 10px;
+    width: 46px;
+    height: 46px;
+    border-radius: 9px;
     color: #fff7ed;
     background:
       linear-gradient(180deg, rgba(217, 93, 103, 0.16), rgba(127, 29, 42, 0.08)),
@@ -2260,14 +2260,14 @@ meter {
       inset 0 0 0 4px rgba(255, 247, 237, 0.045),
       0 1px 2px rgba(50, 9, 15, 0.14);
     font-family: var(--hanzi-font);
-    font-size: 1.82rem;
+    font-size: 1.62rem;
     font-weight: 900;
     line-height: 1;
   }
 
   .mobile-brand-mark::after {
     position: absolute;
-    inset: 6px;
+    inset: 5px;
     border: 1px solid rgba(255, 247, 237, 0.56);
     border-radius: 7px;
     content: "";
@@ -2281,7 +2281,7 @@ meter {
   .mobile-brand-lockup strong {
     overflow: hidden;
     color: #fffaf3;
-    font-size: 1.02rem;
+    font-size: 0.98rem;
     font-weight: 700;
     line-height: 1.16;
     text-overflow: ellipsis;
@@ -2289,23 +2289,10 @@ meter {
   }
 
   .mobile-brand-lockup span {
-    margin-top: 3px;
+    margin-top: 2px;
     color: rgba(255, 247, 237, 0.84);
-    font-size: 0.86rem;
+    font-size: 0.8rem;
     line-height: 1.2;
-  }
-
-  .mobile-brand-bar > button {
-    display: grid;
-    flex: 0 0 42px;
-    place-items: center;
-    width: 42px;
-    height: 42px;
-    padding: 0;
-    border: 1px solid rgba(255, 247, 237, 0.2);
-    border-radius: 10px;
-    color: #fff7ed;
-    background: rgba(255, 247, 237, 0.07);
   }
 
   .sidebar {
@@ -2611,7 +2598,14 @@ meter {
   }
 
   .main {
-    padding: 14px 14px calc(88px + env(safe-area-inset-bottom));
+    position: relative;
+    z-index: 17;
+    margin-top: -12px;
+    padding: 18px 14px calc(88px + env(safe-area-inset-bottom));
+    border-radius: 18px 18px 0 0;
+    background:
+      linear-gradient(180deg, rgba(255, 250, 247, 0.94) 0%, rgba(248, 243, 239, 0) 84px),
+      var(--app-bg);
   }
 
   .primary-button,
