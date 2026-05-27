@@ -10,8 +10,10 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `CLAUDE.md` | Thin pointer for Claude Code users back to `AGENTS.md`. |
 | `README.md` | Public-facing project overview. |
 | `package.json` | Scripts, dependencies, and project metadata. |
+| `vite.config.ts` | Vite build config, compile-time app metadata, and generated `version.json`. |
 | `wrangler.jsonc` | Cloudflare Pages/Wrangler config. |
 | `public/_headers` | Cloudflare Pages security headers. |
+| `public/sw.js` | PWA service worker and cache/update behavior. |
 | `docs/agent-context/` | Shared agent memory, harness, rules, and deploy notes. |
 | `docs/architecture/technology-review-2026-05-26.md` | Researched technology decision record and comparable project notes. |
 | `src/README.md` | Source-layer dependency map and DDD-lite boundaries. |
@@ -39,6 +41,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/app/views/data-view.ts` | Import/export and data-health rendering. |
 | `src/app/views/view-helpers.ts` | Shared HTML/view helpers for app views. |
 | `src/domain/types.ts` | Domain types for vocab, review, attempts, settings. |
+| `src/domain/app-version.ts` | App/build version metadata, schema constants, and version comparison helpers. |
 | `src/domain/locale.ts` | Locale normalization shared by UI and persistence. |
 | `src/domain/hsk4/hsk4-excel-vocab.ts` | Imported/curated HSK4 Excel vocabulary source. |
 | `src/domain/hsk4/hsk4-vi-glossary.ts` | Vietnamese glossary fallback/enrichment. |
@@ -47,7 +50,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/domain/exam/mock-exam.ts` | HSK4 mock exam generation and scoring. |
 | `src/domain/hsk4/hsk4-targets.ts` | Target counts for HSK4 data quality messaging. |
 | `src/application/bootstrap/initial-state.ts` | Lesson names and initial app state. |
-| `src/application/ports/*.ts` | Clean architecture ports for state storage, import/export, and speech playback. |
+| `src/application/ports/*.ts` | Clean architecture ports for state storage, import/export, speech playback, and version checks. |
 | `src/application/vocab/data-enrichment.ts` | Vietnamese meaning quality and draft detection. |
 | `src/application/vocab/item-collection.ts` | Collection helpers for replacing starter/reference vocabulary safely. |
 | `src/application/vocab/replace-vocabulary.ts` | Use case for replacing starter/reference vocabulary with imported data. |
@@ -56,6 +59,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/infrastructure/import-export/workbook-io.ts` | Excel/CSV/JSON import and export. |
 | `src/infrastructure/hanzi/hanzi-stroke-trainer.ts` | Hanzi Writer integration for stroke practice. |
 | `src/infrastructure/speech/chinese-speech.ts` | Browser speech synthesis adapter for Chinese playback. |
+| `src/infrastructure/version/http-version-checker.ts` | Fetches `/version.json` to detect deployed app updates. |
 | `src/presentation/styles.css` | Mobile-first UI, design tokens, layout, states. |
 | `src/presentation/i18n.ts` | Vietnamese/English UI labels. |
 | `src/presentation/icons.ts` | Lucide icon wrappers. |

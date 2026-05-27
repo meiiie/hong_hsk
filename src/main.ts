@@ -12,6 +12,7 @@ import {
 import { HanziStrokeTrainer } from "./infrastructure/hanzi/hanzi-stroke-trainer";
 import { speakChinese } from "./infrastructure/speech/chinese-speech";
 import { loadState, resetState, saveState } from "./infrastructure/storage/indexeddb-state-store";
+import { checkAppVersion, currentAppVersion } from "./infrastructure/version/http-version-checker";
 
 mountHskApp({
   stateStore: {
@@ -33,4 +34,8 @@ mountHskApp({
     play: speakChinese,
   },
   strokePractice: new StrokePracticeWorkflow(new HanziStrokeTrainer()),
+  versionChecker: {
+    current: currentAppVersion,
+    check: checkAppVersion,
+  },
 });

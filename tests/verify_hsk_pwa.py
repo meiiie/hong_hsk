@@ -69,6 +69,12 @@ def main() -> None:
         expect(page.get_by_text("Chưa có transcript chữ Hán")).to_be_visible()
 
         page.locator("[data-account-menu-toggle]").click()
+        page.locator('.sidebar-account-menu [data-view="settings"]').click()
+        expect(page.get_by_role("heading", name="Cập nhật ứng dụng")).to_be_visible()
+        expect(page.get_by_role("button", name="Kiểm tra")).to_be_visible()
+        expect(page.get_by_text("Schema dữ liệu")).to_be_visible()
+
+        page.locator("[data-account-menu-toggle]").click()
         page.locator('.sidebar-account-menu [data-view="data"]').click()
         expect(page.get_by_role("heading", name="Nhập dữ liệu chuẩn")).to_be_visible()
         page.screenshot(path=str(Path("artifacts") / "hsk4-pwa-dashboard.png"), full_page=True)

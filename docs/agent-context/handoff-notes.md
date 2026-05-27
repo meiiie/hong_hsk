@@ -1,6 +1,6 @@
 # Handoff Notes
 
-Last updated: 2026-05-26.
+Last updated: 2026-05-27.
 
 ## Current Production
 
@@ -13,11 +13,12 @@ Last updated: 2026-05-26.
 
 - Repo: `meiiie/hong_hsk`
 - Default branch: `main`
-- Main history is linear as of commit `6cabd5b`.
+- Main history includes production commit `01fa604 Polish HSK4 learning UX and modular app`.
 - Known teammate/main commits preserved:
   - `a4f8291 Use Excel HSK4 meanings`
   - `cd0a746 Improve Cloudflare deploy workflow`
   - `6cabd5b Automate Pages deploy after CI`
+  - `bab8d5b Add lesson listening practice`
 
 ## Current Operational State
 
@@ -47,3 +48,4 @@ gh pr create --draft --base main --head codex/<task>
 - Do not reveal stroke-practice answers during recall by default.
 - Do not add backend/SQLite unless multi-device sync becomes an explicit requirement.
 - Do not use Cloudflare/GitHub secrets outside GitHub Secrets or approved interactive prompts.
+- Version management now uses compile-time app metadata and `/version.json`; keep schema constants in `src/domain/app-version.ts` aligned with real data migrations.

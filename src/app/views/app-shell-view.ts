@@ -1,5 +1,7 @@
 import type { View } from "../app-types";
+import type { AppVersionCheck } from "../../application/ports/app-version-checker";
 import type { AppState, DashboardStats } from "../../domain/types";
+import { versionLabel } from "../../domain/app-version";
 import { icon, labelWithIcon, type IconName } from "../../presentation/icons";
 import { escapeHtml } from "./view-helpers";
 
@@ -10,6 +12,7 @@ interface AppShellViewModel {
   accountMenuOpen: boolean;
   state: AppState;
   stats: DashboardStats;
+  versionCheck?: AppVersionCheck;
   content: string;
 }
 
@@ -20,6 +23,7 @@ export function renderAppShell({
   accountMenuOpen,
   state,
   stats,
+  versionCheck,
   content,
 }: AppShellViewModel): string {
   const learnedPercent = stats.totalItems > 0 ? Math.min(100, Math.round((stats.learned / stats.totalItems) * 100)) : 0;
@@ -126,9 +130,27 @@ export function renderAppShell({
             ${activeView === "dashboard" ? `<span class="topbar-date">${icon("calendar")} ${escapeHtml(formatTodayDate())}</span>` : ""}
           </div>
         </header>
+        ${renderUpdateBanner(versionCheck)}
         ${content}
       </main>
     </div>
+  `;
+}
+
+function renderUpdateBanner(versionCheck?: AppVersionCheck): string {
+  if (versionCheck?.status !== "available" || !versionCheck.latest) {
+    return "";
+  }
+
+  return `
+    <section class="app-update-banner" role="status" aria-live="polite">
+      <span>${icon("alert")}</span>
+      <div>
+        <strong>Có bản cập nhật mới</strong>
+        <small>Đang dùng ${escapeHtml(versionLabel(versionCheck.current))}; bản mới ${escapeHtml(versionLabel(versionCheck.latest))} đã sẵn sàng.</small>
+      </div>
+      <button class="primary-button" type="button" data-app-reload>${labelWithIcon("rotate", "Tải lại")}</button>
+    </section>
   `;
 }
 

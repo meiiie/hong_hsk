@@ -1,9 +1,8 @@
 import type { AppState, VocabItem } from "../../domain/types";
+import { APP_DATA_SCHEMA_VERSION } from "../../domain/app-version";
 import { createExcelCourseItems } from "../../domain/hsk4/hsk4-excel-vocab";
 import { HSK4_REVIEW_POLICY } from "../../domain/review/review-policy";
 import { toDateKey } from "../../shared/date-utils";
-
-export const APP_STATE_VERSION = 1;
 
 export const LESSON_TITLES: Record<number, string> = {
   1: "简单的爱情",
@@ -193,7 +192,7 @@ export function createInitialState(): AppState {
   const today = toDateKey();
 
   return {
-    version: APP_STATE_VERSION,
+    version: APP_DATA_SCHEMA_VERSION,
     items: createExcelCourseItems(),
     attempts: [],
     reviews: {},

@@ -15,6 +15,7 @@ import { renderSettingsView } from "./views/settings-view";
 import { renderStudyView } from "./views/study-view";
 import { submitStudyAnswer as applyStudyAnswer } from "../application/review/submit-study-answer";
 import { replaceStarterVocabulary } from "../application/vocab/replace-vocabulary";
+import type { AppVersionCheck } from "../application/ports/app-version-checker";
 import type { AppState, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
 import { extractBlcupAudioUrl, findLessonListeningTrack } from "../domain/hsk4/lesson-listening";
@@ -46,6 +47,7 @@ class HskApp {
   private mobileMoreOpen = false;
   private accountMenuOpen = false;
   private studyMotionState: StudyMotionState | undefined;
+  private versionCheck: AppVersionCheck | undefined;
   private lessonAudio: LessonListeningViewState = {
     playbackRate: 1,
     transcripts: {},
@@ -60,8 +62,13 @@ class HskApp {
     this.state = await this.dependencies.stateStore.load();
     this.sidebarCollapsed = loadSidebarCollapsed();
     this.lessonAudio.transcripts = loadLessonTranscripts();
+    this.versionCheck = {
+      status: "checking",
+      current: this.dependencies.versionChecker.current(),
+    };
     registerServiceWorker();
     this.render();
+    void this.refreshVersionStatus();
   }
 
   private render(): void {
@@ -85,6 +92,7 @@ class HskApp {
       accountMenuOpen: this.accountMenuOpen,
       state: this.state,
       stats,
+      versionCheck: this.versionCheck,
       content,
     });
     this.bindEvents();
@@ -133,7 +141,7 @@ class HskApp {
       return renderDataView(this.state);
     }
     if (this.activeView === "settings") {
-      return renderSettingsView(this.state);
+      return renderSettingsView(this.state, this.versionCheck);
     }
     return renderDashboardView(this.state, getDataHealthStats(this.state));
   }
@@ -200,6 +208,8 @@ class HskApp {
       toggleLessonTranscript: (trackId) => this.toggleLessonTranscript(trackId),
       setLessonAudioSpeed: (rate) => this.setLessonAudioSpeed(rate),
       saveLessonTranscript: (trackId, transcript) => this.saveLessonTranscript(trackId, transcript),
+      checkAppVersion: () => this.refreshVersionStatus(true),
+      reloadApp: () => this.reloadApp(),
     });
   }
 
@@ -412,6 +422,34 @@ class HskApp {
     };
     saveLessonTranscripts(transcripts);
     this.render();
+  }
+
+  private async refreshVersionStatus(forceRender = false): Promise<void> {
+    if (forceRender) {
+      this.versionCheck = {
+        status: "checking",
+        current: this.dependencies.versionChecker.current(),
+        latest: this.versionCheck?.latest,
+      };
+      this.render();
+    }
+
+    this.versionCheck = await this.dependencies.versionChecker.check();
+    this.render();
+  }
+
+  private reloadApp(): void {
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.getRegistration().then((registration) => {
+        registration?.waiting?.postMessage({ type: "SKIP_WAITING" });
+        return registration?.update();
+      }).finally(() => {
+        window.location.reload();
+      });
+      return;
+    }
+
+    window.location.reload();
   }
 
   private nextCard(): void {
