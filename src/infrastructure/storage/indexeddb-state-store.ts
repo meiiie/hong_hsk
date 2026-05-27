@@ -1,12 +1,13 @@
 import { createInitialState } from "../../application/bootstrap/initial-state";
 import { enrichVietnameseMeanings } from "../../application/vocab/data-enrichment";
+import { APP_DATA_SCHEMA_VERSION, INDEXEDDB_SCHEMA_VERSION } from "../../domain/app-version";
 import { HSK4_EXCEL_SOURCE, createExcelCourseItems } from "../../domain/hsk4/hsk4-excel-vocab";
 import { normalizeLocale } from "../../domain/locale";
 import type { AppState, Attempt, ReviewState, VocabItem } from "../../domain/types";
 
 // Keep the legacy IndexedDB name so existing learners do not lose local progress after the product rename.
 const DB_NAME = "hsk4-review-pwa";
-const DB_VERSION = 1;
+const DB_VERSION = INDEXEDDB_SCHEMA_VERSION;
 const STORE_NAME = "app-state";
 const STATE_KEY = "current";
 
@@ -73,6 +74,7 @@ function migrateState(state: AppState): AppState {
     : { attempts: state.attempts, reviews: state.reviews };
   const next: AppState = {
     ...state,
+    version: APP_DATA_SCHEMA_VERSION,
     items: enrichVietnameseMeanings(items),
     attempts: learningData.attempts,
     reviews: learningData.reviews,
@@ -94,6 +96,7 @@ function migrateState(state: AppState): AppState {
     next.settings.useEnglishFallback === settings.useEnglishFallback &&
     next.settings.revealPinyin === settings.revealPinyin &&
     next.settings.revealMeaning === settings.revealMeaning &&
+    next.version === state.version &&
     next.items === state.items &&
     next.attempts === state.attempts &&
     next.reviews === state.reviews

@@ -1,8 +1,15 @@
+import type { AppVersionCheck } from "../../application/ports/app-version-checker";
+import {
+  APP_DATA_SCHEMA_VERSION,
+  INDEXEDDB_SCHEMA_VERSION,
+  shortBuildSha,
+  versionLabel,
+} from "../../domain/app-version";
 import type { AppState } from "../../domain/types";
 import { icon } from "../../presentation/icons";
 import { escapeAttribute, escapeHtml } from "./view-helpers";
 
-export function renderSettingsView(state: AppState): string {
+export function renderSettingsView(state: AppState, versionCheck?: AppVersionCheck): string {
   const { settings } = state;
 
   return `
@@ -87,6 +94,91 @@ export function renderSettingsView(state: AppState): string {
           </span>
         </label>
       </article>
+
+      ${renderVersionSettings(versionCheck)}
     </section>
   `;
+}
+
+function renderVersionSettings(versionCheck?: AppVersionCheck): string {
+  const current = versionCheck?.current;
+  const latest = versionCheck?.latest;
+  const status = versionCheck?.status ?? "unknown";
+  const statusLabel = versionStatusLabel(status);
+  const statusClass = `version-status-${status}`;
+
+  return `
+    <article class="settings-card version-settings-card">
+      <div class="settings-card-head">
+        <div>
+          <p class="eyebrow">Phiên bản</p>
+          <h2>Cập nhật ứng dụng</h2>
+        </div>
+        <span class="settings-card-icon">${icon(status === "available" ? "alert" : "check")}</span>
+      </div>
+      <div class="version-summary">
+        <div>
+          <span class="version-status ${statusClass}">${escapeHtml(statusLabel)}</span>
+          <strong>${escapeHtml(current ? versionLabel(current) : "Đang đọc phiên bản")}</strong>
+          <small>${escapeHtml(current ? `Nhánh ${current.branch} · build ${shortBuildSha(current.buildSha)}` : "Chưa có metadata build")}</small>
+        </div>
+        <button class="ghost-button" type="button" data-version-check>${icon("rotate")} Kiểm tra</button>
+      </div>
+      ${
+        latest && status === "available"
+          ? `<div class="settings-note version-update-note">
+              <span>${icon("alert")}</span>
+              <p>Bản mới ${escapeHtml(versionLabel(latest))} đã sẵn sàng. Tải lại để nhận giao diện và logic mới nhất.</p>
+              <button class="primary-button" type="button" data-app-reload>Tải lại</button>
+            </div>`
+          : ""
+      }
+      <div class="version-detail-grid">
+        <span>
+          <strong>Schema dữ liệu</strong>
+          <small>${escapeHtml(String(current?.dataSchemaVersion ?? APP_DATA_SCHEMA_VERSION))}</small>
+        </span>
+        <span>
+          <strong>IndexedDB</strong>
+          <small>${escapeHtml(String(current?.storageSchemaVersion ?? INDEXEDDB_SCHEMA_VERSION))}</small>
+        </span>
+        <span>
+          <strong>Kiểm tra lần cuối</strong>
+          <small>${escapeHtml(formatCheckedAt(versionCheck?.checkedAt))}</small>
+        </span>
+      </div>
+      ${versionCheck?.message ? `<p class="version-message">${escapeHtml(versionCheck.message)}</p>` : ""}
+    </article>
+  `;
+}
+
+function versionStatusLabel(status: string): string {
+  if (status === "checking") {
+    return "Đang kiểm tra";
+  }
+  if (status === "current") {
+    return "Đang là bản mới nhất";
+  }
+  if (status === "available") {
+    return "Có bản mới";
+  }
+  if (status === "offline") {
+    return "Chưa kết nối";
+  }
+  return "Chưa rõ";
+}
+
+function formatCheckedAt(value: string | undefined): string {
+  if (!value) {
+    return "Chưa kiểm tra";
+  }
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(new Date(value));
 }

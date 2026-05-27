@@ -1,4 +1,4 @@
-const CACHE_NAME = "hong-hsk4-studio-v1";
+const CACHE_NAME = "hong-hsk4-studio-v2";
 const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon.svg", "/maskable-icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -21,12 +21,25 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
     return;
   }
 
-  if (new URL(event.request.url).pathname.startsWith("/src/")) {
+  const url = new URL(event.request.url);
+
+  if (url.pathname === "/version.json") {
+    event.respondWith(fetch(event.request, { cache: "no-store" }));
+    return;
+  }
+
+  if (url.pathname.startsWith("/src/")) {
     event.respondWith(fetch(event.request));
     return;
   }

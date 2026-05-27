@@ -40,6 +40,8 @@ export interface AppEventHandlers {
   toggleLessonTranscript(trackId: string): void;
   setLessonAudioSpeed(rate: number): void;
   saveLessonTranscript(trackId: string, transcript: string): void;
+  checkAppVersion(): void | Promise<void>;
+  reloadApp(): void;
 }
 
 export function bindAppEvents(root: HTMLElement, handlers: AppEventHandlers): void {
@@ -50,6 +52,7 @@ export function bindAppEvents(root: HTMLElement, handlers: AppEventHandlers): vo
   bindMockExam(root, handlers);
   bindAudio(root, handlers);
   bindLessonListening(root, handlers);
+  bindVersionControls(root, handlers);
 }
 
 function bindNavigation(root: HTMLElement, handlers: AppEventHandlers): void {
@@ -316,6 +319,20 @@ function bindLessonListening(root: HTMLElement, handlers: AppEventHandlers): voi
       event.preventDefault();
       const textarea = form.querySelector<HTMLTextAreaElement>("textarea");
       handlers.saveLessonTranscript(form.dataset.transcriptForm ?? "", textarea?.value ?? "");
+    });
+  });
+}
+
+function bindVersionControls(root: HTMLElement, handlers: AppEventHandlers): void {
+  root.querySelectorAll<HTMLButtonElement>("[data-version-check]").forEach((button) => {
+    button.addEventListener("click", () => {
+      void handlers.checkAppVersion();
+    });
+  });
+
+  root.querySelectorAll<HTMLButtonElement>("[data-app-reload]").forEach((button) => {
+    button.addEventListener("click", () => {
+      handlers.reloadApp();
     });
   });
 }
