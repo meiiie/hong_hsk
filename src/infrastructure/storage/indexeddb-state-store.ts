@@ -78,6 +78,8 @@ function migrateState(state: AppState): AppState {
     reviews: learningData.reviews,
     settings: {
       ...settings,
+      displayName: settings.displayName?.trim() || "Hồng",
+      avatarInitial: settings.avatarInitial?.trim().slice(0, 2).toUpperCase() || "H",
       locale: normalizeLocale(settings.locale),
       useEnglishFallback: settings.useEnglishFallback ?? false,
       revealPinyin: settings.revealPinyin ?? true,
@@ -87,6 +89,8 @@ function migrateState(state: AppState): AppState {
 
   if (
     next.settings.locale === settings.locale &&
+    next.settings.displayName === settings.displayName &&
+    next.settings.avatarInitial === settings.avatarInitial &&
     next.settings.useEnglishFallback === settings.useEnglishFallback &&
     next.settings.revealPinyin === settings.revealPinyin &&
     next.settings.revealMeaning === settings.revealMeaning &&

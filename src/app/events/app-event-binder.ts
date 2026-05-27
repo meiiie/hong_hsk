@@ -4,6 +4,8 @@ import type { StudyMode } from "../../domain/types";
 export interface AppEventHandlers {
   navigate(view: View): void;
   toggleSidebar(): void;
+  toggleAccountMenu(): void;
+  closeAccountMenu(): void;
   toggleMobileMore(): void;
   closeMobileMore(): void;
   startStudy(mode: StudyMode): void;
@@ -50,6 +52,17 @@ function bindNavigation(root: HTMLElement, handlers: AppEventHandlers): void {
     handlers.toggleSidebar();
   });
 
+  root.querySelector<HTMLButtonElement>("[data-account-menu-toggle]")?.addEventListener("click", () => {
+    handlers.toggleAccountMenu();
+  });
+
+  const accountMenu = root.querySelector<HTMLElement>("[data-account-menu]:not([hidden])");
+  accountMenu?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      handlers.closeAccountMenu();
+    }
+  });
+
   root.querySelector<HTMLButtonElement>("[data-mobile-more-toggle]")?.addEventListener("click", () => {
     handlers.toggleMobileMore();
   });
@@ -59,6 +72,17 @@ function bindNavigation(root: HTMLElement, handlers: AppEventHandlers): void {
       handlers.closeMobileMore();
     });
   });
+
+  const mobileMoreSheet = root.querySelector<HTMLElement>(".mobile-more-sheet:not([hidden])");
+  mobileMoreSheet?.focus({ preventScroll: true });
+  mobileMoreSheet?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      handlers.closeMobileMore();
+    }
+  });
+  if (mobileMoreSheet) {
+    bindMobileMoreDrag(mobileMoreSheet, handlers);
+  }
 
   root.querySelectorAll<HTMLButtonElement>("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -71,6 +95,57 @@ function bindNavigation(root: HTMLElement, handlers: AppEventHandlers): void {
       handlers.startStudy(button.dataset.studyMode as StudyMode);
     });
   });
+}
+
+function bindMobileMoreDrag(sheet: HTMLElement, handlers: AppEventHandlers): void {
+  const handle = sheet.querySelector<HTMLElement>("[data-mobile-more-drag]");
+  if (!handle) {
+    return;
+  }
+
+  let dragging = false;
+  let startY = 0;
+  let currentY = 0;
+
+  const resetSheet = () => {
+    sheet.style.transform = "";
+    sheet.style.transition = "";
+  };
+
+  const finishDrag = () => {
+    if (!dragging) {
+      return;
+    }
+    dragging = false;
+    if (currentY > 64) {
+      handlers.closeMobileMore();
+      return;
+    }
+    resetSheet();
+  };
+
+  handle.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    dragging = true;
+    startY = event.clientY;
+    currentY = 0;
+    sheet.style.transition = "none";
+    sheet.getAnimations().forEach((animation) => animation.cancel());
+    handle.setPointerCapture(event.pointerId);
+  });
+
+  handle.addEventListener("pointermove", (event) => {
+    if (!dragging) {
+      return;
+    }
+    currentY = Math.max(0, event.clientY - startY);
+    sheet.style.transform = `translateY(${Math.min(currentY, 160)}px)`;
+  });
+
+  handle.addEventListener("pointerup", finishDrag);
+  handle.addEventListener("pointercancel", finishDrag);
 }
 
 function bindStudy(root: HTMLElement, handlers: AppEventHandlers): void {

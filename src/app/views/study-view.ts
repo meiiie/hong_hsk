@@ -41,12 +41,15 @@ export function renderStudyView(model: StudyViewModel): string {
   const answerVisible = Boolean(feedback);
   const sessionProgress = percent(studyIndex + 1, studyQueue.length);
   const modeLabel = studyModeLabel(studyMode, state.settings.locale);
+  const bookName = bookLabel(item.book, state.settings.locale);
   const feedbackLabel = feedback?.revealed ? "Đáp án" : feedback?.correct ? "Đúng" : "Sai";
   const feedbackText = feedback?.revealed ? item.hanzi : `Đáp án: ${item.hanzi}`;
+  const exampleHan = usefulStudyExample(item.exampleHan, item.hanzi);
+  const exampleVi = usefulStudyExample(item.exampleVi, item.hanzi);
 
   return `
     <section class="study-layout">
-      <article class="study-card">
+      <article class="study-card" data-motion="study-card" data-study-card-id="${escapeAttribute(item.id)}">
         <div class="session-strip">
           <div>
             <span>${escapeHtml(modeLabel)}</span>
@@ -56,12 +59,21 @@ export function renderStudyView(model: StudyViewModel): string {
         </div>
         <div class="study-meta">
           <span>Bài ${item.lesson}</span>
-          <span>${escapeHtml(bookLabel(item.book, state.settings.locale))}</span>
+          <span>${escapeHtml(bookName)}</span>
           <span>${position}</span>
           <span>${reviewStatusLabel(review?.status ?? "new", state.settings.locale)}</span>
         </div>
         <div class="prompt">
-          <p class="eyebrow">Gõ lại chữ Hán</p>
+          <div class="prompt-head">
+            <p class="eyebrow">Gõ lại chữ Hán</p>
+            <details class="answer-help">
+              <summary>${labelWithIcon("help", "Cách chấm")}</summary>
+              <div class="answer-help-popover">
+                <p>Gõ chữ Hán bạn nhớ được. Hệ thống bỏ qua khoảng trắng và dấu câu khi so đáp án.</p>
+                <p>Nếu sai do thiếu hoặc thừa chữ, app sẽ nhắc ở phần phản hồi.</p>
+              </div>
+            </details>
+          </div>
           <h2>${escapeHtml(displayMeaning(item, state.settings.useEnglishFallback))}</h2>
           ${
             answerVisible && state.settings.revealPinyin
@@ -69,10 +81,10 @@ export function renderStudyView(model: StudyViewModel): string {
               : ""
           }
           ${
-            item.exampleHan || item.exampleVi
+            answerVisible && (exampleHan || exampleVi)
               ? `<div class="example">
-                  <span>${escapeHtml(item.exampleVi || "Ví dụ")}</span>
-                  ${feedback ? `<strong>${escapeHtml(item.exampleHan)}</strong>` : ""}
+                  ${exampleVi ? `<span>${escapeHtml(exampleVi)}</span>` : ""}
+                  ${exampleHan ? `<strong>${escapeHtml(exampleHan)}</strong>` : ""}
                 </div>`
               : ""
           }
@@ -85,30 +97,30 @@ export function renderStudyView(model: StudyViewModel): string {
             class="${inputClass}"
             name="answer"
             autocomplete="off"
-            aria-describedby="answer-hint"
+            data-motion="study-input"
+            data-feedback-state="${feedback ? feedbackLabel.toLowerCase() : "none"}"
             inputmode="text"
             value="${escapeAttribute(feedback?.input ?? "")}"
             placeholder="Gõ chữ Hán..."
             ${feedback ? "readonly" : ""}
           />
-          <p id="answer-hint" class="answer-hint">So khớp tự động với đáp án, bỏ qua khoảng trắng và dấu câu. Số chữ Hán cần nhớ: ${hanziChars.length || item.hanzi.length}.</p>
           <div class="answer-actions">
-            ${
-              feedback
-                ? `<button type="button" class="primary-button" data-next-card>${labelWithIcon("arrowRight", "Thẻ tiếp theo")}</button>`
-                : `<button type="submit" class="primary-button">${labelWithIcon("check", "Chấm đáp án")}</button>`
-            }
             ${
               feedback?.revealed
                 ? `<button type="button" class="ghost-button answer-toggle active" data-hide-answer>${labelWithIcon("eyeOff", "Ẩn đáp án")}</button>`
                 : `<button type="button" class="ghost-button answer-toggle" data-reveal-answer>${labelWithIcon("eye", "Hiện đáp án")}</button>`
+            }
+            ${
+              feedback
+                ? `<button type="button" class="primary-button" data-next-card>${labelWithIcon("arrowRight", "Thẻ tiếp theo")}</button>`
+                : `<button type="submit" class="primary-button">${labelWithIcon("check", "Chấm đáp án")}</button>`
             }
           </div>
         </form>
 
         ${
           feedback
-            ? `<div class="feedback ${feedback.correct ? "good" : "bad"}" role="status" aria-live="polite">
+            ? `<div class="feedback ${feedback.correct ? "good" : "bad"}" data-motion="study-feedback" role="status" aria-live="polite">
                 <strong>${feedbackLabel}</strong>
                 <span>${escapeHtml(feedbackText)}</span>
               </div>`
@@ -118,10 +130,10 @@ export function renderStudyView(model: StudyViewModel): string {
 
       <aside class="study-side">
           ${renderStrokeLab(selectedChar, hanziChars, canUseStroke, strokeCharIndex)}
-        <section class="review-panel">
-          <h3>Trạng thái từ này</h3>
-          ${renderReviewDetail(state, item)}
-        </section>
+        ${review ? `<section class="review-panel">
+            <h3>Trạng thái từ này</h3>
+            ${renderReviewDetail(state, item)}
+          </section>` : ""}
         <section class="mode-panel">
           <h3>Đổi hàng đợi</h3>
           <div class="mode-box">
@@ -136,28 +148,40 @@ export function renderStudyView(model: StudyViewModel): string {
   `;
 }
 
+function usefulStudyExample(example: string, hanzi: string): string {
+  const normalized = example.trim();
+  if (!normalized) {
+    return "";
+  }
+
+  const generatedHan = `我今天复习了“${hanzi}”，并在课文里找它的用法。`;
+  const generatedVi = `Hôm nay tôi ôn từ “${hanzi}” và tìm cách dùng của nó trong bài khóa.`;
+
+  if (normalized === generatedHan || normalized === generatedVi) {
+    return "";
+  }
+
+  return normalized;
+}
+
 function renderStrokeLab(selectedChar: string, hanziChars: string[], canUseStroke: boolean, strokeCharIndex: number): string {
   if (!canUseStroke) {
     return `
-      <div class="stroke-lab stroke-locked">
-        <div class="stroke-lab-head">
-          <div>
-            <p class="eyebrow">Luyện nét</p>
-            <h3>Ẩn trong lúc gõ</h3>
-          </div>
-          <span>Khóa</span>
-        </div>
-        <div class="stroke-lock-box">
-          ${icon("eye")}
-          <strong>Chưa mở luyện nét</strong>
-          <p>Phần này sẽ hiện sau khi bạn chấm đáp án hoặc chủ động bấm “Hiện đáp án”, để không lộ chữ cần nhớ.</p>
+      <div class="stroke-lab stroke-locked" data-motion="stroke-lab">
+        <div class="stroke-lock-row">
+          <span class="stroke-lock-icon">${icon("pencil")}</span>
+          <span>
+            <strong>Luyện nét khóa</strong>
+            <small>Mở sau khi chấm hoặc hiện đáp án.</small>
+          </span>
+          ${icon("chevronRight")}
         </div>
       </div>
     `;
   }
 
   return `
-    <div class="stroke-lab">
+    <div class="stroke-lab" data-motion="stroke-lab">
       <div class="stroke-lab-head">
         <div>
           <p class="eyebrow">Luyện nét</p>
@@ -195,7 +219,7 @@ function renderStrokeLab(selectedChar: string, hanziChars: string[], canUseStrok
 function renderReviewDetail(state: AppState, item: VocabItem): string {
   const review = state.reviews[item.id];
   if (!review) {
-    return `<p class="muted">Chưa có log. Lần chấm đầu tiên sẽ tạo lịch ôn tiếp.</p>`;
+    return "";
   }
 
   const accuracy = review.totalAttempts

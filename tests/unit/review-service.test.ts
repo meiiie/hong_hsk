@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   applyAttempt,
   dueItems,
@@ -40,29 +40,36 @@ describe("review service", () => {
   });
 
   it("builds today's queue from due cards first and then new lesson cards", () => {
-    const due = makeVocabItem({ id: "due", hanzi: "复习", lesson: 1, order: 1 });
-    const fresh = makeVocabItem({ id: "fresh", hanzi: "新的", lesson: 1, order: 2 });
-    const state = makeAppState({
-      items: [fresh, due],
-      reviews: {
-        due: makeReviewState({
-          itemId: "due",
-          nextReviewDate: "2026-05-24",
-          wrongCount: 2,
-          lastCorrect: false,
-        }),
-      },
-      settings: {
-        ...makeAppState().settings,
-        startDate: "2026-05-26",
-        dailyReviewTarget: 10,
-        dailyNewTarget: 10,
-      },
-    });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 26, 12));
 
-    expect(dueItems(state, "2026-05-26").map((item) => item.id)).toEqual(["due"]);
-    expect(wrongItems(state).map((item) => item.id)).toEqual(["due"]);
-    expect(newItemsForLesson(state, 1).map((item) => item.id)).toEqual(["fresh"]);
-    expect(queueForMode(state, "today").map((item) => item.id)).toEqual(["due", "fresh"]);
+    try {
+      const due = makeVocabItem({ id: "due", hanzi: "复习", lesson: 1, order: 1 });
+      const fresh = makeVocabItem({ id: "fresh", hanzi: "新的", lesson: 1, order: 2 });
+      const state = makeAppState({
+        items: [fresh, due],
+        reviews: {
+          due: makeReviewState({
+            itemId: "due",
+            nextReviewDate: "2026-05-24",
+            wrongCount: 2,
+            lastCorrect: false,
+          }),
+        },
+        settings: {
+          ...makeAppState().settings,
+          startDate: "2026-05-26",
+          dailyReviewTarget: 10,
+          dailyNewTarget: 10,
+        },
+      });
+
+      expect(dueItems(state, "2026-05-26").map((item) => item.id)).toEqual(["due"]);
+      expect(wrongItems(state).map((item) => item.id)).toEqual(["due"]);
+      expect(newItemsForLesson(state, 1).map((item) => item.id)).toEqual(["fresh"]);
+      expect(queueForMode(state, "today").map((item) => item.id)).toEqual(["due", "fresh"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

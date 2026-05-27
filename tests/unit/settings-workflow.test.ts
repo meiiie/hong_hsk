@@ -9,6 +9,8 @@ describe("settings workflow", () => {
     applySettingInput(settings, { dataset: { setting: "dailyNewTarget" }, value: "999" } as HTMLInputElement);
     applySettingInput(settings, { dataset: { setting: "dailyReviewTarget" }, value: "0" } as HTMLInputElement);
     applySettingInput(settings, { dataset: { setting: "locale" }, value: "en" } as HTMLSelectElement);
+    applySettingInput(settings, { dataset: { setting: "displayName" }, value: "  Hồng Nguyễn  " } as HTMLInputElement);
+    applySettingInput(settings, { dataset: { setting: "avatarInitial" }, value: "hn" } as HTMLInputElement);
     applySettingInput(settings, {
       dataset: { setting: "useEnglishFallback" },
       value: "",
@@ -18,6 +20,8 @@ describe("settings workflow", () => {
     expect(settings.dailyNewTarget).toBe(80);
     expect(settings.dailyReviewTarget).toBe(20);
     expect(settings.locale).toBe("en");
+    expect(settings.displayName).toBe("Hồng Nguyễn");
+    expect(settings.avatarInitial).toBe("HN");
     expect(settings.useEnglishFallback).toBe(true);
   });
 });

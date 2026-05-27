@@ -18,13 +18,19 @@ def main() -> None:
 
         page.goto("http://127.0.0.1:5173/", wait_until="networkidle")
         expect(page.locator(".brand-copy").get_by_text("Hồng HSK4")).to_be_visible()
-        expect(page.get_by_role("heading", name="Tổng quan hôm nay")).to_be_visible()
+        expect(page.get_by_role("heading", name="Hôm nay", exact=True)).to_be_visible()
         expect(page.get_by_text("Ôn thi HSK4 trên máy tính")).to_have_count(0)
+        expect(page.locator(".topbar .language-switcher")).to_have_count(0)
 
         page.get_by_role("button", name="Bắt đầu ôn").first.click()
         expect(page.locator("#hanzi-input")).to_be_visible()
         expect(page.get_by_text("Luyện nét").first).to_be_visible()
-        expect(page.get_by_text("Ẩn trong lúc gõ")).to_be_visible()
+        expect(page.get_by_text("Luyện nét khóa")).to_be_visible()
+        expect(page.get_by_text("Ẩn trong lúc gõ")).to_have_count(0)
+        expect(page.get_by_text("So khớp tự động")).to_have_count(0)
+        expect(page.get_by_text("Số chữ")).to_have_count(0)
+        expect(page.get_by_text("Chưa có log")).to_have_count(0)
+        expect(page.get_by_text("Cách chấm")).to_be_visible()
         expect(page.locator("#stroke-target")).to_have_count(0)
         expect(page.locator(".pinyin")).to_have_count(0)
         page.locator("[data-reveal-answer]").click()
@@ -51,7 +57,8 @@ def main() -> None:
         expect(page.get_by_role("heading", name="Từ sai lần gần nhất")).to_be_visible()
         expect(page.get_by_role("cell", name="法律", exact=True)).to_be_visible()
 
-        page.get_by_role("button", name="Dữ liệu").click()
+        page.locator("[data-account-menu-toggle]").click()
+        page.locator('.sidebar-account-menu [data-view="data"]').click()
         expect(page.get_by_role("heading", name="Nhập dữ liệu chuẩn")).to_be_visible()
         page.screenshot(path=str(Path("artifacts") / "hsk4-pwa-dashboard.png"), full_page=True)
 

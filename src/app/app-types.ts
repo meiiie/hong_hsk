@@ -1,4 +1,4 @@
-export type View = "dashboard" | "study" | "lessons" | "wrong" | "mock" | "plan" | "data";
+export type View = "dashboard" | "study" | "lessons" | "wrong" | "mock" | "plan" | "data" | "settings";
 
 export interface DataHealth {
   total: number;

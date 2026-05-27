@@ -64,6 +64,8 @@ export function makeAppState(overrides: Partial<AppState> = {}): AppState {
     attempts: overrides.attempts ?? [],
     reviews: overrides.reviews ?? {},
     settings: overrides.settings ?? {
+      displayName: "Hồng",
+      avatarInitial: "H",
       startDate: "2026-05-25",
       dailyNewTarget: 30,
       dailyReviewTarget: 80,

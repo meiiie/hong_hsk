@@ -11,6 +11,7 @@ import { getDataHealthStats, renderDataView } from "./views/data-view";
 import { renderLessonsView, renderWrongView } from "./views/lesson-views";
 import { renderMockExamIntro, renderMockExamResults, renderMockExamRunner } from "./views/mock-exam-view";
 import { renderPlanView } from "./views/plan-view";
+import { renderSettingsView } from "./views/settings-view";
 import { renderStudyView } from "./views/study-view";
 import { submitStudyAnswer as applyStudyAnswer } from "../application/review/submit-study-answer";
 import { replaceStarterVocabulary } from "../application/vocab/replace-vocabulary";
@@ -18,7 +19,14 @@ import type { AppState, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
 import { computeStats } from "../domain/review/review-service";
 import { icon } from "../presentation/icons";
-import { animateSidebarToggleMotion, hydrateSidebarMotion, type SidebarMotionState } from "../presentation/motion";
+import {
+  animateSidebarToggleMotion,
+  hydrateSidebarMotion,
+  hydrateStudyMotion,
+  type SidebarMotionState,
+  type StudyFeedbackKind,
+  type StudyMotionState,
+} from "../presentation/motion";
 import { clamp } from "../shared/number-utils";
 
 const SIDEBAR_COLLAPSED_KEY = "hong-hsk4-sidebar-collapsed";
@@ -32,6 +40,8 @@ class HskApp {
   private sidebarCollapsed = false;
   private sidebarMotionState: SidebarMotionState | undefined;
   private mobileMoreOpen = false;
+  private accountMenuOpen = false;
+  private studyMotionState: StudyMotionState | undefined;
 
   constructor(
     private readonly root: HTMLElement,
@@ -57,13 +67,16 @@ class HskApp {
       learnedPercent,
       dueToday: stats.dueToday,
     };
+    const content = this.renderActiveView();
+    const studyMotionState = this.createStudyMotionState();
     this.root.innerHTML = renderAppShell({
       activeView: this.activeView,
       sidebarCollapsed: this.sidebarCollapsed,
       mobileMoreOpen: this.mobileMoreOpen,
+      accountMenuOpen: this.accountMenuOpen,
       state: this.state,
       stats,
-      content: this.renderActiveView(),
+      content,
     });
     this.bindEvents();
     void this.dependencies.strokePractice.mount(
@@ -73,7 +86,22 @@ class HskApp {
     );
     this.syncExamClock();
     hydrateSidebarMotion(this.root, sidebarMotionState, this.sidebarMotionState);
+    hydrateStudyMotion(this.root, studyMotionState, this.studyMotionState);
     this.sidebarMotionState = sidebarMotionState;
+    this.studyMotionState = studyMotionState;
+  }
+
+  private createStudyMotionState(): StudyMotionState {
+    const item = this.activeView === "study" ? this.study.currentItem() : undefined;
+    const feedback = item && this.study.feedback?.itemId === item.id ? this.study.feedback : undefined;
+    const feedbackKind: StudyFeedbackKind = !feedback ? "none" : feedback.revealed ? "revealed" : feedback.correct ? "correct" : "wrong";
+
+    return {
+      activeView: this.activeView,
+      itemId: item?.id,
+      feedbackKind,
+      strokeUnlocked: feedbackKind !== "none",
+    };
   }
 
   private renderActiveView(): string {
@@ -94,6 +122,9 @@ class HskApp {
     }
     if (this.activeView === "data") {
       return renderDataView(this.state);
+    }
+    if (this.activeView === "settings") {
+      return renderSettingsView(this.state);
     }
     return renderDashboardView(this.state, getDataHealthStats(this.state));
   }
@@ -124,6 +155,8 @@ class HskApp {
     bindAppEvents(this.root, {
       navigate: (view) => this.navigate(view),
       toggleSidebar: () => this.toggleSidebar(),
+      toggleAccountMenu: () => this.toggleAccountMenu(),
+      closeAccountMenu: () => this.closeAccountMenu(),
       toggleMobileMore: () => this.toggleMobileMore(),
       closeMobileMore: () => this.closeMobileMore(),
       startStudy: (mode) => this.startStudy(mode),
@@ -160,14 +193,31 @@ class HskApp {
   private navigate(view: View): void {
     this.activeView = view;
     this.mobileMoreOpen = false;
+    this.accountMenuOpen = false;
     if (view !== "study") {
       this.study.clear();
     }
     this.render();
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   private toggleMobileMore(): void {
     this.mobileMoreOpen = !this.mobileMoreOpen;
+    this.accountMenuOpen = false;
+    this.render();
+  }
+
+  private toggleAccountMenu(): void {
+    this.accountMenuOpen = !this.accountMenuOpen;
+    this.mobileMoreOpen = false;
+    this.render();
+  }
+
+  private closeAccountMenu(): void {
+    if (!this.accountMenuOpen) {
+      return;
+    }
+    this.accountMenuOpen = false;
     this.render();
   }
 
@@ -180,6 +230,7 @@ class HskApp {
   }
 
   private toggleSidebar(): void {
+    this.accountMenuOpen = false;
     this.sidebarCollapsed = !this.sidebarCollapsed;
     this.applySidebarState();
     animateSidebarToggleMotion(this.root, this.sidebarCollapsed);
@@ -214,6 +265,7 @@ class HskApp {
     this.study.start(mode);
     this.activeView = "study";
     this.mobileMoreOpen = false;
+    this.accountMenuOpen = false;
     this.render();
     this.focusHanziInput();
   }

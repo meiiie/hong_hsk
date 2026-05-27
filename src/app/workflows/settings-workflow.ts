@@ -7,6 +7,12 @@ export function applySettingInput(
   input: HTMLInputElement | HTMLSelectElement,
 ): void {
   const key = input.dataset.setting;
+  if (key === "displayName") {
+    settings.displayName = input.value.trim().slice(0, 40) || "Hồng";
+  }
+  if (key === "avatarInitial") {
+    settings.avatarInitial = input.value.trim().slice(0, 2).toUpperCase() || "H";
+  }
   if (key === "startDate") {
     settings.startDate = input.value || toDateKey();
   }

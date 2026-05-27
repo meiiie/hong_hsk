@@ -1,9 +1,6 @@
 import { prefersReducedMotion } from "./motion-preferences";
 import { motionDurations, motionEases } from "./motion-tokens";
-
-type AnimeModule = typeof import("animejs");
-
-let animeModulePromise: Promise<AnimeModule> | undefined;
+import { runWithAnime } from "./anime-runtime";
 
 export interface SidebarMotionState {
   activeView: string;
@@ -150,9 +147,9 @@ async function animateMobileMoreSheet(root: ParentNode): Promise<void> {
     }
 
     animate(sheet, {
-      opacity: [0, 1],
+      opacity: [1, 1],
       translateY: [18, 0],
-      duration: motionDurations.slow,
+      duration: motionDurations.medium,
       ease: motionEases.emphasized,
     });
 
@@ -165,14 +162,4 @@ async function animateMobileMoreSheet(root: ParentNode): Promise<void> {
       });
     }
   });
-}
-
-async function runWithAnime(callback: (anime: AnimeModule) => void | Promise<void>): Promise<void> {
-  const anime = await loadAnime();
-  await callback(anime);
-}
-
-function loadAnime(): Promise<AnimeModule> {
-  animeModulePromise ??= import("animejs");
-  return animeModulePromise;
 }

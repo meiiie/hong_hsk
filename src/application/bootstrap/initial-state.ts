@@ -198,6 +198,8 @@ export function createInitialState(): AppState {
     attempts: [],
     reviews: {},
     settings: {
+      displayName: "Hồng",
+      avatarInitial: "H",
       startDate: today,
       dailyNewTarget: HSK4_REVIEW_POLICY.dailyNewTarget,
       dailyReviewTarget: HSK4_REVIEW_POLICY.dailyReviewTarget,

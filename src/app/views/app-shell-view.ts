@@ -7,18 +7,29 @@ interface AppShellViewModel {
   activeView: View;
   sidebarCollapsed: boolean;
   mobileMoreOpen: boolean;
+  accountMenuOpen: boolean;
   state: AppState;
   stats: DashboardStats;
   content: string;
 }
 
-export function renderAppShell({ activeView, sidebarCollapsed, mobileMoreOpen, state, stats, content }: AppShellViewModel): string {
+export function renderAppShell({
+  activeView,
+  sidebarCollapsed,
+  mobileMoreOpen,
+  accountMenuOpen,
+  state,
+  stats,
+  content,
+}: AppShellViewModel): string {
   const learnedPercent = stats.totalItems > 0 ? Math.min(100, Math.round((stats.learned / stats.totalItems) * 100)) : 0;
   const overflowActive = isMobileOverflowView(activeView);
   const moreActive = mobileMoreOpen || overflowActive;
+  const displayName = state.settings.displayName || "Hồng";
+  const avatarInitial = state.settings.avatarInitial || "H";
 
   return `
-    <div class="app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
+    <div class="app-shell view-${activeView} ${sidebarCollapsed ? "sidebar-collapsed" : ""}">
       <header class="mobile-brand-bar" aria-label="Hồng HSK4 Studio">
         <div class="mobile-brand-lockup">
           <div class="mobile-brand-mark">红</div>
@@ -47,15 +58,19 @@ export function renderAppShell({ activeView, sidebarCollapsed, mobileMoreOpen, s
               ${icon(sidebarCollapsed ? "chevronRight" : "chevronLeft")}
             </button>
           </div>
-          <span class="sidebar-kicker">Luyện tập</span>
           <nav class="nav" aria-label="Điều hướng" data-motion="sidebar-nav">
-            ${navButton(activeView, "dashboard", "Tổng quan", "layout", "primary")}
-            ${navButton(activeView, "study", "Học hôm nay", "keyboard", "primary")}
-            ${navButton(activeView, "lessons", "Theo bài", "book", "primary")}
-            ${navButton(activeView, "wrong", "Từ sai", "rotate", "overflow")}
-            ${navButton(activeView, "mock", "Thi thử", "clipboardList", "primary")}
-            ${navButton(activeView, "plan", "Lịch 30 ngày", "calendar", "overflow")}
-            ${navButton(activeView, "data", "Dữ liệu", "database", "overflow")}
+            <div class="nav-section nav-section-primary" aria-label="Luyện tập">
+              <span class="nav-section-label">Luyện tập</span>
+              ${navButton(activeView, "dashboard", "Tổng quan", "layout", "primary")}
+              ${navButton(activeView, "study", "Học tập", "keyboard", "primary")}
+              ${navButton(activeView, "lessons", "Theo bài", "book", "primary")}
+              ${navButton(activeView, "mock", "Thi thử", "clipboardList", "primary")}
+            </div>
+            <div class="nav-section nav-section-tools" aria-label="Công cụ">
+              <span class="nav-section-label">Công cụ</span>
+              ${navButton(activeView, "wrong", "Từ sai", "rotate", "overflow")}
+              ${navButton(activeView, "plan", "Lịch 30 ngày", "calendar", "overflow")}
+            </div>
             <button
               class="mobile-more-trigger ${moreActive ? "active" : ""}"
               type="button"
@@ -71,17 +86,26 @@ export function renderAppShell({ activeView, sidebarCollapsed, mobileMoreOpen, s
               <span data-mobile-label="Thêm">Thêm</span>
             </button>
           </nav>
-          <div class="sidebar-card" data-motion="sidebar-footer">
-            <div class="sidebar-card-head">
-              <div class="sidebar-user">
-                <span class="sidebar-avatar">H</span>
-                <span>
-                  <span class="sidebar-user-name">Hồng</span>
+          <div class="sidebar-card ${activeView === "settings" || activeView === "data" ? "active" : ""}" data-motion="sidebar-footer">
+            <button
+              class="sidebar-account-trigger"
+              type="button"
+              data-account-menu-toggle
+              aria-haspopup="menu"
+              aria-expanded="${accountMenuOpen ? "true" : "false"}"
+              title="Tài khoản học"
+            >
+              <span class="sidebar-user">
+                <span class="sidebar-avatar">${escapeHtml(avatarInitial)}</span>
+                <span class="sidebar-user-copy">
+                  <span class="sidebar-user-name">${escapeHtml(displayName)}</span>
                   <small>HSK4 4A/4B</small>
                 </span>
-              </div>
-              <strong>${stats.learned}/${stats.totalItems}</strong>
-            </div>
+              </span>
+              <strong class="sidebar-account-stat">${stats.learned}/${stats.totalItems}</strong>
+              <span class="sidebar-account-caret">${icon("chevronRight")}</span>
+            </button>
+            ${renderAccountMenu(accountMenuOpen)}
             <div class="sidebar-progress" aria-label="Đã học ${learnedPercent}%" data-motion="sidebar-progress">
               <span style="--progress: ${learnedPercent}%"></span>
             </div>
@@ -97,23 +121,35 @@ export function renderAppShell({ activeView, sidebarCollapsed, mobileMoreOpen, s
       ${renderMobileMoreMenu(activeView, mobileMoreOpen)}
       <main class="main view-${activeView}">
         <header class="topbar">
-          <div>
+          <div class="topbar-title">
             <h1>${titleForView(activeView)}</h1>
-          </div>
-          <div class="top-actions">
-            <button class="ghost-button" data-study-mode="today">${labelWithIcon("playCircle", "Bắt đầu ôn")}</button>
-            <button class="primary-button" data-view="data">${labelWithIcon("upload", "Nhập Excel")}</button>
-            <label class="language-switcher">
-              <span>Ngôn ngữ</span>
-              <select data-setting="locale" aria-label="Ngôn ngữ giao diện">
-                <option value="vi" ${state.settings.locale === "vi" ? "selected" : ""}>Tiếng Việt</option>
-                <option value="en" ${state.settings.locale === "en" ? "selected" : ""}>English</option>
-              </select>
-            </label>
+            ${activeView === "dashboard" ? `<span class="topbar-date">${icon("calendar")} ${escapeHtml(formatTodayDate())}</span>` : ""}
           </div>
         </header>
         ${content}
       </main>
+    </div>
+  `;
+}
+
+function renderAccountMenu(accountMenuOpen: boolean): string {
+  const hidden = accountMenuOpen ? "" : "hidden";
+  return `
+    <div class="sidebar-account-menu" role="menu" data-account-menu ${hidden}>
+      <button type="button" role="menuitem" data-view="settings">
+        <span>${icon("settings")}</span>
+        <span>
+          <strong>Thiết lập tài khoản</strong>
+          <small>Tên, avatar, ngôn ngữ</small>
+        </span>
+      </button>
+      <button type="button" role="menuitem" data-view="data">
+        <span>${icon("database")}</span>
+        <span>
+          <strong>Dữ liệu</strong>
+          <small>Nhập, xuất, kiểm tra bộ từ</small>
+        </span>
+      </button>
     </div>
   `;
 }
@@ -133,17 +169,18 @@ function renderMobileMoreMenu(activeView: View, mobileMoreOpen: boolean): string
   const hidden = mobileMoreOpen ? "" : "hidden";
   return `
     <button class="mobile-more-scrim" type="button" data-mobile-more-close aria-label="Đóng công cụ" ${hidden}></button>
-    <div class="mobile-more-sheet" data-motion="mobile-more-sheet" role="dialog" aria-modal="true" aria-label="Công cụ" ${hidden}>
-      <div class="mobile-more-handle" aria-hidden="true"></div>
+    <div class="mobile-more-sheet" data-motion="mobile-more-sheet" role="dialog" aria-modal="true" aria-label="Công cụ" tabindex="-1" ${hidden}>
+      <div class="mobile-more-handle" data-mobile-more-drag aria-hidden="true"></div>
       <div class="mobile-more-head">
         <strong>Công cụ</strong>
-        <button type="button" data-mobile-more-close aria-label="Đóng công cụ">${icon("x")}</button>
       </div>
       <div class="mobile-more-list">
         ${mobileMoreItem(activeView, "wrong", "Từ sai", "rotate")}
         ${mobileMoreItem(activeView, "plan", "Lịch 30 ngày", "calendar")}
         ${mobileMoreItem(activeView, "data", "Dữ liệu", "database")}
+        ${mobileMoreItem(activeView, "settings", "Cài đặt", "settings")}
       </div>
+      <button class="mobile-more-close-button" type="button" data-mobile-more-close>Đóng</button>
     </div>
   `;
 }
@@ -160,7 +197,7 @@ function mobileMoreItem(activeView: View, view: View, label: string, iconName: I
 }
 
 function isMobileOverflowView(view: View): boolean {
-  return view === "wrong" || view === "plan" || view === "data";
+  return view === "wrong" || view === "plan" || view === "data" || view === "settings";
 }
 
 function shortLabelForView(view: View): string {
@@ -172,19 +209,40 @@ function shortLabelForView(view: View): string {
     mock: "Thi",
     plan: "Lịch",
     data: "Dữ liệu",
+    settings: "Cài",
   };
   return labels[view];
 }
 
 function titleForView(view: View): string {
   const titles: Record<View, string> = {
-    dashboard: "Tổng quan hôm nay",
-    study: "Học hôm nay",
+    dashboard: "Hôm nay",
+    study: "Học tập",
     lessons: "Theo bài",
     wrong: "Từ cần sửa",
     mock: "Thi thử HSK4",
     plan: "Lịch ôn 30 ngày",
-    data: "Dữ liệu học",
+    data: "Dữ liệu",
+    settings: "Cài đặt",
   };
   return titles[view];
+}
+
+function formatTodayDate(): string {
+  const now = new Date();
+  const date = new Intl.DateTimeFormat("vi-VN", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(now);
+  const time = new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(now);
+
+  return `${date}, ${time} (Việt Nam)`;
 }

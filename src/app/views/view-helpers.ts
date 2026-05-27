@@ -54,12 +54,12 @@ export function vocabTable(items: VocabItem[], state: AppState): string {
               const review = state.reviews[item.id];
               return `
                 <tr>
-                  <td>B${item.lesson}</td>
-                  <td class="hanzi-cell">${escapeHtml(item.hanzi)}</td>
-                  <td>${escapeHtml(item.pinyin)}</td>
-                  <td>${escapeHtml(displayMeaning(item, state.settings.useEnglishFallback))}</td>
-                  <td>${escapeHtml(item.exampleVi || item.exampleHan || item.note)}</td>
-                  <td>${statusPill(review?.status ?? "new", review?.lastCorrect, state.settings.locale)}</td>
+                  <td data-label="Bài">B${item.lesson}</td>
+                  <td data-label="Từ Hán" class="hanzi-cell">${escapeHtml(item.hanzi)}</td>
+                  <td data-label="Pinyin">${escapeHtml(item.pinyin)}</td>
+                  <td data-label="Nghĩa">${escapeHtml(displayMeaning(item, state.settings.useEnglishFallback))}</td>
+                  <td data-label="Ví dụ">${escapeHtml(item.exampleVi || item.exampleHan || item.note)}</td>
+                  <td data-label="Trạng thái">${statusPill(review?.status ?? "new", review?.lastCorrect, state.settings.locale)}</td>
                 </tr>
               `;
             })

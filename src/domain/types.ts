@@ -57,6 +57,8 @@ export interface ReviewState {
 }
 
 export interface StudySettings {
+  displayName: string;
+  avatarInitial: string;
   startDate: string;
   dailyNewTarget: number;
   dailyReviewTarget: number;

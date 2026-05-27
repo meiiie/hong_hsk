@@ -1,147 +1,185 @@
 import { LESSON_TITLES } from "../../application/bootstrap/initial-state";
 import { HSK4_TARGETS } from "../../domain/hsk4/hsk4-targets";
-import type { AppState } from "../../domain/types";
 import { computeStats, dueItems, newItemsForLesson, wrongItems } from "../../domain/review/review-service";
+import type { AppState, DashboardStats, StudyMode, VocabItem } from "../../domain/types";
 import { icon, labelWithIcon } from "../../presentation/icons";
 import type { DataHealth } from "../app-types";
-import { escapeHtml, metric, percent, queuePreview } from "./view-helpers";
+import { escapeHtml, percent } from "./view-helpers";
 
 export function renderDashboardView(state: AppState, dataHealth: DataHealth): string {
   const stats = computeStats(state);
-  const todayLesson = Math.min(20, stats.planDay);
+  const todayLesson = Math.min(20, Math.max(1, stats.planDay));
+  const lessonTitle = LESSON_TITLES[todayLesson] ?? "";
   const newCards = newItemsForLesson(state, todayLesson);
   const due = dueItems(state);
   const wrong = wrongItems(state);
   const learnedProgress = percent(stats.learned, stats.totalItems);
   const planProgress = percent(Math.min(stats.planDay, 30), 30);
-  const meaningQualityGaps = dataHealth.missingVi + dataHealth.draftVi;
+  const readinessProgress = percent(dataHealth.total, HSK4_TARGETS.oldExamCumulativeWords);
+  const priorityCount = due.length + wrong.length;
 
   return `
-    ${renderReadinessBanner(dataHealth)}
-
-    <section class="metrics-grid">
-      ${metric("Bộ 4A/4B", `${Math.min(dataHealth.courseItems, HSK4_TARGETS.standardCourse4ReferenceItems)}/${HSK4_TARGETS.standardCourse4ReferenceItems}`, "Khung theo giáo trình chuẩn Thượng/Hạ")}
-      ${metric("Chuẩn thi HSK4 cũ", `${stats.totalItems}/${HSK4_TARGETS.oldExamCumulativeWords}`, "Mục tiêu thi là 1.200 từ tích lũy")}
-      ${metric("Cần duyệt nghĩa", meaningQualityGaps.toString(), "Thiếu nghĩa hoặc còn nghĩa nháp")}
-      ${metric("Đến hạn hôm nay", stats.dueToday.toString(), "Ưu tiên ôn trước từ mới")}
-      ${metric("Đang sai", stats.wrongOpen.toString(), "Sẽ được kéo vào vòng ôn gần")}
-      ${metric("Độ chính xác", `${stats.accuracy}%`, "Tính theo log đã chấm")}
-    </section>
-
-    <section class="progress-strip" aria-label="Tiến độ ôn tập">
-      <div>
-        <span>Tiến độ từ vựng</span>
-        <strong>${stats.learned}/${stats.totalItems}</strong>
-        <div class="progress-track"><span style="width: ${learnedProgress}%"></span></div>
-      </div>
-      <div>
-        <span>Lộ trình 30 ngày</span>
-        <strong>Ngày ${stats.planDay}</strong>
-        <div class="progress-track"><span style="width: ${planProgress}%"></span></div>
-      </div>
-      <div>
-        <span>Ưu tiên trước khi học mới</span>
-        <strong>${due.length + wrong.length}</strong>
-        <small>từ đến hạn hoặc vừa sai</small>
-      </div>
-    </section>
-
-    <section class="workbench">
-      <article class="focus-panel">
-        <div class="section-title">
-          <p class="eyebrow">Hôm nay</p>
-          <h2>Bài ${todayLesson}: ${escapeHtml(LESSON_TITLES[todayLesson] ?? "")}</h2>
-        </div>
-        <p class="lead">
-          Quy trình khuyến nghị: ôn từ đến hạn, xử lý từ sai hôm qua, rồi mới học từ mới của bài hôm nay.
-          Mỗi đáp án đều được lưu vào log để ngày sau app tự gọi lại.
-        </p>
-        <div class="today-checklist" aria-label="Thứ tự học hôm nay">
-          ${todayChecklist(due.length, wrong.length, newCards.length)}
-        </div>
-        <div class="action-row">
-          <button class="primary-button" data-study-mode="today">${labelWithIcon("calendarCheck", "Ôn theo lịch hôm nay")}</button>
-          <button class="ghost-button" data-study-mode="wrong">${labelWithIcon("rotate", "Ôn từ sai")}</button>
-          <button class="ghost-button" data-study-mode="lesson">${labelWithIcon("book", "Học bài đang chọn")}</button>
-        </div>
-      </article>
-
-      <article class="queue-panel">
-        <h3>Hàng đợi</h3>
-        ${queuePreview("Đến hạn", due, "Chưa có từ đến hạn. Hãy học bài mới trước.")}
-        ${queuePreview("Từ sai", wrong, "Chưa có từ sai mở.")}
-        ${queuePreview("Từ mới bài hôm nay", newCards, "Bài hôm nay đã hết từ mới hoặc chưa có dữ liệu.")}
-      </article>
+    <section class="today-dashboard" aria-label="Kế hoạch học hôm nay">
+      ${renderTodayHero(todayLesson, lessonTitle, due.length + wrong.length + newCards.length)}
+      ${renderReadinessStrip(dataHealth)}
+      <section class="today-grid">
+        ${renderProgressPanel(stats, dataHealth, learnedProgress, planProgress, readinessProgress, priorityCount)}
+        ${renderQueuePanel(due, wrong, newCards)}
+      </section>
     </section>
   `;
 }
 
-function renderReadinessBanner(health: DataHealth): string {
+function renderTodayHero(todayLesson: number, lessonTitle: string, queueCount: number): string {
+  return `
+    <article class="today-hero">
+      <div class="today-hero-head">
+        <div>
+          <p class="eyebrow">Kế hoạch hôm nay</p>
+          <h2>Kế hoạch học hôm nay</h2>
+        </div>
+        <span class="today-lesson-badge">
+          <small>Bài học hôm nay</small>
+          <strong>Bài ${todayLesson}</strong>
+        </span>
+      </div>
+      <div class="today-plan">
+        <div class="today-focus-card" aria-label="Bài học hôm nay">
+          <span>${icon("book")}</span>
+          <span>
+            <strong>Bài ${todayLesson}</strong>
+            <small>${escapeHtml(lessonTitle)}</small>
+          </span>
+        </div>
+        <div class="today-start-card">
+          <span>Ước tính 20-25 phút</span>
+          <strong>${queueCount} thẻ trong hàng đợi</strong>
+          <button class="primary-button today-start-button" data-study-mode="today">
+            ${labelWithIcon("playCircle", "Bắt đầu ôn")}
+          </button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderReadinessStrip(health: DataHealth): string {
+  const qualityGaps = health.missingVi + health.draftVi;
   const ready = health.examReady && health.qualityReady;
-  const statusClass = ready ? "ready" : "needs-work";
-  let title = "Dữ liệu đã sẵn sàng để ôn thi HSK4";
-  let message = "Bộ từ đã đạt mốc 1.200 từ tích lũy và không còn nghĩa Việt nháp/thiếu nghĩa. Bạn có thể tập trung vào lịch ôn.";
-
-  if (!health.qualityReady) {
-    title = "Chưa đạt chất lượng dữ liệu cuối cùng";
-    message = `${health.missingVi} từ thiếu nghĩa Việt, ${health.draftVi} nghĩa Việt còn là bản nháp cần duyệt. App sẽ không coi bộ này là sẵn sàng cho học thật cho tới khi nghĩa được kiểm chứng.`;
-  } else if (!health.courseReady) {
-    title = "Chưa đủ bộ từ theo giáo trình chuẩn 4A/4B";
-    message = `${health.courseItems}/${HSK4_TARGETS.standardCourse4ReferenceItems} mục 4A/4B hiện có. Nên nạp đủ bộ Bài 1-20 trước khi chạy lịch 30 ngày theo bài khóa.`;
-  } else if (!health.examReady) {
-    title = "Đủ khung 4A/4B, nhưng chưa đủ chuẩn thi HSK4 cũ";
-    message = `Bộ hiện tại mới đạt ${health.total}/${HSK4_TARGETS.oldExamCumulativeWords} từ so với mục tiêu HSK4 cũ 1.200 từ tích lũy. Nếu nền HSK1-3 chưa chắc, cần bổ sung khoảng ${HSK4_TARGETS.foundationHsk1To3Words} từ nền để ôn thi nghiêm túc.`;
-  }
+  const statusText = ready
+    ? "Dữ liệu sẵn sàng"
+    : health.courseReady
+      ? "Cần bổ sung nền HSK1-3"
+      : "Cần kiểm tra dữ liệu";
+  const detail = ready
+    ? "Bộ từ đủ điều kiện để tập trung vào lịch ôn."
+    : health.courseReady
+      ? `${health.total}/${HSK4_TARGETS.oldExamCumulativeWords} từ so với chuẩn HSK4 cũ.`
+      : `${health.courseItems}/${HSK4_TARGETS.standardCourse4ReferenceItems} mục 4A/4B đã có.`;
 
   return `
-    <section class="readiness-banner ${statusClass}">
-      <div class="banner-icon">${icon(ready ? "check" : "alert")}</div>
+    <article class="today-readiness-strip ${ready ? "ready" : "needs-work"}">
+      <span class="today-strip-icon">${icon(ready ? "check" : "alert")}</span>
       <div>
-        <strong>${escapeHtml(title)}</strong>
-        <p>${escapeHtml(message)}</p>
+        <strong>${escapeHtml(statusText)}</strong>
+        <p>${escapeHtml(detail)}</p>
       </div>
-      <button class="${ready ? "ghost-button" : "primary-button"}" data-view="data">
-        ${labelWithIcon("upload", ready ? "Kiểm tra dữ liệu" : "Nhập dữ liệu")}
-      </button>
-    </section>
+      <div class="today-strip-meta">
+        <span>${qualityGaps} nghĩa cần duyệt</span>
+        <button class="ghost-button" data-view="data">${labelWithIcon("database", "Dữ liệu")}</button>
+      </div>
+    </article>
   `;
 }
 
-function todayChecklist(dueCount: number, wrongCount: number, newCount: number): string {
-  const rows = [
-    {
-      iconName: "calendarCheck" as const,
-      title: "Ôn từ đến hạn",
-      value: `${dueCount} thẻ`,
-      detail: "Làm trước để giữ nhịp spaced repetition.",
-    },
-    {
-      iconName: "rotate" as const,
-      title: "Sửa từ sai gần nhất",
-      value: `${wrongCount} thẻ`,
-      detail: "Từ sai được kéo lên sớm để tránh quên dai.",
-    },
-    {
-      iconName: "book" as const,
-      title: "Học từ mới theo bài khóa",
-      value: `${newCount} thẻ`,
-      detail: "Giữ đúng thứ tự bài 1-20 của quyển Thượng/Hạ.",
-    },
-  ];
+function renderProgressPanel(
+  stats: DashboardStats,
+  health: DataHealth,
+  learnedProgress: number,
+  planProgress: number,
+  readinessProgress: number,
+  priorityCount: number,
+): string {
+  return `
+    <article class="today-progress-panel">
+      <div class="section-title">
+        <p class="eyebrow">Tiến độ</p>
+        <h2>Nhịp học của Hồng</h2>
+      </div>
+      <div class="today-progress-stack">
+        ${renderProgressRow("Từ đã học", `${stats.learned}/${stats.totalItems}`, learnedProgress, "accent")}
+        ${renderProgressRow("Lộ trình 30 ngày", `Ngày ${stats.planDay}`, planProgress, "brand")}
+        ${renderProgressRow("Chuẩn thi HSK4 cũ", `${health.total}/${HSK4_TARGETS.oldExamCumulativeWords}`, readinessProgress, "warning")}
+      </div>
+      <div class="today-mini-stats">
+        ${renderMiniStat("Cần ôn", priorityCount.toString(), "trước khi học mới")}
+        ${renderMiniStat("Chuỗi", stats.streak.toString(), "ngày duy trì")}
+        ${renderMiniStat("Độ đúng", `${stats.accuracy}%`, "theo log đã chấm")}
+      </div>
+    </article>
+  `;
+}
 
-  return rows
-    .map(
-      (row, index) => `
-        <div class="checklist-row">
-          <span class="check-index">${index + 1}</span>
-          ${icon(row.iconName)}
-          <div>
-            <strong>${escapeHtml(row.title)}</strong>
-            <small>${escapeHtml(row.detail)}</small>
-          </div>
-          <b>${escapeHtml(row.value)}</b>
-        </div>
-      `,
-    )
+function renderProgressRow(label: string, value: string, progress: number, tone: "accent" | "brand" | "warning"): string {
+  return `
+    <div class="today-progress-row">
+      <div>
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+      <div class="progress-track today-progress-track" data-tone="${tone}">
+        <span style="width: ${progress}%"></span>
+      </div>
+    </div>
+  `;
+}
+
+function renderMiniStat(label: string, value: string, hint: string): string {
+  return `
+    <div>
+      <strong>${escapeHtml(value)}</strong>
+      <span>${escapeHtml(label)}</span>
+      <small>${escapeHtml(hint)}</small>
+    </div>
+  `;
+}
+
+function renderQueuePanel(due: VocabItem[], wrong: VocabItem[], newCards: VocabItem[]): string {
+  return `
+    <article class="today-queue-panel">
+      <div class="section-title">
+        <p class="eyebrow">Hàng đợi</p>
+        <h2>Việc nên làm tiếp</h2>
+      </div>
+      <div class="today-queue-list">
+        ${renderQueueTask("Đến hạn", due, "today", "calendarCheck", "Chưa có từ đến hạn. Có thể học bài mới trước.")}
+        ${renderQueueTask("Từ sai", wrong, "wrong", "rotate", "Chưa có lỗi mở. Giữ nhịp ôn như hiện tại.")}
+        ${renderQueueTask("Từ mới bài hôm nay", newCards, "lesson", "book", "Bài hôm nay chưa có từ mới hoặc đã học hết.")}
+      </div>
+    </article>
+  `;
+}
+
+function renderQueueTask(
+  title: string,
+  items: VocabItem[],
+  mode: Extract<StudyMode, "today" | "lesson" | "wrong">,
+  iconName: "calendarCheck" | "rotate" | "book",
+  empty: string,
+): string {
+  const preview = items
+    .slice(0, 3)
+    .map((item) => `<span class="hanzi-chip">${escapeHtml(item.hanzi)}</span>`)
     .join("");
+
+  return `
+    <button class="today-queue-row" type="button" data-study-mode="${mode}" data-tone="${mode}">
+      <span class="today-queue-icon">${icon(iconName)}</span>
+      <span class="today-queue-copy">
+        <strong>${escapeHtml(title)}</strong>
+        ${items.length ? `<span class="today-queue-preview">${preview}</span>` : `<small>${escapeHtml(empty)}</small>`}
+      </span>
+      <span class="today-queue-count">${items.length}</span>
+    </button>
+  `;
 }
