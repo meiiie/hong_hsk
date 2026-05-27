@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://hsk4.holilihu.online/"><img alt="Live app" src="https://img.shields.io/badge/live-hsk4.holilihu.online-2f7d68?style=for-the-badge&logo=cloudflarepages&logoColor=white"></a>
+  <a href="https://hsk4.holilihu.online/"><img alt="Live app" src="https://img.shields.io/badge/live-hsk4.holilihu.online-9f2734?style=for-the-badge&logo=cloudflarepages&logoColor=white"></a>
   <a href="https://github.com/meiiie/hong_hsk/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/meiiie/hong_hsk/ci.yml?branch=main&style=for-the-badge&label=CI"></a>
   <img alt="PWA" src="https://img.shields.io/badge/PWA-offline_ready-9f2734?style=for-the-badge">
   <img alt="Stack" src="https://img.shields.io/badge/TypeScript%20%2B%20Vite-2026-1f3154?style=for-the-badge">
@@ -76,13 +76,16 @@ flowchart LR
 
 Các module chính:
 
-- `src/review-policy.ts`: hằng số lịch ôn và thuật toán tăng khoảng cách.
-- `src/review.ts`: chấm đáp án, tạo attempt, xếp hàng học.
-- `src/hanzi-trainer.ts`: tích hợp Hanzi Writer và dữ liệu nét.
-- `src/mock-exam.ts`: sinh đề thi thử HSK4 mô phỏng.
-- `src/import-export.ts`: nhập/xuất Excel, CSV, JSON.
-- `src/storage.ts`: IndexedDB/local state.
-- `src/i18n.ts`: nhãn tiếng Việt/Anh.
+- `src/README.md`: quy tắc DDD-lite/Clean Architecture cho source tree.
+- `src/main.ts` và `src/app/hsk-app.ts`: entrypoint mỏng và app shell.
+- `src/domain/review/review-policy.ts`: hằng số lịch ôn và thuật toán tăng khoảng cách.
+- `src/domain/review/review-service.ts`: chấm đáp án, tạo attempt, xếp hàng học.
+- `src/domain/hsk4/hsk4-excel-vocab.ts`: dữ liệu từ vựng HSK4 4A/4B đã nạp.
+- `src/infrastructure/hanzi/hanzi-stroke-trainer.ts`: tích hợp Hanzi Writer và dữ liệu nét.
+- `src/domain/exam/mock-exam.ts`: sinh đề thi thử HSK4 mô phỏng.
+- `src/infrastructure/import-export/workbook-io.ts`: nhập/xuất Excel, CSV, JSON.
+- `src/infrastructure/storage/indexeddb-state-store.ts`: IndexedDB/local state.
+- `src/presentation/i18n.ts`: nhãn tiếng Việt/Anh.
 
 ## Chạy Local
 
@@ -117,12 +120,17 @@ npm test
 
 `npm test` chạy:
 
-1. TypeScript check.
-2. Vite production build.
-3. Harness Playwright trên desktop và mobile viewport.
-4. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
+1. Agent/context harness check.
+2. Architecture boundary check cho DDD-lite source tree.
+3. TypeScript check.
+4. Vitest unit test cho review policy, review queue, answer matching và mock exam.
+5. Vite production build.
+6. Harness Playwright trên desktop và mobile viewport.
+7. Kiểm tra luồng học, nút ẩn/hiện đáp án, luyện nét, từ sai, nạp dữ liệu 621 mục và thi thử.
 
 Ảnh kiểm thử được ghi vào `artifacts/` khi chạy local/CI.
+
+Agent và người mới nên bắt đầu từ [AGENTS.md](AGENTS.md), sau đó đọc [docs/agent-context/README.md](docs/agent-context/README.md) để nắm quy tắc làm việc, bản đồ dự án, harness và bước Cloudflare còn lại.
 
 ## Deploy
 

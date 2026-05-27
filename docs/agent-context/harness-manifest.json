@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-05-26",
+  "requiredFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "src/README.md",
+    "docs/agent-context/README.md",
+    "docs/agent-context/collaboration-rules.md",
+    "docs/agent-context/project-map.md",
+    "docs/agent-context/harness.md",
+    "docs/architecture/technology-review-2026-05-26.md",
+    "docs/agent-context/cloudflare-final-step.md",
+    "docs/agent-context/handoff-notes.md",
+    ".github/workflows/ci.yml",
+    ".github/workflows/deploy-cloudflare-pages.yml",
+    "scripts/run_harness.mjs",
+    "scripts/check_architecture.mjs",
+    "scripts/check_agent_context.mjs",
+    "src/main.ts",
+    "src/application/vocab/item-collection.ts",
+    "src/application/review/submit-study-answer.ts",
+    "src/application/vocab/replace-vocabulary.ts",
+    "src/application/ports/app-state-store.ts",
+    "src/application/ports/speech-player.ts",
+    "src/application/ports/vocabulary-io.ts",
+    "src/app/app-dependencies.ts",
+    "src/app/events/app-event-binder.ts",
+    "src/app/workflows/mock-exam-workflow.ts",
+    "src/app/workflows/settings-workflow.ts",
+    "src/app/workflows/study-workflow.ts",
+    "src/app/workflows/stroke-practice-workflow.ts",
+    "src/infrastructure/speech/chinese-speech.ts",
+    "src/shared/number-utils.ts",
+    "tests/unit/factories.ts",
+    "tests/unit/item-collection.test.ts",
+    "tests/unit/mock-exam.test.ts",
+    "tests/unit/mock-exam-workflow.test.ts",
+    "tests/unit/review-policy.test.ts",
+    "tests/unit/review-service.test.ts",
+    "tests/unit/replace-vocabulary.test.ts",
+    "tests/unit/settings-workflow.test.ts",
+    "tests/unit/study-workflow.test.ts",
+    "tests/unit/submit-study-answer.test.ts",
+    "tests/verify_hsk_pwa.py",
+    "tests/verify_hsk_mobile_mock.py"
+  ],
+  "requiredPackageScripts": [
+    "context:check",
+    "architecture:check",
+    "check",
+    "test:unit",
+    "build",
+    "test:harness",
+    "test",
+    "deploy:cf"
+  ],
+  "criticalWorkflowMarkers": {
+    ".github/workflows/ci.yml": [
+      "npm test",
+      "npm audit --audit-level=high",
+      "actions/upload-artifact"
+    ],
+    ".github/workflows/deploy-cloudflare-pages.yml": [
+      "workflow_run",
+      "CI",
+      "cloudflare-pages-production",
+      "CLOUDFLARE_API_TOKEN",
+      "pages deploy dist --project-name hong-hsk4-studio --branch main"
+    ]
+  }
+}

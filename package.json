@@ -17,7 +17,10 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "check": "tsc --noEmit",
-    "test": "npm run check && npm run build && npm run test:harness",
+    "architecture:check": "node scripts/check_architecture.mjs",
+    "context:check": "node scripts/check_agent_context.mjs",
+    "test": "npm run context:check && npm run architecture:check && npm run check && npm run test:unit && npm run build && npm run test:harness",
+    "test:unit": "vitest run",
     "test:harness": "node scripts/run_harness.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "preview:cf": "npm run build && wrangler pages dev dist --port 8788",
@@ -26,6 +29,7 @@
     "docker:run": "docker run --rm -p 8080:80 hong-hsk4-studio:local"
   },
   "dependencies": {
+    "animejs": "^4.4.1",
     "hanzi-writer": "^3.7.3",
     "lucide": "^1.16.0",
     "read-excel-file": "^9.0.10",
@@ -34,6 +38,7 @@
   "devDependencies": {
     "typescript": "^6.0.3",
     "vite": "^8.0.14",
+    "vitest": "^4.1.7",
     "wrangler": "^4.94.0"
   }
 }

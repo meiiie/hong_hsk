@@ -1,0 +1,43 @@
+# Sidebar UX/Motion Lab
+
+## Decision
+
+Do not switch the whole product back to green. The issue was that the first coded sidebar used too much high-intensity red across a large surface. The corrected direction keeps the Hồng red seal identity, but moves the expanded sidebar body to warm paper/ivory and reserves red for the brand header, active state, CTA, and collapsed rail.
+
+## Implementation Direction
+
+- Expanded desktop: warm paper sidebar body, red brand header, blush active item, ink text.
+- Collapsed desktop/tablet: narrow burgundy icon rail, tooltip/title labels, no text crowding.
+- Mobile: keep bottom navigation light and thumb-friendly; it should not inherit collapsed desktop styling.
+- Motion: 160-220ms, ease-out, opacity/width transitions only. No bounce, no 3D, no particle effects.
+- Accessibility: honor `prefers-reduced-motion`, keep focus-visible rings, and keep labels available through `aria-label`/`title` when collapsed.
+
+## Micro Spec
+
+- Expanded sidebar width: 248px.
+- Collapsed rail width: 76px, with 48px icon-only hit targets.
+- Sidebar radius: 8px for nav items, rail controls, and progress card.
+- Brand header: 84px cap, full sidebar width, 48px seal in expanded mode, 44px seal in collapsed mode, soft burgundy gradient, no nested-card border.
+- Navigation item: 48px height, 14px label, 18px icon, 12px icon-label gap.
+- Navigation weight: 500 by default, 600 when active.
+- Active state: stronger flat blush background, red text/icon, 2px left active rail, no full red border, no 3D shadow.
+- Footer: compact learner row, one progress bar, three short meta labels, and a short `Ôn ngay` CTA. Avoid stacked stat blocks that make the bottom feel heavy.
+- Mobile bottom bar: fixed five-item grid, no horizontal scrolling, `Học / Ôn / Bài / Thi / Thêm`, active state uses blush fill plus a small red indicator.
+- Mobile overflow: `Thêm` opens a bottom sheet for `Từ sai`, `Lịch 30 ngày`, and `Dữ liệu`.
+- CTA: 14px label, medium-bold weight, solid brand fill, restrained shadow.
+- Brand lockup: `Hồng HSK4` as the title and `Studio 4A/4B` as the meta line to avoid wrapping or clipped text.
+
+## Library Decision
+
+Anime.js is now lazy-loaded as a presentation-only micro-interaction layer under `src/presentation/motion/`. Keep large layout changes such as sidebar width and mobile bottom-bar placement in CSS. Use Anime.js only after render through `data-motion` hooks for short feedback, active-state, progress, and footer entrance animations. Every motion helper must honor `prefers-reduced-motion`.
+
+- Anime.js timeline: good fit for complex, authored UI/stroke sequences when a future screen needs sequencing.
+- GSAP matchMedia: good fit for large animation systems with responsive/reduced-motion branches.
+- Tailwind CSS v4: useful if the whole project moves to a utility/token workflow, but not worth migrating just for the sidebar.
+
+## References
+
+- MDN `prefers-reduced-motion`: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+- GSAP `matchMedia`: https://gsap.com/docs/v3/GSAP/gsap.matchMedia/
+- Anime.js documentation: https://animejs.com/documentation/
+- Tailwind CSS theme variables: https://tailwindcss.com/docs/theme
