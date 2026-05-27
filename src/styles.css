@@ -670,16 +670,6 @@ button:disabled {
   letter-spacing: 0;
 }
 
-.example {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border-left: 4px solid var(--blue);
-  border-radius: 8px;
-  background: var(--blue-soft);
-  color: #2a3b68;
-}
-
 .answer-form {
   display: grid;
   gap: 10px;
@@ -977,6 +967,185 @@ button:disabled {
   color: #ffffff;
   border-color: var(--blue);
   background: var(--blue);
+}
+
+.lesson-listening {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.lesson-listening-head,
+.lesson-track-main,
+.lesson-audio-player {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.lesson-listening-head h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.lesson-source-link {
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lesson-track-list {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.lesson-track {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.lesson-track:first-child {
+  border-top: 0;
+}
+
+.lesson-track.active {
+  background: var(--panel-soft);
+}
+
+.lesson-track-title {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lesson-track-title span {
+  justify-self: start;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.lesson-track-title strong {
+  color: var(--ink);
+}
+
+.lesson-track-title small {
+  color: var(--muted);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.lesson-track-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.lesson-audio-panel {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.lesson-audio-player audio {
+  width: 100%;
+  min-width: 0;
+}
+
+.speed-controls {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.speed-controls button {
+  min-width: 48px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.speed-controls button.active {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.audio-error {
+  margin: 0;
+  color: var(--red);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.lesson-transcript-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed #b8c2d6;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.lesson-transcript-text {
+  color: var(--ink);
+  font-family: var(--hanzi-font);
+  font-size: 1.12rem;
+  font-weight: 650;
+  line-height: 1.7;
+}
+
+.transcript-form {
+  display: grid;
+  gap: 8px;
+}
+
+.transcript-form label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.transcript-form textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 11px 12px;
+  border: 2px solid #b8c2d6;
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+  font-family: var(--hanzi-font);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.transcript-form textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+  outline: none;
+}
+
+.transcript-form button {
+  justify-self: start;
 }
 
 .table-head {
@@ -1768,6 +1937,25 @@ meter {
 
   .main {
     padding: 14px 14px calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .lesson-listening-head,
+  .lesson-track-main,
+  .lesson-audio-player {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-track-actions {
+    justify-content: stretch;
+  }
+
+  .lesson-track-actions .primary-button,
+  .lesson-track-actions .ghost-button {
+    flex: 1 1 138px;
+  }
+
+  .lesson-source-link {
+    white-space: normal;
   }
 
   .primary-button,

@@ -31,6 +31,12 @@ import { countDraftVietnameseMeanings, isDraftVietnameseMeaning } from "./data-e
 import { HSK4_TARGETS } from "./hsk4-targets";
 import { HSK4_EXCEL_SOURCE } from "./hsk4-excel-vocab";
 import {
+  extractBlcupAudioUrl,
+  findLessonListeningTrack,
+  getLessonListeningTracks,
+  type LessonListeningTrack,
+} from "./lesson-listening";
+import {
   HSK4_MOCK_BLUEPRINT,
   HSK4_MOCK_SPEC,
   HSK4_MOCK_SETS,
@@ -55,6 +61,14 @@ interface DataHealth {
   qualityReady: boolean;
 }
 
+interface LessonAudioState {
+  trackId?: string;
+  audioUrl?: string;
+  loadingTrackId?: string;
+  error?: string;
+  playbackRate: number;
+}
+
 class HskApp {
   private state!: AppState;
   private activeView: View = "dashboard";
@@ -68,6 +82,10 @@ class HskApp {
   private mockExamIndex = 0;
   private selectedMockSetId = HSK4_MOCK_SETS[0].id;
   private examClockId: number | undefined;
+  private lessonAudio: LessonAudioState = { playbackRate: 1 };
+  private readonly lessonAudioCache = new Map<string, string>();
+  private lessonTranscriptTrackId: string | undefined;
+  private lessonTranscripts = loadLessonTranscripts();
   private feedback:
     | {
         itemId: string;
@@ -381,14 +399,6 @@ class HskApp {
                 ? `<p class="pinyin">${escapeHtml(item.pinyin || "Chưa có pinyin")}</p>`
                 : ""
             }
-            ${
-              item.exampleHan || item.exampleVi
-                ? `<div class="example">
-                    <span>${escapeHtml(item.exampleVi || "Ví dụ")}</span>
-                    ${feedback ? `<strong>${escapeHtml(item.exampleHan)}</strong>` : ""}
-                  </div>`
-                : ""
-            }
           </div>
 
           <form class="answer-form" data-answer-form>
@@ -563,8 +573,122 @@ class HskApp {
             <button class="ghost-button" data-export-csv>${labelWithIcon("download", "Xuất CSV")}</button>
           </div>
           ${vocabTable(items, this.state)}
+          ${this.renderLessonListening(selected)}
         </article>
       </section>
+    `;
+  }
+
+  private renderLessonListening(lesson: number): string {
+    const tracks = getLessonListeningTracks(lesson);
+    if (!tracks.length) {
+      return "";
+    }
+
+    return `
+      <section class="lesson-listening" aria-labelledby="lesson-listening-title">
+        <div class="lesson-listening-head">
+          <div>
+            <p class="eyebrow">Nghe bài khóa</p>
+            <h3 id="lesson-listening-title">Bài ${lesson}: nghe rồi chép lại</h3>
+          </div>
+          <a class="ghost-button lesson-source-link" href="${escapeAttribute(tracks[0].seriesUrl)}" target="_blank" rel="noreferrer">
+            ${labelWithIcon("fileText", "Nguồn BLCUP")}
+          </a>
+        </div>
+        <div class="lesson-track-list">
+          ${tracks.map((track) => this.renderLessonTrack(track)).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  private renderLessonTrack(track: LessonListeningTrack): string {
+    const active = this.lessonAudio.trackId === track.id;
+    const loading = this.lessonAudio.loadingTrackId === track.id;
+    const transcriptOpen = this.lessonTranscriptTrackId === track.id;
+    const transcript = this.lessonTranscripts[track.id]?.trim() ?? "";
+
+    return `
+      <div class="lesson-track ${active ? "active" : ""}">
+        <div class="lesson-track-main">
+          <div class="lesson-track-title">
+            <span>${escapeHtml(track.label)}</span>
+            <strong>${escapeHtml(track.title)}</strong>
+            <small>${escapeHtml(track.sourceTitle)}</small>
+          </div>
+          <div class="lesson-track-actions">
+            <button type="button" class="primary-button" data-lesson-audio="${escapeAttribute(track.id)}" ${loading ? "disabled" : ""}>
+              ${labelWithIcon(loading ? "clock" : "volume", loading ? "Đang mở" : active ? "Nghe lại" : "Nghe")}
+            </button>
+            <button type="button" class="ghost-button" data-transcript-toggle="${escapeAttribute(track.id)}">
+              ${labelWithIcon(transcriptOpen ? "eyeOff" : "eye", transcriptOpen ? "Ẩn transcript" : "Xem transcript")}
+            </button>
+            <a class="ghost-button lesson-source-link" href="${escapeAttribute(track.resourceUrl)}" target="_blank" rel="noreferrer">
+              ${labelWithIcon("fileText", "Nguồn")}
+            </a>
+          </div>
+        </div>
+        ${
+          active
+            ? `<div class="lesson-audio-panel">
+                ${
+                  loading
+                    ? `<p class="muted">Đang lấy audio từ BLCUP...</p>`
+                    : this.lessonAudio.audioUrl
+                      ? this.renderLessonAudioPlayer(track)
+                      : ""
+                }
+                ${this.lessonAudio.error ? `<p class="audio-error">${escapeHtml(this.lessonAudio.error)}</p>` : ""}
+              </div>`
+            : ""
+        }
+        ${transcriptOpen ? this.renderTranscriptPanel(track, transcript) : ""}
+      </div>
+    `;
+  }
+
+  private renderLessonAudioPlayer(track: LessonListeningTrack): string {
+    const rates = [0.75, 1, 1.25];
+    return `
+      <div class="lesson-audio-player">
+        <audio
+          controls
+          preload="none"
+          src="${escapeAttribute(this.lessonAudio.audioUrl ?? "")}"
+          data-lesson-audio-player="${escapeAttribute(track.id)}"
+        ></audio>
+        <div class="speed-controls" aria-label="Tốc độ nghe">
+          ${rates
+            .map(
+              (rate) => `
+                <button
+                  type="button"
+                  class="${this.lessonAudio.playbackRate === rate ? "active" : ""}"
+                  data-lesson-audio-speed="${rate}"
+                >${rate}x</button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderTranscriptPanel(track: LessonListeningTrack, transcript: string): string {
+    return `
+      <div class="lesson-transcript-panel">
+        ${
+          transcript
+            ? `<div class="lesson-transcript-text" lang="zh-Hans">${formatTranscript(transcript)}</div>`
+            : `<p class="muted">Chưa có transcript chữ Hán cho đoạn này trong app.</p>`
+        }
+        <form class="transcript-form" data-transcript-form="${escapeAttribute(track.id)}">
+          <label for="transcript-${escapeAttribute(track.id)}">Transcript chữ Hán</label>
+          <textarea id="transcript-${escapeAttribute(track.id)}" rows="4" placeholder="Dán chữ Hán để lần sau bấm xem transcript...">${escapeHtml(transcript)}</textarea>
+          <button type="submit" class="ghost-button">${labelWithIcon("check", "Lưu transcript")}</button>
+        </form>
+      </div>
     `;
   }
 
@@ -1068,6 +1192,8 @@ class HskApp {
     this.root.querySelectorAll<HTMLButtonElement>("[data-lesson]").forEach((button) => {
       button.addEventListener("click", async () => {
         this.state.settings.selectedLesson = Number(button.dataset.lesson);
+        this.lessonAudio = { playbackRate: this.lessonAudio.playbackRate };
+        this.lessonTranscriptTrackId = undefined;
         await this.persist();
         this.render();
       });
@@ -1254,6 +1380,56 @@ class HskApp {
         this.speakChinese(button.dataset.playAudio ?? "");
       });
     });
+
+    this.root.querySelectorAll<HTMLButtonElement>("[data-lesson-audio]").forEach((button) => {
+      button.addEventListener("click", () => {
+        void this.handleLessonAudio(button.dataset.lessonAudio ?? "");
+      });
+    });
+
+    this.root.querySelectorAll<HTMLButtonElement>("[data-transcript-toggle]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const trackId = button.dataset.transcriptToggle;
+        this.lessonTranscriptTrackId = this.lessonTranscriptTrackId === trackId ? undefined : trackId;
+        this.render();
+      });
+    });
+
+    this.root.querySelectorAll<HTMLButtonElement>("[data-lesson-audio-speed]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const rate = Number(button.dataset.lessonAudioSpeed);
+        if (!Number.isFinite(rate)) {
+          return;
+        }
+        this.lessonAudio.playbackRate = rate;
+        const audio = this.root.querySelector<HTMLAudioElement>("[data-lesson-audio-player]");
+        if (audio) {
+          audio.playbackRate = rate;
+        }
+        this.root.querySelectorAll<HTMLButtonElement>("[data-lesson-audio-speed]").forEach((speedButton) => {
+          speedButton.classList.toggle("active", speedButton === button);
+        });
+      });
+    });
+
+    this.root.querySelectorAll<HTMLFormElement>("[data-transcript-form]").forEach((form) => {
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const trackId = form.dataset.transcriptForm;
+        const transcript = form.querySelector<HTMLTextAreaElement>("textarea")?.value.trim() ?? "";
+        if (!trackId) {
+          return;
+        }
+        if (transcript) {
+          this.lessonTranscripts[trackId] = transcript;
+        } else {
+          delete this.lessonTranscripts[trackId];
+        }
+        saveLessonTranscripts(this.lessonTranscripts);
+        this.lessonTranscriptTrackId = trackId;
+        this.render();
+      });
+    });
   }
 
   private saveMockAnswer(answer: string): void {
@@ -1283,6 +1459,86 @@ class HskApp {
       utterance.voice = voice;
     }
     window.speechSynthesis.speak(utterance);
+  }
+
+  private async handleLessonAudio(trackId: string): Promise<void> {
+    const track = findLessonListeningTrack(trackId);
+    if (!track) {
+      return;
+    }
+
+    this.lessonAudio = {
+      ...this.lessonAudio,
+      trackId: track.id,
+      audioUrl: this.lessonAudioCache.get(track.id),
+      loadingTrackId: this.lessonAudioCache.has(track.id) ? undefined : track.id,
+      error: undefined,
+    };
+    this.render();
+
+    try {
+      const audioUrl = await this.resolveLessonAudioUrl(track);
+      if (this.lessonAudio.trackId !== track.id) {
+        return;
+      }
+      this.lessonAudio = {
+        ...this.lessonAudio,
+        trackId: track.id,
+        audioUrl,
+        loadingTrackId: undefined,
+        error: undefined,
+      };
+      this.render();
+      queueMicrotask(() => this.playLessonAudioElement(track.id));
+    } catch {
+      if (this.lessonAudio.trackId !== track.id) {
+        return;
+      }
+      this.lessonAudio = {
+        ...this.lessonAudio,
+        loadingTrackId: undefined,
+        error: "Không mở được audio từ BLCUP. Bạn có thể bấm Nguồn để nghe trực tiếp.",
+      };
+      this.render();
+    }
+  }
+
+  private async resolveLessonAudioUrl(track: LessonListeningTrack): Promise<string> {
+    const cached = this.lessonAudioCache.get(track.id);
+    if (cached) {
+      return cached;
+    }
+
+    const response = await fetch(track.viewUrl);
+    if (!response.ok) {
+      throw new Error(`BLCUP audio ${response.status}`);
+    }
+
+    const audioUrl = extractBlcupAudioUrl(await response.text());
+    if (!audioUrl) {
+      throw new Error("Missing BLCUP audio source");
+    }
+
+    this.lessonAudioCache.set(track.id, audioUrl);
+    return audioUrl;
+  }
+
+  private playLessonAudioElement(trackId: string): void {
+    const audio = this.root.querySelector<HTMLAudioElement>(
+      `[data-lesson-audio-player="${CSS.escape(trackId)}"]`,
+    );
+    if (!audio) {
+      return;
+    }
+
+    audio.playbackRate = this.lessonAudio.playbackRate;
+    void audio.play().catch(() => {
+      this.lessonAudio = {
+        ...this.lessonAudio,
+        error: "Trình duyệt chặn tự phát. Bấm play trong thanh nghe để bắt đầu.",
+      };
+      this.render();
+    });
   }
 
   private syncExamClock(): void {
@@ -1519,6 +1775,40 @@ function displayMeaning(item: VocabItem, useEnglishFallback: boolean): string {
     return item.meaningEn;
   }
   return "Thiếu nghĩa tiếng Việt";
+}
+
+const LESSON_TRANSCRIPTS_KEY = "hong-hsk4-lesson-transcripts-v1";
+
+function loadLessonTranscripts(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(LESSON_TRANSCRIPTS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+
+    const transcripts: Record<string, string> = {};
+    Object.entries(parsed).forEach(([key, value]) => {
+      if (typeof value === "string") {
+        transcripts[key] = value;
+      }
+    });
+    return transcripts;
+  } catch {
+    return {};
+  }
+}
+
+function saveLessonTranscripts(transcripts: Record<string, string>): void {
+  try {
+    localStorage.setItem(LESSON_TRANSCRIPTS_KEY, JSON.stringify(transcripts));
+  } catch {
+    // Local transcript notes are optional; keep the study flow working if storage is full.
+  }
+}
+
+function formatTranscript(value: string): string {
+  return escapeHtml(value).replace(/\r?\n/g, "<br>");
 }
 
 function extractHanziChars(value: string): string[] {
