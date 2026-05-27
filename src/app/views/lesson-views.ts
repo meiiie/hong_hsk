@@ -1,11 +1,25 @@
 import { LESSON_TITLES } from "../../application/bootstrap/initial-state";
+import {
+  getLessonListeningTracks,
+  type LessonListeningTrack,
+} from "../../domain/hsk4/lesson-listening";
 import { progressForLesson, wrongItems } from "../../domain/review/review-service";
 import type { AppState, VocabItem } from "../../domain/types";
 import { icon, labelWithIcon } from "../../presentation/icons";
 import { toDateKey } from "../../shared/date-utils";
-import { emptyBlock, escapeHtml, percent, vocabTable } from "./view-helpers";
+import { emptyBlock, escapeAttribute, escapeHtml, percent, vocabTable } from "./view-helpers";
 
-export function renderLessonsView(state: AppState): string {
+export interface LessonListeningViewState {
+  trackId?: string;
+  audioUrl?: string;
+  loadingTrackId?: string;
+  error?: string;
+  playbackRate: number;
+  transcriptTrackId?: string;
+  transcripts: Record<string, string>;
+}
+
+export function renderLessonsView(state: AppState, listening?: LessonListeningViewState): string {
   const selected = state.settings.selectedLesson;
   const items = state.items
     .filter((item) => item.lesson === selected)
@@ -65,6 +79,7 @@ export function renderLessonsView(state: AppState): string {
           </div>
 
           ${vocabTable(items, state)}
+          ${renderLessonListening(selected, listening)}
         </article>
       </section>
     </section>
@@ -147,6 +162,119 @@ function lessonStat(label: string, value: number, iconName: "book" | "rotate" | 
   `;
 }
 
+function renderLessonListening(lesson: number, listening?: LessonListeningViewState): string {
+  const tracks = getLessonListeningTracks(lesson);
+  if (!tracks.length) {
+    return "";
+  }
+  const viewState = listening ?? { playbackRate: 1, transcripts: {} };
+
+  return `
+    <section class="lesson-listening" aria-labelledby="lesson-listening-title">
+      <div class="lesson-listening-head">
+        <div>
+          <p class="eyebrow">Nghe bài khóa</p>
+          <h3 id="lesson-listening-title">Bài ${lesson}: nghe rồi chép lại</h3>
+        </div>
+        <a class="ghost-button lesson-source-link" href="${escapeAttribute(tracks[0].seriesUrl)}" target="_blank" rel="noreferrer">
+          ${labelWithIcon("fileText", "Nguồn BLCUP")}
+        </a>
+      </div>
+      <div class="lesson-track-list">
+        ${tracks.map((track) => renderLessonTrack(track, viewState)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderLessonTrack(track: LessonListeningTrack, listening: LessonListeningViewState): string {
+  const active = listening.trackId === track.id;
+  const loading = listening.loadingTrackId === track.id;
+  const transcriptOpen = listening.transcriptTrackId === track.id;
+  const transcript = listening.transcripts[track.id]?.trim() ?? "";
+
+  return `
+    <article class="lesson-track ${active ? "active" : ""}">
+      <div class="lesson-track-main">
+        <div class="lesson-track-title">
+          <strong>${escapeHtml(track.title)}</strong>
+          <small>${escapeHtml(track.sourceTitle)}</small>
+        </div>
+        <div class="lesson-track-actions">
+          <button type="button" class="primary-button" data-lesson-audio="${escapeAttribute(track.id)}" ${loading ? "disabled" : ""}>
+            ${labelWithIcon(loading ? "clock" : "volume", loading ? "Đang mở" : active ? "Nghe lại" : "Nghe")}
+          </button>
+          <button type="button" class="ghost-button" data-transcript-toggle="${escapeAttribute(track.id)}">
+            ${labelWithIcon(transcriptOpen ? "eyeOff" : "eye", transcriptOpen ? "Ẩn transcript" : "Xem transcript")}
+          </button>
+          <a class="ghost-button lesson-source-link" href="${escapeAttribute(track.resourceUrl)}" target="_blank" rel="noreferrer">
+            ${labelWithIcon("fileText", "Nguồn")}
+          </a>
+        </div>
+      </div>
+      ${
+        active
+          ? `<div class="lesson-audio-panel">
+              ${
+                loading
+                  ? `<p class="muted">Đang lấy audio từ BLCUP...</p>`
+                  : listening.audioUrl
+                    ? renderLessonAudioPlayer(track, listening)
+                    : ""
+              }
+              ${listening.error ? `<p class="audio-error">${escapeHtml(listening.error)}</p>` : ""}
+            </div>`
+          : ""
+      }
+      ${transcriptOpen ? renderTranscriptPanel(track, transcript) : ""}
+    </article>
+  `;
+}
+
+function renderLessonAudioPlayer(track: LessonListeningTrack, listening: LessonListeningViewState): string {
+  const rates = [0.75, 1, 1.25];
+  return `
+    <div class="lesson-audio-player">
+      <audio
+        controls
+        preload="none"
+        src="${escapeAttribute(listening.audioUrl ?? "")}"
+        data-lesson-audio-player="${escapeAttribute(track.id)}"
+      ></audio>
+      <div class="speed-controls" aria-label="Tốc độ nghe">
+        ${rates
+          .map(
+            (rate) => `
+              <button
+                type="button"
+                class="${listening.playbackRate === rate ? "active" : ""}"
+                data-lesson-audio-speed="${rate}"
+              >${rate}x</button>
+            `,
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderTranscriptPanel(track: LessonListeningTrack, transcript: string): string {
+  return `
+    <div class="lesson-transcript-panel">
+      ${
+        transcript
+          ? `<div class="lesson-transcript-text" lang="zh-Hans">${formatTranscript(transcript)}</div>`
+          : `<p class="muted">Chưa có transcript chữ Hán cho đoạn này trong app.</p>`
+      }
+      <form class="transcript-form" data-transcript-form="${escapeAttribute(track.id)}">
+        <label for="transcript-${escapeAttribute(track.id)}">Transcript chữ Hán</label>
+        <textarea id="transcript-${escapeAttribute(track.id)}" rows="4" placeholder="Dán chữ Hán để lần sau bấm xem transcript...">${escapeHtml(transcript)}</textarea>
+        <button type="submit" class="ghost-button">${labelWithIcon("check", "Lưu transcript")}</button>
+      </form>
+    </div>
+  `;
+}
+
 function recoveryMetric(label: string, value: number, hint: string, iconName: "rotate" | "calendarCheck" | "alert"): string {
   return `
     <article class="recovery-metric">
@@ -158,6 +286,10 @@ function recoveryMetric(label: string, value: number, hint: string, iconName: "r
       <em>${escapeHtml(hint)}</em>
     </article>
   `;
+}
+
+function formatTranscript(value: string): string {
+  return escapeHtml(value).replace(/\r?\n/g, "<br>");
 }
 
 function recoveryPreviewItem(item: VocabItem, state: AppState): string {

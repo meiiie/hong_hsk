@@ -36,6 +36,10 @@ export interface AppEventHandlers {
   appendExamFragment(currentValue: string, fragment: string): string;
   clearExamAnswer(): void;
   playAudio(text: string): void;
+  playLessonAudio(trackId: string): void | Promise<void>;
+  toggleLessonTranscript(trackId: string): void;
+  setLessonAudioSpeed(rate: number): void;
+  saveLessonTranscript(trackId: string, transcript: string): void;
 }
 
 export function bindAppEvents(root: HTMLElement, handlers: AppEventHandlers): void {
@@ -45,6 +49,7 @@ export function bindAppEvents(root: HTMLElement, handlers: AppEventHandlers): vo
   bindData(root, handlers);
   bindMockExam(root, handlers);
   bindAudio(root, handlers);
+  bindLessonListening(root, handlers);
 }
 
 function bindNavigation(root: HTMLElement, handlers: AppEventHandlers): void {
@@ -283,6 +288,34 @@ function bindAudio(root: HTMLElement, handlers: AppEventHandlers): void {
   root.querySelectorAll<HTMLButtonElement>("[data-play-audio]").forEach((button) => {
     button.addEventListener("click", () => {
       handlers.playAudio(button.dataset.playAudio ?? "");
+    });
+  });
+}
+
+function bindLessonListening(root: HTMLElement, handlers: AppEventHandlers): void {
+  root.querySelectorAll<HTMLButtonElement>("[data-lesson-audio]").forEach((button) => {
+    button.addEventListener("click", () => {
+      void handlers.playLessonAudio(button.dataset.lessonAudio ?? "");
+    });
+  });
+
+  root.querySelectorAll<HTMLButtonElement>("[data-transcript-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      handlers.toggleLessonTranscript(button.dataset.transcriptToggle ?? "");
+    });
+  });
+
+  root.querySelectorAll<HTMLButtonElement>("[data-lesson-audio-speed]").forEach((button) => {
+    button.addEventListener("click", () => {
+      handlers.setLessonAudioSpeed(Number(button.dataset.lessonAudioSpeed) || 1);
+    });
+  });
+
+  root.querySelectorAll<HTMLFormElement>("[data-transcript-form]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const textarea = form.querySelector<HTMLTextAreaElement>("textarea");
+      handlers.saveLessonTranscript(form.dataset.transcriptForm ?? "", textarea?.value ?? "");
     });
   });
 }
