@@ -177,7 +177,7 @@ function renderLessonListening(lesson: number, listening?: LessonListeningViewSt
           <h3 id="lesson-listening-title">Bài ${lesson}: nghe rồi chép lại</h3>
         </div>
         <a class="ghost-button lesson-source-link" href="${escapeAttribute(tracks[0].seriesUrl)}" target="_blank" rel="noreferrer">
-          ${labelWithIcon("fileText", "Nguồn BLCUP")}
+          ${labelWithIcon("fileText", "Nguồn Nhân Trí Việt")}
         </a>
       </div>
       <div class="lesson-track-list">
@@ -217,7 +217,7 @@ function renderLessonTrack(track: LessonListeningTrack, listening: LessonListeni
           ? `<div class="lesson-audio-panel">
               ${
                 loading
-                  ? `<p class="muted">Đang lấy audio từ BLCUP...</p>`
+                  ? `<p class="muted">Đang lấy audio từ Nhân Trí Việt...</p>`
                   : listening.audioUrl
                     ? renderLessonAudioPlayer(track, listening)
                     : ""

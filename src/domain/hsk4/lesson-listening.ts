@@ -4,10 +4,9 @@ export const HSK4_LEVEL_SOURCE_URL =
   "https://www.hskstandardcourse.com/hsk-standard-course-level-4/";
 
 const BLCUP_ORIGIN = "https://www.blcup.com";
-const BLCUP_4A_SERIES_URL =
-  "https://www.blcup.com/MobileResSeries?rid=009861d5-008b-495d-ae7a-23482ec05ad7";
-const BLCUP_4B_SERIES_URL =
-  "https://www.blcup.com/MobileResSeries?rid=3ddee33f-4951-4075-8698-18b1ef0190e0";
+const NHAN_TRI_VIET_CDN_ORIGIN = "https://ntvcdn.b-cdn.net";
+const NHAN_TRI_VIET_4A_SERIES_URL = "https://www.nhantriviet.com/MP3-HSK4-BH1";
+const NHAN_TRI_VIET_4B_SERIES_URL = "https://www.nhantriviet.com/MP3-HSK4-BH2";
 
 const RESOURCE_IDS_BY_LESSON: Record<number, readonly string[]> = {
   1: [
@@ -330,10 +329,16 @@ export function findLessonListeningTrack(id: string): LessonListeningTrack | und
 function buildTrack(lesson: number, track: number, resourceId: string): LessonListeningTrack {
   const book: BookCode = lesson <= 10 ? "4A" : "4B";
   const label = `${String(lesson).padStart(2, "0")}-${track}`;
-  const audioFilePath = AUDIO_FILE_PATHS_BY_LESSON[lesson]?.[track - 1];
-  if (!audioFilePath) {
-    throw new Error(`Missing BLCUP audio path for lesson ${lesson}-${track}`);
+  const fallbackAudioFilePath = AUDIO_FILE_PATHS_BY_LESSON[lesson]?.[track - 1];
+  const audioUrl =
+    buildNhanTriVietAudioUrl(lesson, track) ??
+    (fallbackAudioFilePath ? new URL(fallbackAudioFilePath, BLCUP_ORIGIN).href : undefined);
+  if (!audioUrl) {
+    throw new Error(`Missing audio path for lesson ${lesson}-${track}`);
   }
+  const resourceUrl =
+    buildNhanTriVietTrackSourceUrl(lesson, track) ??
+    `${BLCUP_ORIGIN}/MobileResource?rid=${resourceId}`;
   const sourceTitle =
     book === "4A"
       ? `HSK标准教程4上 ${label}`
@@ -348,8 +353,40 @@ function buildTrack(lesson: number, track: number, resourceId: string): LessonLi
     title: `Đoạn ${track}`,
     sourceTitle,
     resourceId,
-    resourceUrl: `${BLCUP_ORIGIN}/MobileResource?rid=${resourceId}`,
-    audioUrl: new URL(audioFilePath, BLCUP_ORIGIN).href,
-    seriesUrl: book === "4A" ? BLCUP_4A_SERIES_URL : BLCUP_4B_SERIES_URL,
+    resourceUrl,
+    audioUrl,
+    seriesUrl: getNhanTriVietSeriesUrl(book),
   };
+}
+
+function getNhanTriVietSeriesUrl(book: BookCode): string {
+  return book === "4A" ? NHAN_TRI_VIET_4A_SERIES_URL : NHAN_TRI_VIET_4B_SERIES_URL;
+}
+
+function buildNhanTriVietAudioUrl(lesson: number, track: number): string | undefined {
+  if (!isKnownLessonTrack(lesson, track)) {
+    return undefined;
+  }
+
+  const volume = lesson <= 10 ? 1 : 2;
+  const label = `${String(lesson).padStart(2, "0")}-${track}`;
+  const fileName = `${label}-Giáo-trình-chuẩn-HSK-4-Tập-${volume}.mp3`;
+  return new URL(`/ntv/wp-content/uploads/2019/10/${fileName}`, NHAN_TRI_VIET_CDN_ORIGIN).href;
+}
+
+function buildNhanTriVietTrackSourceUrl(lesson: number, track: number): string | undefined {
+  if (!isKnownLessonTrack(lesson, track)) {
+    return undefined;
+  }
+
+  const seriesUrl = lesson <= 10 ? NHAN_TRI_VIET_4A_SERIES_URL : NHAN_TRI_VIET_4B_SERIES_URL;
+  const lessonInBook = lesson <= 10 ? lesson : lesson - 10;
+  const galleryItem = (lessonInBook - 1) * 5 + track;
+  const sourceUrl = new URL(seriesUrl);
+  sourceUrl.searchParams.set("audiogallery_startitem_ag1", String(galleryItem));
+  return sourceUrl.href;
+}
+
+function isKnownLessonTrack(lesson: number, track: number): boolean {
+  return lesson >= 1 && lesson <= 20 && track >= 1 && track <= 5;
 }

@@ -79,7 +79,8 @@ def main() -> None:
         expect(audio).to_be_visible()
         audio_src = audio.get_attribute("src")
         assert audio_src is not None
-        assert "/File/Res3/" in audio_src
+        assert "ntvcdn.b-cdn.net" in audio_src
+        assert "01-1-" in audio_src
         assert audio_src.endswith(".mp3")
         assert "/MobileResource/ViewRes" not in audio_src
         assert "/Common/DownRes" not in audio_src
