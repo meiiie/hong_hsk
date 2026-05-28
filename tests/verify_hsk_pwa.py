@@ -79,8 +79,10 @@ def main() -> None:
         expect(audio).to_be_visible()
         audio_src = audio.get_attribute("src")
         assert audio_src is not None
-        assert "/Common/DownRes?doi=" in audio_src
+        assert "/File/Res3/" in audio_src
+        assert audio_src.endswith(".mp3")
         assert "/MobileResource/ViewRes" not in audio_src
+        assert "/Common/DownRes" not in audio_src
         expect(page.locator("[data-lesson-audio-speed='0.75']")).to_be_visible()
         page.locator("[data-lesson-audio-speed='0.75']").click()
         expect(page.locator("[data-lesson-audio-speed='0.75']")).to_have_class(re.compile(r"\bactive\b"))

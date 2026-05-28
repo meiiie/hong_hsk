@@ -237,7 +237,7 @@ function renderLessonAudioPlayer(track: LessonListeningTrack, listening: LessonL
     <div class="lesson-audio-player">
       <audio
         controls
-        preload="none"
+        preload="metadata"
         src="${escapeAttribute(listening.audioUrl ?? "")}"
         data-lesson-audio-player="${escapeAttribute(track.id)}"
       ></audio>

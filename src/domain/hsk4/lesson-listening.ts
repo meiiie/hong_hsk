@@ -152,6 +152,149 @@ const RESOURCE_IDS_BY_LESSON: Record<number, readonly string[]> = {
   ],
 };
 
+const AUDIO_FILE_PATHS_BY_LESSON: Record<number, readonly string[]> = {
+  1: [
+    "/File/Res3/a5261fe9-3441-4713-b965-b4c9e2846ee4.mp3",
+    "/File/Res3/0e106976-02e0-4ab0-a5e7-ff81698626cd.mp3",
+    "/File/Res3/44b9de60-1c45-4ffd-88ad-0b3434b157e6.mp3",
+    "/File/Res3/9a7fc902-8f0c-4b5f-a2e4-2c3b6bf15cde.mp3",
+    "/File/Res3/d7f96af1-f396-4f4d-be38-4b75c510250d.mp3",
+  ],
+  2: [
+    "/File/Res3/f65cc0f4-5dd3-4a54-8227-fdedee3448dd.mp3",
+    "/File/Res3/8aeb9919-e113-45a5-9060-ee8dab8fdf90.mp3",
+    "/File/Res3/7d422309-5989-4a6a-b851-8f3022274575.mp3",
+    "/File/Res3/04dcae20-368c-45e2-adf7-aff97b05168d.mp3",
+    "/File/Res3/64981243-1bbf-44e2-9c61-81fca13fe6d6.mp3",
+  ],
+  3: [
+    "/File/Res3/a580a32e-adc4-410e-83be-c61a29635430.mp3",
+    "/File/Res3/87a1af4f-fb29-4566-a4a9-cab969439165.mp3",
+    "/File/Res3/10b19bf2-260a-4b31-bcce-4e66cbabb3d3.mp3",
+    "/File/Res3/344a9059-93f1-4784-b237-95027e181fb9.mp3",
+    "/File/Res3/301fad23-b69d-4381-944e-0b2159212cfb.mp3",
+  ],
+  4: [
+    "/File/Res3/d0e07562-7e8a-46c1-a224-87b16050ee08.mp3",
+    "/File/Res3/7900a6ce-d715-46be-af13-7d632f58d67e.mp3",
+    "/File/Res3/070575c5-8c99-4546-a8b2-6399eb5e9b13.mp3",
+    "/File/Res3/509488ca-db9f-405c-8a2e-d86998d9cb30.mp3",
+    "/File/Res3/a2d0a763-f4b0-498f-8ece-0d97b1ef180a.mp3",
+  ],
+  5: [
+    "/File/Res3/db317d8e-1af9-4f86-a081-edbe1b69e03d.mp3",
+    "/File/Res3/8044d317-342f-4406-a400-8a26b8fd05d6.mp3",
+    "/File/Res3/5eb963d3-6fe6-443a-9e2e-6b349ce2e529.mp3",
+    "/File/Res3/5fc33918-ca3b-45e8-9d92-be7508d713d2.mp3",
+    "/File/Res3/f400e8ac-0ec3-4efb-a256-1cc93cdf6db0.mp3",
+  ],
+  6: [
+    "/File/Res3/a5320b13-dba6-4570-a141-34912f417aa6.mp3",
+    "/File/Res3/4054661b-0b94-430f-921e-85452f95e8fa.mp3",
+    "/File/Res3/2868f39e-db2f-41a0-aaa0-24ac4f298c9d.mp3",
+    "/File/Res3/6a7aa643-266b-46fc-a72e-8dd453ca0db9.mp3",
+    "/File/Res3/fd795905-bcef-4ee6-92c2-0f3c05f280aa.mp3",
+  ],
+  7: [
+    "/File/Res3/5f85320c-36d8-49e7-b37a-75cfced896cd.mp3",
+    "/File/Res3/208b8002-89c6-4361-a39e-c49178fa919c.mp3",
+    "/File/Res3/48de8779-6869-4ad8-8eb4-2e40ebc81430.mp3",
+    "/File/Res3/ca4564e2-5b4c-40a8-b77c-bb6d8a957aa5.mp3",
+    "/File/Res3/44cb6be5-4a8c-4ea1-a383-0f0b3ea65b72.mp3",
+  ],
+  8: [
+    "/File/Res3/1d51c792-3183-485d-9b86-7e9e06b6f1af.mp3",
+    "/File/Res3/70727371-e591-4b9f-af8d-2de83a1262f9.mp3",
+    "/File/Res3/1d2cba22-e606-4996-9688-3f1ac7d3cc59.mp3",
+    "/File/Res3/65d6849a-e595-42e6-9f8d-2366434e8972.mp3",
+    "/File/Res3/52b3859a-f7ad-4b37-b7fd-f1674b515bb9.mp3",
+  ],
+  9: [
+    "/File/Res3/0c2aad23-e4a4-4aaa-bb0a-88e165d51666.mp3",
+    "/File/Res3/ef90a208-3142-44f3-9d67-2095b5935800.mp3",
+    "/File/Res3/8e364883-8b68-4820-bb04-8169ea9328c7.mp3",
+    "/File/Res3/8dfbceb8-5e8e-4219-b252-cb3a4bef3499.mp3",
+    "/File/Res3/128503aa-aee0-4dc2-95c2-ba25cc4b0b13.mp3",
+  ],
+  10: [
+    "/File/Res3/7a01fc6e-2557-40b0-9e7d-b45abca01fda.mp3",
+    "/File/Res3/6cb29928-28cd-4887-b425-3b7722bc8df5.mp3",
+    "/File/Res3/9097ed8c-33b7-4300-b933-34fb87ed6aa5.mp3",
+    "/File/Res3/5f33cbe0-fc2a-468d-b72e-67bde16b3c4e.mp3",
+    "/File/Res3/d5cee365-beaa-4c98-87b8-72948454b08b.mp3",
+  ],
+  11: [
+    "/File/Res3/dbb4bf7b-fda6-44b1-a2df-a972f4bed6a5.mp3",
+    "/File/Res3/0f525aaa-99c8-4a6c-99ca-d4cffbee537a.mp3",
+    "/File/Res3/299c7681-8e7b-4f87-8026-135e7b070e4f.mp3",
+    "/File/Res3/96c2e259-e954-44b9-8d9f-7076ec60c53a.mp3",
+    "/File/Res3/e2566bef-8d9b-4621-b1eb-db41511cbda6.mp3",
+  ],
+  12: [
+    "/File/Res3/29aa0776-020c-40e8-8d70-dadb9728d3da.mp3",
+    "/File/Res3/4db5b90a-b7fc-4493-9d5b-4e133c3dd452.mp3",
+    "/File/Res3/e3582069-b7a8-4e1a-81d6-a4e3f21abdea.mp3",
+    "/File/Res3/53b8e7ae-d88b-4d1d-9d16-65c36cdfbe3b.mp3",
+    "/File/Res3/82f3377d-dcfc-4fd6-87cf-94671b41f235.mp3",
+  ],
+  13: [
+    "/File/Res3/51873849-0f9f-4049-87a7-13c81fc5fbdd.mp3",
+    "/File/Res3/e5b17eb3-a90d-4249-be54-aea7257837ee.mp3",
+    "/File/Res3/af98b201-2954-4142-83aa-883e29348f42.mp3",
+    "/File/Res3/f56297df-e79e-475b-a5c7-22915c50e1e7.mp3",
+    "/File/Res3/1e538871-6ac8-45e3-8d91-9aedd64f17c1.mp3",
+  ],
+  14: [
+    "/File/Res3/45b5c14c-7f84-4c6a-b11f-e4186ec44c41.mp3",
+    "/File/Res3/0e5bfa2b-c8cb-4701-8acf-67b87d56c2d4.mp3",
+    "/File/Res3/f2c89efd-2a56-4353-8cec-76b898074c16.mp3",
+    "/File/Res3/3a986f0d-ea88-4e2f-b6db-8244f0b83fc8.mp3",
+    "/File/Res3/62f53b2d-cd20-49a3-9128-47e94ab43e87.mp3",
+  ],
+  15: [
+    "/File/Res3/a0361141-de8b-4e66-a37c-119caa37845e.mp3",
+    "/File/Res3/f526c24d-9a89-4269-821f-8be5fe5261ff.mp3",
+    "/File/Res3/cd5d2b01-e946-47f5-9ca8-353354216f8c.mp3",
+    "/File/Res3/3622c4da-1f4b-4f93-a45d-133185fde90b.mp3",
+    "/File/Res3/36828741-6160-4220-a29c-c77d6b60935e.mp3",
+  ],
+  16: [
+    "/File/Res3/32f3720d-026d-4edf-be40-a7e870ec1604.mp3",
+    "/File/Res3/7aba069b-1bf9-4ae2-84e4-7ab6ed2b423a.mp3",
+    "/File/Res3/b07889a6-f9bd-41cb-ad3f-5258d4c5c28c.mp3",
+    "/File/Res3/78a14800-ac52-44cb-81a8-7a6d7f00d16b.mp3",
+    "/File/Res3/fbabbe73-e3b2-46b3-a637-9a9242fd06c7.mp3",
+  ],
+  17: [
+    "/File/Res3/c9fc717b-41b4-4720-9263-be0c55ec9fb3.mp3",
+    "/File/Res3/34e586db-3f8e-405a-b534-fbb1b7a443d5.mp3",
+    "/File/Res3/8ad0c7e6-4967-40f7-b34f-94b242124427.mp3",
+    "/File/Res3/466c2f8b-ebcd-4fd2-b7fb-c352f41f7167.mp3",
+    "/File/Res3/220ad156-c3ff-4db2-8309-af2b200b0961.mp3",
+  ],
+  18: [
+    "/File/Res3/a7be92ac-7163-46a1-a65f-0b7cfd6f1769.mp3",
+    "/File/Res3/e9639f8f-a0f5-490a-a144-dca4c7e69fb1.mp3",
+    "/File/Res3/38ea559c-3b1c-4b76-9f2c-4e2dde3d7285.mp3",
+    "/File/Res3/a072750b-c553-4048-a86b-e4501aec5ba0.mp3",
+    "/File/Res3/bae73ee9-c285-4c5b-89d4-22b0b3b3cbde.mp3",
+  ],
+  19: [
+    "/File/Res3/7523a7c1-008b-4f9a-9cc6-851b0a3f9186.mp3",
+    "/File/Res3/485c0e3b-2d10-4b75-918a-99f2eb52a095.mp3",
+    "/File/Res3/4a4f58f9-79b8-4c5e-ab0a-5cc4f6860148.mp3",
+    "/File/Res3/50b6acb3-836c-40bf-bbb5-65b558230160.mp3",
+    "/File/Res3/7af0753e-0bcb-43fd-bb12-2c9e9fe65d9a.mp3",
+  ],
+  20: [
+    "/File/Res3/01c8eeca-fa49-4c59-b95e-b64c920053fd.mp3",
+    "/File/Res3/dc1b5533-0ff4-40e8-8609-15ca1a857e30.mp3",
+    "/File/Res3/6c497513-63e0-4ec1-b474-1503d49c0527.mp3",
+    "/File/Res3/633b65a8-c00a-4629-a3f1-f74b14e61061.mp3",
+    "/File/Res3/dbbb6c16-9cbb-4e73-bc46-b51d2201e149.mp3",
+  ],
+};
+
 export interface LessonListeningTrack {
   id: string;
   book: BookCode;
@@ -187,6 +330,10 @@ export function findLessonListeningTrack(id: string): LessonListeningTrack | und
 function buildTrack(lesson: number, track: number, resourceId: string): LessonListeningTrack {
   const book: BookCode = lesson <= 10 ? "4A" : "4B";
   const label = `${String(lesson).padStart(2, "0")}-${track}`;
+  const audioFilePath = AUDIO_FILE_PATHS_BY_LESSON[lesson]?.[track - 1];
+  if (!audioFilePath) {
+    throw new Error(`Missing BLCUP audio path for lesson ${lesson}-${track}`);
+  }
   const sourceTitle =
     book === "4A"
       ? `HSK标准教程4上 ${label}`
@@ -202,7 +349,7 @@ function buildTrack(lesson: number, track: number, resourceId: string): LessonLi
     sourceTitle,
     resourceId,
     resourceUrl: `${BLCUP_ORIGIN}/MobileResource?rid=${resourceId}`,
-    audioUrl: `${BLCUP_ORIGIN}/Common/DownRes?doi=${resourceId}`,
+    audioUrl: new URL(audioFilePath, BLCUP_ORIGIN).href,
     seriesUrl: book === "4A" ? BLCUP_4A_SERIES_URL : BLCUP_4B_SERIES_URL,
   };
 }
