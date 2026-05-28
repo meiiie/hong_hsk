@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from playwright.sync_api import expect, sync_playwright
@@ -14,6 +15,16 @@ def main() -> None:
         page.on(
             "console",
             lambda message: errors.append(message.text) if message.type == "error" else None,
+        )
+        page.add_init_script(
+            """
+            Object.defineProperty(HTMLMediaElement.prototype, "play", {
+                configurable: true,
+                value: function () {
+                    return Promise.resolve();
+                },
+            });
+            """
         )
 
         page.goto("http://127.0.0.1:5173/", wait_until="networkidle")
@@ -63,6 +74,17 @@ def main() -> None:
         expect(page.get_by_text("Nghe bài khóa")).to_be_visible()
         expect(page.get_by_role("button", name="Nghe").first).to_be_visible()
         expect(page.get_by_role("button", name="Xem transcript").first).to_be_visible()
+        page.locator("[data-lesson-audio]").first.click()
+        audio = page.locator("[data-lesson-audio-player='hsk4-1-1']")
+        expect(audio).to_be_visible()
+        audio_src = audio.get_attribute("src")
+        assert audio_src is not None
+        assert "/Common/DownRes?doi=" in audio_src
+        assert "/MobileResource/ViewRes" not in audio_src
+        expect(page.locator("[data-lesson-audio-speed='0.75']")).to_be_visible()
+        page.locator("[data-lesson-audio-speed='0.75']").click()
+        expect(page.locator("[data-lesson-audio-speed='0.75']")).to_have_class(re.compile(r"\bactive\b"))
+        assert page.evaluate("document.querySelector('[data-lesson-audio-player]').playbackRate") == 0.75
         expect(page.locator(".lesson-transcript-panel")).to_have_count(0)
         page.get_by_role("button", name="Xem transcript").first.click()
         expect(page.locator(".lesson-transcript-panel")).to_be_visible()

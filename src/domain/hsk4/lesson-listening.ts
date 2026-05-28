@@ -162,7 +162,7 @@ export interface LessonListeningTrack {
   sourceTitle: string;
   resourceId: string;
   resourceUrl: string;
-  viewUrl: string;
+  audioUrl: string;
   seriesUrl: string;
 }
 
@@ -184,19 +184,6 @@ export function findLessonListeningTrack(id: string): LessonListeningTrack | und
   return resourceId ? buildTrack(lesson, track, resourceId) : undefined;
 }
 
-export function extractBlcupAudioUrl(html: string): string | undefined {
-  const audioSource = html.match(/<audio\s+src="([^"]+)"/i)?.[1];
-  if (!audioSource) {
-    return undefined;
-  }
-
-  try {
-    return new URL(audioSource, BLCUP_ORIGIN).href;
-  } catch {
-    return undefined;
-  }
-}
-
 function buildTrack(lesson: number, track: number, resourceId: string): LessonListeningTrack {
   const book: BookCode = lesson <= 10 ? "4A" : "4B";
   const label = `${String(lesson).padStart(2, "0")}-${track}`;
@@ -215,7 +202,7 @@ function buildTrack(lesson: number, track: number, resourceId: string): LessonLi
     sourceTitle,
     resourceId,
     resourceUrl: `${BLCUP_ORIGIN}/MobileResource?rid=${resourceId}`,
-    viewUrl: `${BLCUP_ORIGIN}/MobileResource/ViewRes?rid=${resourceId}`,
+    audioUrl: `${BLCUP_ORIGIN}/Common/DownRes?doi=${resourceId}`,
     seriesUrl: book === "4A" ? BLCUP_4A_SERIES_URL : BLCUP_4B_SERIES_URL,
   };
 }

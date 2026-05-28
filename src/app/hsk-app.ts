@@ -18,7 +18,7 @@ import { replaceStarterVocabulary } from "../application/vocab/replace-vocabular
 import type { AppVersionCheck } from "../application/ports/app-version-checker";
 import type { AppState, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
-import { extractBlcupAudioUrl, findLessonListeningTrack } from "../domain/hsk4/lesson-listening";
+import { findLessonListeningTrack } from "../domain/hsk4/lesson-listening";
 import { computeStats } from "../domain/review/review-service";
 import { icon } from "../presentation/icons";
 import {
@@ -40,7 +40,6 @@ class HskApp {
   private activeView: View = "dashboard";
   private readonly study = new StudyWorkflow();
   private readonly mockExam = new MockExamWorkflow();
-  private readonly lessonAudioCache = new Map<string, string>();
   private examClockId: number | undefined;
   private sidebarCollapsed = false;
   private sidebarMotionState: SidebarMotionState | undefined;
@@ -312,57 +311,12 @@ class HskApp {
     this.lessonAudio = {
       ...this.lessonAudio,
       trackId,
-      audioUrl: undefined,
-      loadingTrackId: trackId,
+      audioUrl: track.audioUrl,
+      loadingTrackId: undefined,
       error: undefined,
     };
     this.render();
-
-    try {
-      const audioUrl = await this.resolveLessonAudioUrl(track.viewUrl);
-      if (this.lessonAudio.trackId !== trackId) {
-        return;
-      }
-      this.lessonAudio = {
-        ...this.lessonAudio,
-        trackId,
-        audioUrl,
-        loadingTrackId: undefined,
-        error: undefined,
-      };
-      this.render();
-      queueMicrotask(() => this.playLessonAudioElement(trackId));
-    } catch (error) {
-      if (this.lessonAudio.trackId !== trackId) {
-        return;
-      }
-      this.lessonAudio = {
-        ...this.lessonAudio,
-        loadingTrackId: undefined,
-        error: error instanceof Error ? error.message : "Không mở được audio bài khóa.",
-      };
-      this.render();
-    }
-  }
-
-  private async resolveLessonAudioUrl(viewUrl: string): Promise<string> {
-    const cached = this.lessonAudioCache.get(viewUrl);
-    if (cached) {
-      return cached;
-    }
-
-    const response = await fetch(viewUrl);
-    if (!response.ok) {
-      throw new Error("Chưa lấy được audio từ nguồn BLCUP.");
-    }
-
-    const audioUrl = extractBlcupAudioUrl(await response.text());
-    if (!audioUrl) {
-      throw new Error("Nguồn BLCUP chưa trả về đường dẫn audio hợp lệ.");
-    }
-
-    this.lessonAudioCache.set(viewUrl, audioUrl);
-    return audioUrl;
+    queueMicrotask(() => this.playLessonAudioElement(trackId));
   }
 
   private playLessonAudioElement(trackId: string): void {
@@ -378,7 +332,7 @@ class HskApp {
       }
       this.lessonAudio = {
         ...this.lessonAudio,
-        error: "Trình duyệt chặn tự phát. Bấm play trong thanh nghe để bắt đầu.",
+        error: "Trình duyệt chặn tự phát hoặc nguồn nghe tạm lỗi. Bấm play trong thanh nghe, hoặc mở Nguồn để kiểm tra.",
       };
       this.render();
     });
