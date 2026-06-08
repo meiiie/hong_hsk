@@ -2,8 +2,8 @@ const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
 const DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1";
 const MAX_BODY_BYTES = 12_000;
 const MAX_QUESTION_CHARS = 400;
-const MAX_OUTPUT_TOKENS = 700;
-const REQUEST_TIMEOUT_MS = 25_000;
+const MAX_OUTPUT_TOKENS = 520;
+const REQUEST_TIMEOUT_MS = 70_000;
 
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
