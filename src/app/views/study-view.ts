@@ -173,7 +173,7 @@ function renderAiTutorPanel(
           <p class="eyebrow">Gia sư HSK</p>
           <h3>Hỏi về ${escapeHtml(item.hanzi)}</h3>
         </div>
-        <span>Nemotron 3 Ultra</span>
+        <span>Nemotron Tutor</span>
       </div>
       <div class="ai-tutor-actions">
         ${aiActionButton("explain", "Giải thích", activeAction, isLoading)}
@@ -193,7 +193,7 @@ function renderAiTutorPanel(
       }
       ${
         response
-          ? `<div class="ai-tutor-response" data-motion="study-ai-response">${response}<small>AI hỗ trợ học, không thay dữ liệu gốc.</small></div>`
+          ? `<div class="ai-tutor-response" data-motion="study-ai-response">${response}<small>AI hỗ trợ học, không thay dữ liệu gốc. Model: ${escapeHtml(aiTutor.response?.model ?? "NVIDIA")}</small></div>`
           : ""
       }
       ${
