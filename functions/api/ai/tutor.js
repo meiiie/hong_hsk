@@ -213,6 +213,7 @@ async function callNemotron({ apiKey, baseUrl, models, request }) {
   let lastError;
 
   for (const [index, entry] of models.entries()) {
+    const attemptStartedAt = Date.now();
     try {
       const content = await callNemotronModel({
         apiKey,
@@ -225,6 +226,7 @@ async function callNemotron({ apiKey, baseUrl, models, request }) {
     } catch (error) {
       lastError = error;
       const canFallback = index < models.length - 1 && isRetryableProviderError(error);
+      logProviderAttempt(canFallback ? "ai_tutor_provider_retry" : "ai_tutor_provider_final_error", request, entry.model, error, attemptStartedAt);
       if (!canFallback) {
         throw error;
       }
@@ -257,7 +259,7 @@ async function callNemotronModel({ apiKey, baseUrl, model, request, timeoutMs })
     });
 
     if (!response.ok) {
-      throw providerError(response.status);
+      throw providerError(response.status, model);
     }
 
     const payload = await response.json();
@@ -326,6 +328,8 @@ function streamResponse({ apiKey, baseUrl, models, request }) {
           event: "ai_tutor_stream_error",
           action: request.action,
           error: message,
+          providerModel: error?.providerModel,
+          providerStatus: error?.providerStatus,
           durationMs: Date.now() - startedAt,
         }));
       } finally {
@@ -347,6 +351,7 @@ async function streamNemotron({ apiKey, baseUrl, models, request, onStatus, onDe
   let lastError;
 
   for (const [index, entry] of models.entries()) {
+    const attemptStartedAt = Date.now();
     try {
       onStatus(index === 0 ? "Đang gọi gia sư nhanh..." : "Model chính chậm, chuyển sang dự phòng...");
       const result = await streamNemotronModel({
@@ -361,6 +366,7 @@ async function streamNemotron({ apiKey, baseUrl, models, request, onStatus, onDe
     } catch (error) {
       lastError = error;
       const canFallback = index < models.length - 1 && isRetryableProviderError(error);
+      logProviderAttempt(canFallback ? "ai_tutor_provider_retry" : "ai_tutor_provider_final_error", request, entry.model, error, attemptStartedAt);
       if (!canFallback) {
         throw error;
       }
@@ -404,7 +410,7 @@ async function streamNemotronModel({ apiKey, baseUrl, model, request, timeoutMs,
     });
 
     if (!response.ok) {
-      throw providerError(response.status);
+      throw providerError(response.status, model);
     }
     if (!response.body) {
       throw new TutorRequestError("NVIDIA chưa trả về stream.", 502, true);
@@ -506,6 +512,17 @@ function parseOpenAiStreamDelta(eventText) {
 
 function isRetryableProviderError(error) {
   return error instanceof TutorRequestError && error.retryable;
+}
+
+function logProviderAttempt(event, request, model, error, startedAt) {
+  console.log(JSON.stringify({
+    event,
+    action: request.action,
+    model,
+    retryable: Boolean(error?.retryable),
+    providerStatus: error?.providerStatus,
+    durationMs: Date.now() - startedAt,
+  }));
 }
 
 function cleanAiContent(content) {
@@ -622,14 +639,23 @@ function outputTokenBudget(request) {
   return budgets[request.action] ?? DEFAULT_OUTPUT_TOKENS;
 }
 
-function providerError(status) {
+function providerError(status, model) {
   if (status === 401 || status === 403) {
-    return new TutorRequestError("AI gateway chưa có quyền gọi NVIDIA. Kiểm tra secret NVIDIA_API_KEY.", status);
+    return new TutorRequestError("AI gateway chưa có quyền gọi NVIDIA. Kiểm tra secret NVIDIA_API_KEY.", status, false, {
+      providerModel: model,
+      providerStatus: status,
+    });
   }
   if (status === 429) {
-    return new TutorRequestError("NVIDIA đang giới hạn lượt gọi. Chờ một chút rồi thử lại.", 429);
+    return new TutorRequestError("Gia sư AI đang bận. Thử lại sau vài giây.", 429, true, {
+      providerModel: model,
+      providerStatus: status,
+    });
   }
-  return new TutorRequestError("NVIDIA tạm thời chưa phản hồi ổn định.", 502, status >= 500);
+  return new TutorRequestError("Gia sư AI chưa phản hồi ổn định. Thử lại sau vài giây.", 502, true, {
+    providerModel: model,
+    providerStatus: status,
+  });
 }
 
 function jsonResponse(payload, status = 200) {
@@ -644,9 +670,11 @@ function jsonError(error, status) {
 }
 
 class TutorRequestError extends Error {
-  constructor(message, status, retryable = false) {
+  constructor(message, status, retryable = false, details = {}) {
     super(message);
     this.status = status;
     this.retryable = retryable;
+    this.providerModel = details.providerModel;
+    this.providerStatus = details.providerStatus;
   }
 }
