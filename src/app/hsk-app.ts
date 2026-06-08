@@ -2,9 +2,12 @@ import type { HskAppDependencies } from "./app-dependencies";
 import type { View } from "./app-types";
 import { bindAppEvents } from "./events/app-event-binder";
 import { registerServiceWorker } from "./service-worker";
+import type { AiTutorAction } from "../application/ports/ai-tutor-client";
 import { MockExamWorkflow } from "./workflows/mock-exam-workflow";
+import { AiTutorWorkflow, buildAiTutorRequest } from "./workflows/ai-tutor-workflow";
 import { applySettingInput } from "./workflows/settings-workflow";
 import { StudyWorkflow } from "./workflows/study-workflow";
+import { registerHskWebMcpTools } from "./webmcp/hsk-webmcp";
 import { renderAppShell } from "./views/app-shell-view";
 import { renderDashboardView } from "./views/dashboard-view";
 import { getDataHealthStats, renderDataView } from "./views/data-view";
@@ -39,6 +42,7 @@ class HskApp {
   private state!: AppState;
   private activeView: View = "dashboard";
   private readonly study = new StudyWorkflow();
+  private readonly aiTutor = new AiTutorWorkflow();
   private readonly mockExam = new MockExamWorkflow();
   private examClockId: number | undefined;
   private sidebarCollapsed = false;
@@ -103,6 +107,21 @@ class HskApp {
     this.syncExamClock();
     hydrateSidebarMotion(this.root, sidebarMotionState, this.sidebarMotionState);
     hydrateStudyMotion(this.root, studyMotionState, this.studyMotionState);
+    registerHskWebMcpTools(
+      {
+        navigate: (view) => this.navigate(view),
+        startStudy: (mode) => this.startStudy(mode),
+        askAiTutor: (action, question) => this.askAiTutor(action, question),
+      },
+      {
+        activeView: this.activeView,
+        currentItem: this.createWebMcpCurrentItem(),
+        aiUnlocked: Boolean(this.study.feedback && this.activeView === "study"),
+        dueToday: stats.dueToday,
+        wrongOpen: stats.wrongOpen,
+        selectedLesson: this.state.settings.selectedLesson,
+      },
+    );
     this.sidebarMotionState = sidebarMotionState;
     this.studyMotionState = studyMotionState;
   }
@@ -117,6 +136,28 @@ class HskApp {
       itemId: item?.id,
       feedbackKind,
       strokeUnlocked: feedbackKind !== "none",
+      aiUnlocked: feedbackKind !== "none",
+      aiStatus: this.aiTutor.stateForItem(item?.id).status,
+    };
+  }
+
+  private createWebMcpCurrentItem() {
+    if (this.activeView !== "study") {
+      return undefined;
+    }
+
+    const item = this.study.currentItem();
+    if (!item) {
+      return undefined;
+    }
+
+    return {
+      id: item.id,
+      hanzi: item.hanzi,
+      pinyin: item.pinyin,
+      meaningVi: item.meaningVi,
+      book: item.book,
+      lesson: item.lesson,
     };
   }
 
@@ -154,6 +195,7 @@ class HskApp {
       studyIndex: this.study.index,
       strokeCharIndex: this.study.strokeCharIndex,
       feedback: this.study.feedback,
+      aiTutor: this.aiTutor.stateForItem(this.study.currentItem()?.id),
     });
   }
 
@@ -181,6 +223,7 @@ class HskApp {
       nextCard: () => this.nextCard(),
       revealAnswer: () => this.revealAnswer(),
       hideAnswer: () => this.hideAnswer(),
+      askAiTutor: (action, question) => this.askAiTutor(action, question),
       selectStrokeChar: (index) => this.selectStrokeChar(index),
       runStrokeAction: (action) => this.dependencies.strokePractice.run(action),
       updateSetting: (input) => this.updateSetting(input),
@@ -218,6 +261,7 @@ class HskApp {
     this.accountMenuOpen = false;
     if (view !== "study") {
       this.study.clear();
+      this.aiTutor.reset();
     }
     this.render();
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -285,6 +329,7 @@ class HskApp {
 
   private startStudy(mode: StudyMode): void {
     this.study.start(mode);
+    this.aiTutor.reset();
     this.activeView = "study";
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
@@ -410,6 +455,36 @@ class HskApp {
     this.study.nextCard();
     this.render();
     this.focusHanziInput();
+  }
+
+  private async askAiTutor(action: AiTutorAction, question?: string): Promise<void> {
+    const item = this.study.currentItem();
+    const feedback =
+      item && this.study.feedback?.itemId === item.id
+        ? this.study.feedback
+        : undefined;
+    if (!item || !feedback) {
+      return;
+    }
+
+    this.aiTutor.start(item.id, action, question);
+    this.render();
+
+    try {
+      const response = await this.dependencies.aiTutorClient.ask(
+        buildAiTutorRequest(this.state, item, this.study.mode, action, feedback, question),
+      );
+      if (this.study.currentItem()?.id !== item.id) {
+        return;
+      }
+      this.aiTutor.complete(response);
+    } catch (error) {
+      if (this.study.currentItem()?.id !== item.id) {
+        return;
+      }
+      this.aiTutor.fail(error instanceof Error ? error.message : "AI tạm thời chưa phản hồi.");
+    }
+    this.render();
   }
 
   private revealAnswer(): void {

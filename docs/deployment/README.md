@@ -78,6 +78,14 @@ CLOUDFLARE_API_TOKEN
 Account -> Cloudflare Pages -> Edit
 ```
 
+Gia sư AI cần thêm Pages runtime secret ở project `hong-hsk4-studio`:
+
+```text
+NVIDIA_API_KEY
+```
+
+Secret này đặt trong Cloudflare Pages production environment. Không commit key vào repo, không đưa vào frontend, và không thêm vào GitHub Actions trừ khi workflow có nhu cầu test gateway thật.
+
 Sau khi thêm token, mỗi lần push lên `main` sẽ tự deploy nếu CI xanh.
 
 ### Deploy thủ công từ máy local

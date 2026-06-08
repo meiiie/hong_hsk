@@ -36,6 +36,7 @@ Ports live in `src/application/ports/`:
 - `VocabularyImporter`: import uploaded vocab and load the bundled 4A/4B reference.
 - `StudyDataExporter`: export backup/template files.
 - `ChineseSpeechPlayer`: play Mandarin audio through a browser adapter.
+- `AiTutorClient`: ask the server-side HSK tutor gateway for explanations, examples, mistake repair, and memory tips.
 
 `src/main.ts` wires those ports to browser adapters in `src/infrastructure/`. This keeps the app controller testable and prevents accidental direct coupling to IndexedDB, Excel libraries, or speech synthesis.
 
@@ -50,6 +51,8 @@ App workflow code is split by responsibility:
 - `workflows/mock-exam-workflow.ts`: selected mock set, active exam session, question index, answer storage, submit/reset, and clock state.
 - `workflows/settings-workflow.ts`: settings form normalization and bounds.
 - `workflows/stroke-practice-workflow.ts`: Hanzi Writer mounting and stroke actions after render.
+- `workflows/ai-tutor-workflow.ts`: per-card AI tutor state and compact request context.
+- `webmcp/hsk-webmcp.ts`: progressive WebMCP tool registration for browsers/agents that expose a model context API.
 
 Workflow rendering lives under `src/app/views/`:
 
@@ -64,6 +67,12 @@ Workflow rendering lives under `src/app/views/`:
 - `src/presentation/motion/`: lazy-loaded Anime.js micro-interaction helpers called after render through `data-motion` hooks. Layout transitions stay in CSS.
 
 This split keeps render functions mostly pure while the controller keeps side effects in one place.
+
+## AI Boundary
+
+The browser never calls NVIDIA directly. `src/infrastructure/ai/hsk-ai-client.ts` calls the same-origin `/api/ai/tutor` endpoint, and `functions/api/ai/tutor.js` reads `NVIDIA_API_KEY` from Cloudflare Pages secrets before calling `nvidia/nemotron-3-ultra-550b-a55b`.
+
+AI is a tutor overlay, not a data source of record. It can explain, generate practice examples, and repair mistakes after the learner has checked an answer; it must not silently mutate vocabulary, review logs, or verified translations.
 
 ## Test Boundaries
 

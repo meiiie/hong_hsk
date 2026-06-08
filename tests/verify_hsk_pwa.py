@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -26,6 +27,22 @@ def main() -> None:
             });
             """
         )
+        page.route(
+            "**/api/ai/tutor",
+            lambda route: route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "content": "Nghĩa: đây là phản hồi gia sư AI đã được mock để kiểm tra giao diện.",
+                        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+                        "action": "explain",
+                        "generatedAt": "2026-06-08T10:00:00.000Z",
+                    },
+                    ensure_ascii=False,
+                ),
+            ),
+        )
 
         page.goto("http://127.0.0.1:5173/", wait_until="networkidle")
         expect(page.locator(".brand-copy").get_by_text("Hồng HSK4")).to_be_visible()
@@ -42,6 +59,7 @@ def main() -> None:
         expect(page.get_by_text("Số chữ")).to_have_count(0)
         expect(page.get_by_text("Chưa có log")).to_have_count(0)
         expect(page.get_by_text("Cách chấm")).to_be_visible()
+        expect(page.get_by_text("Gia sư HSK")).to_have_count(0)
         expect(page.locator("#stroke-target")).to_have_count(0)
         expect(page.locator(".pinyin")).to_have_count(0)
         expect(page.get_by_text("Hôm nay tôi ôn từ")).to_have_count(0)
@@ -56,6 +74,9 @@ def main() -> None:
         page.locator("#hanzi-input").fill("法绿")
         page.get_by_role("button", name="Chấm đáp án").click()
         expect(page.get_by_text("Sai", exact=True)).to_be_visible()
+        expect(page.get_by_text("Gia sư HSK")).to_be_visible()
+        page.get_by_role("button", name="Giải thích").click()
+        expect(page.get_by_text("Nghĩa: đây là phản hồi gia sư AI")).to_be_visible()
         expect(page.locator(".pinyin")).to_contain_text("fǎ lǜ")
         page.locator("#stroke-target svg").wait_for(state="visible", timeout=20000)
         page.get_by_role("button", name="Nét mẫu").click()
@@ -95,7 +116,7 @@ def main() -> None:
 
         page.locator("[data-account-menu-toggle]").click()
         page.locator('.sidebar-account-menu [data-view="settings"]').click()
-        expect(page.get_by_role("heading", name="Cập nhật ứng dụng")).to_be_visible()
+        expect(page.get_by_role("heading", name="Trạng thái ứng dụng")).to_be_visible()
         expect(page.get_by_role("button", name="Kiểm tra")).to_be_visible()
         expect(page.get_by_text("Schema dữ liệu")).to_be_visible()
 

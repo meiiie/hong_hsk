@@ -1,4 +1,5 @@
 import type { View } from "../app-types";
+import type { AiTutorAction } from "../../application/ports/ai-tutor-client";
 import type { StudyMode } from "../../domain/types";
 
 export interface AppEventHandlers {
@@ -14,6 +15,7 @@ export interface AppEventHandlers {
   nextCard(): void;
   revealAnswer(): void;
   hideAnswer(): void;
+  askAiTutor(action: AiTutorAction, question?: string): void | Promise<void>;
   selectStrokeChar(index: number): void;
   runStrokeAction(action: string): void | Promise<void>;
   updateSetting(input: HTMLInputElement | HTMLSelectElement): void | Promise<void>;
@@ -190,6 +192,23 @@ function bindStudy(root: HTMLElement, handlers: AppEventHandlers): void {
     button.addEventListener("click", () => {
       void handlers.runStrokeAction(button.dataset.strokeAction ?? "");
     });
+  });
+
+  root.querySelectorAll<HTMLButtonElement>("[data-ai-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      void handlers.askAiTutor(button.dataset.aiAction as AiTutorAction);
+    });
+  });
+
+  root.querySelector<HTMLFormElement>("[data-ai-form]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = root.querySelector<HTMLTextAreaElement>("[data-ai-question]");
+    const question = input?.value.trim() ?? "";
+    if (!question) {
+      input?.focus();
+      return;
+    }
+    void handlers.askAiTutor("ask", question);
   });
 }
 

@@ -9,6 +9,8 @@ export interface StudyMotionState {
   itemId: string | undefined;
   feedbackKind: StudyFeedbackKind;
   strokeUnlocked: boolean;
+  aiUnlocked: boolean;
+  aiStatus: string;
 }
 
 export function hydrateStudyMotion(
@@ -24,6 +26,8 @@ export function hydrateStudyMotion(
   const cardChanged = previous?.itemId !== current.itemId;
   const feedbackChanged = previous?.feedbackKind !== current.feedbackKind && current.feedbackKind !== "none";
   const strokeUnlocked = current.strokeUnlocked && previous?.strokeUnlocked !== true;
+  const aiUnlocked = current.aiUnlocked && previous?.aiUnlocked !== true;
+  const aiStatusChanged = previous?.aiStatus !== current.aiStatus && current.aiStatus !== "idle";
 
   if (enteredStudy || cardChanged) {
     void animateStudyCard(root);
@@ -33,6 +37,12 @@ export function hydrateStudyMotion(
   }
   if (strokeUnlocked) {
     void animateStrokeUnlock(root);
+  }
+  if (aiUnlocked) {
+    void animateAiTutorUnlock(root);
+  }
+  if (aiStatusChanged) {
+    void animateAiTutorResponse(root);
   }
 }
 
@@ -105,3 +115,34 @@ async function animateStrokeUnlock(root: ParentNode): Promise<void> {
   });
 }
 
+async function animateAiTutorUnlock(root: ParentNode): Promise<void> {
+  await runWithAnime(async ({ animate }) => {
+    const panel = root.querySelector<HTMLElement>('[data-motion="study-ai"]');
+    if (!panel) {
+      return;
+    }
+
+    animate(panel, {
+      opacity: [0, 1],
+      translateY: [8, 0],
+      duration: motionDurations.medium,
+      ease: motionEases.emphasized,
+    });
+  });
+}
+
+async function animateAiTutorResponse(root: ParentNode): Promise<void> {
+  await runWithAnime(async ({ animate }) => {
+    const response = root.querySelector<HTMLElement>('[data-motion="study-ai-response"]');
+    if (!response) {
+      return;
+    }
+
+    animate(response, {
+      opacity: [0, 1],
+      translateY: [6, 0],
+      duration: motionDurations.medium,
+      ease: motionEases.emphasized,
+    });
+  });
+}
