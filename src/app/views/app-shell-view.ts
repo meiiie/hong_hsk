@@ -245,7 +245,7 @@ function titleForView(view: View): string {
     mock: "Thi thử HSK4",
     plan: "Lịch ôn 30 ngày",
     data: "Dữ liệu",
-    settings: "Cài đặt",
+    settings: "Thiết lập tài khoản",
   };
   return titles[view];
 }

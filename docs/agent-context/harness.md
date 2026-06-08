@@ -51,6 +51,7 @@ python -m playwright install chromium
 - Due, wrong, lesson, and today queue ordering.
 - Mock exam shape, deterministic generation, scoring, and timer formatting.
 - App workflow state for study sessions, mock exams, settings normalization, and starter-data replacement.
+- AI tutor workflow state and compact request context.
 - Application use cases for typed-answer submission and imported-vocabulary replacement.
 
 ## What The Browser Harness Covers
@@ -79,6 +80,7 @@ Mobile/mock:
 - It does not prove every Vietnamese meaning is final-quality.
 - It does not validate official HSK licensing.
 - It does not guarantee Cloudflare deploy unless `CLOUDFLARE_API_TOKEN` is configured.
+- It does not call NVIDIA or prove AI quality; local/CI checks only prove the gateway contract and UI wiring.
 - It does not replace human mobile UX review on a real phone.
 - It does not prove the current architecture is final; it only prevents obvious inward/outward dependency violations.
 
@@ -99,6 +101,15 @@ Deploy will skip build/deploy steps if either Cloudflare secret is missing:
 
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_API_TOKEN`
+
+The AI tutor also needs a Cloudflare Pages secret:
+
+- `NVIDIA_API_KEY`
+
+Optional AI overrides:
+
+- `NVIDIA_MODEL` defaults to `nvidia/nemotron-3-ultra-550b-a55b`.
+- `NVIDIA_BASE_URL` defaults to `https://integrate.api.nvidia.com/v1`.
 
 This prevents noisy red deploy runs while the token is not configured, but still shows that the workflow was triggered.
 

@@ -1,6 +1,7 @@
 import "./presentation/styles.css";
 import { mountHskApp } from "./app/hsk-app";
 import { StrokePracticeWorkflow } from "./app/workflows/stroke-practice-workflow";
+import { createHskAiClient } from "./infrastructure/ai/hsk-ai-client";
 import {
   exportCsv,
   exportJson,
@@ -38,4 +39,5 @@ mountHskApp({
     current: currentAppVersion,
     check: checkAppVersion,
   },
+  aiTutorClient: createHskAiClient(),
 });

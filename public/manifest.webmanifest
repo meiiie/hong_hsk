@@ -1,7 +1,7 @@
 {
   "name": "Hồng HSK4 Studio",
   "short_name": "Hồng HSK4",
-  "description": "Không gian luyện HSK4 cho Hồng: học theo bài 4A/4B, gõ chữ Hán, luyện nét và thi thử.",
+  "description": "Gia sư HSK4 4A/4B cho Hồng: học theo bài, gõ chữ Hán, luyện nét, ôn giãn cách, thi thử và hỏi AI sau khi chấm.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

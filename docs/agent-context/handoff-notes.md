@@ -1,6 +1,6 @@
 # Handoff Notes
 
-Last updated: 2026-05-27.
+Last updated: 2026-06-08.
 
 ## Current Production
 
@@ -25,6 +25,8 @@ Last updated: 2026-05-27.
 Cloudflare deploy secrets are configured and the production deploy workflow has succeeded. The API token used during setup was exposed in chat, so rotate it before treating this as long-lived production infrastructure.
 
 The current technology decision is recorded in [Technology Review](../architecture/technology-review-2026-05-26.md): keep the static Vite/TypeScript PWA, IndexedDB, Hanzi Writer, Cloudflare Pages, and Playwright harness for now. Revisit a backend only when sync/accounts or multi-user workflows become real.
+
+The AI tutor is implemented as a Cloudflare Pages Function at `/api/ai/tutor`. Production needs the Pages secret `NVIDIA_API_KEY`; the default model is `nvidia/nemotron-3-ultra-550b-a55b`. AI output is tutor assistance only and must not be treated as verified vocabulary data.
 
 ## Preferred Next Workflow
 

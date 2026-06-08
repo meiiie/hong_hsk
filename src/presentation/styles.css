@@ -1098,6 +1098,7 @@ button:disabled {
 .focus-panel,
 .queue-panel,
 .study-card,
+.ai-tutor-panel,
 .review-panel,
 .mode-panel,
 .table-panel,
@@ -1241,6 +1242,7 @@ button:disabled {
 .queue-panel,
 .table-panel,
 .study-card,
+.ai-tutor-panel,
 .review-panel,
 .mode-panel,
 .settings-card,
@@ -2077,6 +2079,169 @@ button:disabled {
   gap: 14px;
 }
 
+.ai-tutor-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-color: rgba(159, 39, 52, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 247, 0.94));
+}
+
+.ai-tutor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ai-tutor-head h3 {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.ai-tutor-head > span {
+  flex: 0 0 auto;
+  max-width: 112px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.ai-tutor-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.48;
+}
+
+.ai-tutor-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.ai-tutor-actions button {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(159, 39, 52, 0.14);
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 850;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+
+.ai-tutor-actions button:hover:not(:disabled),
+.ai-tutor-actions button.active {
+  color: var(--brand);
+  border-color: rgba(159, 39, 52, 0.28);
+  background: var(--brand-soft);
+}
+
+.ai-tutor-actions button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.ai-tutor-response {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgba(159, 39, 52, 0.14);
+  border-radius: 8px;
+  background: #fffdfb;
+}
+
+.ai-tutor-response p {
+  margin: 0;
+  color: #3f3440;
+  font-size: 0.88rem;
+  line-height: 1.56;
+}
+
+.ai-tutor-response small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.ai-tutor-response.error {
+  border-color: rgba(199, 53, 63, 0.25);
+  background: var(--red-soft);
+}
+
+.ai-tutor-response.error strong {
+  color: var(--red);
+}
+
+.ai-tutor-response.loading {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.ai-tutor-response.loading span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--brand);
+  animation: ai-tutor-pulse 920ms var(--ease-out) infinite alternate;
+}
+
+.ai-tutor-form {
+  display: grid;
+  gap: 8px;
+}
+
+.ai-tutor-form label {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.ai-tutor-form textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 11px;
+  color: var(--ink);
+  background: #ffffff;
+  line-height: 1.45;
+}
+
+.ai-tutor-form textarea::placeholder {
+  color: #9aa1b2;
+}
+
+.ai-tutor-form .primary-button {
+  width: 100%;
+  min-height: 40px;
+}
+
+@keyframes ai-tutor-pulse {
+  from {
+    opacity: 0.45;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
 .review-panel,
 .mode-panel {
   display: grid;
@@ -2831,12 +2996,129 @@ td {
   align-items: start;
 }
 
-.profile-settings-card {
+.account-settings-layout {
+  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.68fr);
+}
+
+.account-hero-card {
+  position: relative;
+  overflow: hidden;
   grid-column: 1 / -1;
+  padding: 18px;
+  border-color: rgba(159, 39, 52, 0.12);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(159, 39, 52, 0.13), transparent 34%),
+    radial-gradient(circle at 92% 12%, rgba(15, 118, 110, 0.08), transparent 34%),
+    linear-gradient(135deg, #fffdfb 0%, #fff6f3 100%);
+}
+
+.account-hero-card::after {
+  position: absolute;
+  right: -54px;
+  bottom: -88px;
+  width: 190px;
+  height: 190px;
+  border: 1px solid rgba(159, 39, 52, 0.08);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.account-hero-main {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.account-hero-main h2,
+.account-hero-main p,
+.settings-helper {
+  margin: 0;
+}
+
+.account-hero-main h2 {
+  color: var(--ink);
+  font-size: clamp(1.55rem, 2.5vw, 2.15rem);
+  line-height: 1.08;
+}
+
+.account-hero-main p,
+.settings-helper {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.account-hero-avatar {
+  flex-basis: 58px;
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 247, 237, 0.45),
+    0 12px 24px rgba(127, 29, 42, 0.18);
+}
+
+.account-hero-stats {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.account-hero-stats span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  min-height: 82px;
+  padding: 12px;
+  border: 1px solid rgba(159, 39, 52, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 8px 18px rgba(88, 43, 39, 0.05);
+}
+
+.account-hero-stats small,
+.account-hero-stats em {
+  color: var(--muted);
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.account-hero-stats small {
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.account-hero-stats strong {
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.account-hero-stats em {
+  font-size: 0.74rem;
+}
+
+.profile-settings-card {
+  grid-column: auto;
 }
 
 .settings-rhythm-card {
   grid-column: 1 / -1;
+}
+
+.account-data-card {
+  align-self: stretch;
+}
+
+.settings-wide-action {
+  width: 100%;
 }
 
 .settings-card-head {
@@ -2849,6 +3131,11 @@ td {
 .settings-card-head h2,
 .settings-card-head p {
   margin: 0;
+}
+
+.account-settings-layout .settings-card-head h2 {
+  font-size: clamp(1.16rem, 2vw, 1.42rem);
+  line-height: 1.16;
 }
 
 .settings-save-state,
@@ -4496,6 +4783,18 @@ meter {
     line-height: 1.08;
   }
 
+  .main.view-settings .topbar h1 {
+    font-size: 1.5rem;
+  }
+
+  .account-hero-main h2 {
+    font-size: 1.52rem;
+  }
+
+  .account-settings-layout .settings-card-head h2 {
+    font-size: 1.28rem;
+  }
+
   .top-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -4729,6 +5028,7 @@ meter {
   }
 
   .study-card,
+  .ai-tutor-panel,
   .stroke-lab,
   .review-panel,
   .mode-panel,
@@ -4746,6 +5046,49 @@ meter {
 
   .settings-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .account-hero-card {
+    padding: 14px;
+  }
+
+  .account-hero-main {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .account-hero-main .settings-save-state {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .account-hero-avatar {
+    flex-basis: 50px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .account-hero-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 12px;
+  }
+
+  .account-hero-stats span {
+    min-height: 62px;
+    padding: 9px 8px;
+  }
+
+  .account-hero-stats small {
+    font-size: 0.67rem;
+  }
+
+  .account-hero-stats strong {
+    font-size: 1.02rem;
+  }
+
+  .account-hero-stats em {
+    display: none;
   }
 
   .settings-profile-preview {
@@ -4933,6 +5276,46 @@ meter {
 
   .main.view-study .study-side {
     gap: 10px;
+  }
+
+  .main.view-study .ai-tutor-panel {
+    gap: 10px;
+    padding: 12px;
+    border-color: rgba(159, 39, 52, 0.14);
+    background: #fffdfb;
+    box-shadow: 0 8px 18px rgba(88, 43, 39, 0.045);
+  }
+
+  .main.view-study .ai-tutor-head h3 {
+    font-size: 0.95rem;
+  }
+
+  .main.view-study .ai-tutor-head > span {
+    max-width: 94px;
+    font-size: 0.66rem;
+  }
+
+  .main.view-study .ai-tutor-actions {
+    gap: 6px;
+  }
+
+  .main.view-study .ai-tutor-actions button {
+    min-height: 36px;
+    padding: 0 8px;
+    font-size: 0.76rem;
+  }
+
+  .main.view-study .ai-tutor-response {
+    padding: 10px;
+  }
+
+  .main.view-study .ai-tutor-response p {
+    font-size: 0.84rem;
+  }
+
+  .main.view-study .ai-tutor-form textarea {
+    min-height: 66px;
+    padding: 9px 10px;
   }
 
   .main.view-study .study-side .stroke-lab.stroke-locked {

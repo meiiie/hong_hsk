@@ -11,45 +11,57 @@ import { escapeAttribute, escapeHtml } from "./view-helpers";
 
 export function renderSettingsView(state: AppState, versionCheck?: AppVersionCheck): string {
   const { settings } = state;
+  const displayName = settings.displayName || "Hồng";
+  const avatarInitial = settings.avatarInitial || "H";
+  const currentLesson = Math.min(20, Math.max(1, settings.selectedLesson || 1));
 
   return `
-    <section class="settings-layout" aria-label="Thiết lập tài khoản học">
-      <article class="settings-card profile-settings-card">
-        <div class="settings-card-head">
+    <section class="settings-layout account-settings-layout" aria-label="Thiết lập tài khoản học">
+      <article class="settings-card account-hero-card">
+        <div class="account-hero-main">
+          <span class="settings-avatar-preview account-hero-avatar">${escapeHtml(avatarInitial)}</span>
           <div>
             <p class="eyebrow">Tài khoản học</p>
-            <h2>Thiết lập của ${escapeHtml(settings.displayName || "Hồng")}</h2>
+            <h2>${escapeHtml(displayName)}</h2>
+            <p>HSK4 4A/4B · dữ liệu lưu trong trình duyệt này.</p>
           </div>
           <span class="settings-save-state">${icon("check")} Tự lưu</span>
         </div>
-
-        <div class="settings-profile-preview" aria-label="Hồ sơ hiện tại">
-          <span class="settings-avatar-preview">${escapeHtml(settings.avatarInitial || "H")}</span>
-          <div>
-            <h2>${escapeHtml(settings.displayName || "Hồng")}</h2>
-            <small>HSK4 4A/4B · Dữ liệu lưu trong trình duyệt này</small>
-          </div>
-        </div>
-
-        <div class="settings-form-grid">
-          <label class="settings-field">
-            <span>Tên hiển thị</span>
-            <input type="text" maxlength="40" value="${escapeAttribute(settings.displayName || "Hồng")}" data-setting="displayName" />
-          </label>
-          <label class="settings-field settings-field-short">
-            <span>Avatar</span>
-            <input type="text" maxlength="2" value="${escapeAttribute(settings.avatarInitial || "H")}" data-setting="avatarInitial" />
-          </label>
+        <div class="account-hero-stats" aria-label="Tóm tắt nhịp học">
+          ${accountStat("Bài đang học", `Bài ${currentLesson}`, "Theo giáo trình 4A/4B")}
+          ${accountStat("Từ mới/ngày", String(settings.dailyNewTarget), "Mục tiêu học mới")}
+          ${accountStat("Ôn tối đa", String(settings.dailyReviewTarget), "Thẻ ôn mỗi ngày")}
         </div>
       </article>
 
-      <article class="settings-card">
+      <article class="settings-card profile-settings-card">
         <div class="settings-card-head">
           <div>
-            <p class="eyebrow">Giao diện</p>
-            <h2>Ngôn ngữ</h2>
+            <p class="eyebrow">Hồ sơ</p>
+            <h2>Thông tin hiển thị</h2>
           </div>
           <span class="settings-card-icon">${icon("user")}</span>
+        </div>
+        <div class="settings-form-grid">
+          <label class="settings-field">
+            <span>Tên hiển thị</span>
+            <input type="text" maxlength="40" value="${escapeAttribute(displayName)}" data-setting="displayName" autocomplete="name" />
+          </label>
+          <label class="settings-field settings-field-short">
+            <span>Ký hiệu avatar</span>
+            <input type="text" maxlength="2" value="${escapeAttribute(avatarInitial)}" data-setting="avatarInitial" aria-label="Ký hiệu avatar" />
+          </label>
+        </div>
+        <p class="settings-helper">Tên và avatar chỉ dùng trong giao diện học của bạn.</p>
+      </article>
+
+      <article class="settings-card language-settings-card">
+        <div class="settings-card-head">
+          <div>
+            <p class="eyebrow">Ngôn ngữ</p>
+            <h2>Ưu tiên nội dung</h2>
+          </div>
+          <span class="settings-card-icon">${icon("book")}</span>
         </div>
         <label class="settings-field">
           <span>Ngôn ngữ ứng dụng</span>
@@ -58,17 +70,20 @@ export function renderSettingsView(state: AppState, versionCheck?: AppVersionChe
             <option value="en" ${settings.locale === "en" ? "selected" : ""}>English</option>
           </select>
         </label>
-        <div class="settings-note">
-          <span>${icon("alert")}</span>
-          <p>Nội dung học chính ưu tiên tiếng Việt; tiếng Anh chỉ dùng làm dự phòng khi cần.</p>
-        </div>
+        <label class="toggle-row settings-toggle-row">
+          <input type="checkbox" data-setting="useEnglishFallback" ${settings.useEnglishFallback ? "checked" : ""} />
+          <span>
+            <strong>Dùng nghĩa tiếng Anh dự phòng</strong>
+            <small>Chỉ hiện khi một từ chưa có nghĩa tiếng Việt đã duyệt.</small>
+          </span>
+        </label>
       </article>
 
       <article class="settings-card settings-rhythm-card">
         <div class="settings-card-head">
           <div>
             <p class="eyebrow">Nhịp học</p>
-            <h2>Mục tiêu mỗi ngày</h2>
+            <h2>Lịch ôn của Hồng</h2>
           </div>
           <span class="settings-card-icon">${icon("calendar")}</span>
         </div>
@@ -86,17 +101,35 @@ export function renderSettingsView(state: AppState, versionCheck?: AppVersionChe
             <input type="date" value="${escapeAttribute(settings.startDate)}" data-setting="startDate" />
           </label>
         </div>
-        <label class="toggle-row settings-toggle-row">
-          <input type="checkbox" data-setting="useEnglishFallback" ${settings.useEnglishFallback ? "checked" : ""} />
-          <span>
-            <strong>Dùng nghĩa tiếng Anh dự phòng</strong>
-            <small>Khi một từ chưa có nghĩa tiếng Việt đã duyệt.</small>
-          </span>
-        </label>
+        <p class="settings-helper">Giữ mục tiêu vừa sức để app ưu tiên từ đến hạn và từ sai trước khi thêm từ mới.</p>
+      </article>
+
+      <article class="settings-card account-data-card">
+        <div class="settings-card-head">
+          <div>
+            <p class="eyebrow">Dữ liệu</p>
+            <h2>Bộ từ và sao lưu</h2>
+          </div>
+          <span class="settings-card-icon">${icon("database")}</span>
+        </div>
+        <p class="settings-helper">Nhập Excel, xuất dữ liệu hoặc kiểm tra chất lượng bộ từ ở trang Dữ liệu.</p>
+        <button class="ghost-button settings-wide-action" type="button" data-view="data">
+          ${icon("database")} Mở Dữ liệu
+        </button>
       </article>
 
       ${renderVersionSettings(versionCheck)}
     </section>
+  `;
+}
+
+function accountStat(label: string, value: string, hint: string): string {
+  return `
+    <span>
+      <small>${escapeHtml(label)}</small>
+      <strong>${escapeHtml(value)}</strong>
+      <em>${escapeHtml(hint)}</em>
+    </span>
   `;
 }
 
@@ -112,7 +145,7 @@ function renderVersionSettings(versionCheck?: AppVersionCheck): string {
       <div class="settings-card-head">
         <div>
           <p class="eyebrow">Phiên bản</p>
-          <h2>Cập nhật ứng dụng</h2>
+          <h2>Trạng thái ứng dụng</h2>
         </div>
         <span class="settings-card-icon">${icon(status === "available" ? "alert" : "check")}</span>
       </div>

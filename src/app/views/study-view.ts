@@ -1,3 +1,4 @@
+import type { AiTutorAction, AiTutorPanelState } from "../../application/ports/ai-tutor-client";
 import type { AppState, StudyMode, VocabItem } from "../../domain/types";
 import { bookLabel, reviewStatusLabel, studyModeLabel } from "../../presentation/i18n";
 import { icon, labelWithIcon } from "../../presentation/icons";
@@ -12,6 +13,7 @@ interface StudyViewModel {
   studyIndex: number;
   strokeCharIndex: number;
   feedback: StudyFeedback | undefined;
+  aiTutor: AiTutorPanelState;
 }
 
 export function renderStudyView(model: StudyViewModel): string {
@@ -129,7 +131,8 @@ export function renderStudyView(model: StudyViewModel): string {
       </article>
 
       <aside class="study-side">
-          ${renderStrokeLab(selectedChar, hanziChars, canUseStroke, strokeCharIndex)}
+        ${renderAiTutorPanel(item, model.aiTutor, canUseStroke, feedback)}
+        ${renderStrokeLab(selectedChar, hanziChars, canUseStroke, strokeCharIndex)}
         ${review ? `<section class="review-panel">
             <h3>Trạng thái từ này</h3>
             ${renderReviewDetail(state, item)}
@@ -146,6 +149,78 @@ export function renderStudyView(model: StudyViewModel): string {
       </aside>
     </section>
   `;
+}
+
+function renderAiTutorPanel(
+  item: VocabItem,
+  aiTutor: AiTutorPanelState,
+  canUseAi: boolean,
+  feedback: StudyFeedback | undefined,
+): string {
+  if (!canUseAi) {
+    return "";
+  }
+
+  const isLoading = aiTutor.status === "loading";
+  const wrongDisabled = feedback?.correct === false && !isLoading ? "" : "disabled";
+  const response = aiTutor.status === "ready" && aiTutor.response ? formatAiResponse(aiTutor.response.content) : "";
+  const activeAction = aiTutor.action;
+
+  return `
+    <section class="ai-tutor-panel" data-motion="study-ai" aria-live="polite">
+      <div class="ai-tutor-head">
+        <div>
+          <p class="eyebrow">Gia sư HSK</p>
+          <h3>Hỏi về ${escapeHtml(item.hanzi)}</h3>
+        </div>
+        <span>Nemotron 3 Ultra</span>
+      </div>
+      <div class="ai-tutor-actions">
+        ${aiActionButton("explain", "Giải thích", activeAction, isLoading)}
+        ${aiActionButton("examples", "Ví dụ", activeAction, isLoading)}
+        ${aiActionButton("memory_tip", "Mẹo nhớ", activeAction, isLoading)}
+        <button type="button" data-ai-action="why_wrong" class="${activeAction === "why_wrong" ? "active" : ""}" ${wrongDisabled}>Sửa lỗi</button>
+      </div>
+      ${
+        aiTutor.status === "loading"
+          ? `<div class="ai-tutor-response loading" data-motion="study-ai-response"><span></span><p>Gia sư đang phân tích từ này...</p></div>`
+          : ""
+      }
+      ${
+        aiTutor.status === "error"
+          ? `<div class="ai-tutor-response error" data-motion="study-ai-response"><strong>Chưa gọi được AI</strong><p>${escapeHtml(aiTutor.error ?? "Thử lại sau vài giây.")}</p></div>`
+          : ""
+      }
+      ${
+        response
+          ? `<div class="ai-tutor-response" data-motion="study-ai-response">${response}<small>AI hỗ trợ học, không thay dữ liệu gốc.</small></div>`
+          : ""
+      }
+      ${
+        aiTutor.status === "idle"
+          ? `<p class="ai-tutor-empty">Chọn một gợi ý hoặc hỏi trực tiếp sau khi đã xem đáp án.</p>`
+          : ""
+      }
+      <form class="ai-tutor-form" data-ai-form>
+        <label for="ai-question">Hỏi thêm</label>
+        <textarea id="ai-question" data-ai-question rows="3" maxlength="400" placeholder="Ví dụ: từ này khác gì với từ gần nghĩa?" ${isLoading ? "disabled" : ""}>${escapeHtml(aiTutor.question ?? "")}</textarea>
+        <button type="submit" class="primary-button" ${isLoading ? "disabled" : ""}>${labelWithIcon("arrowRight", "Hỏi gia sư")}</button>
+      </form>
+    </section>
+  `;
+}
+
+function aiActionButton(action: AiTutorAction, label: string, activeAction: AiTutorAction | undefined, disabled: boolean): string {
+  return `<button type="button" data-ai-action="${action}" class="${activeAction === action ? "active" : ""}" ${disabled ? "disabled" : ""}>${escapeHtml(label)}</button>`;
+}
+
+function formatAiResponse(content: string): string {
+  return content
+    .trim()
+    .split(/\n{2,}/)
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
 }
 
 function usefulStudyExample(example: string, hanzi: string): string {
