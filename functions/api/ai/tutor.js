@@ -1,9 +1,11 @@
 const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
+const DEFAULT_FALLBACK_MODEL = "nvidia/nemotron-3-super-120b-a12b";
 const DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1";
 const MAX_BODY_BYTES = 12_000;
 const MAX_QUESTION_CHARS = 400;
 const MAX_OUTPUT_TOKENS = 520;
-const REQUEST_TIMEOUT_MS = 70_000;
+const PRIMARY_TIMEOUT_MS = 45_000;
+const FALLBACK_TIMEOUT_MS = 24_000;
 
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -32,17 +34,18 @@ export async function onRequestPost(context) {
     }
 
     const model = cleanText(context.env.NVIDIA_MODEL) || DEFAULT_MODEL;
+    const fallbackModel = cleanText(context.env.NVIDIA_FALLBACK_MODEL) || DEFAULT_FALLBACK_MODEL;
     const baseUrl = cleanText(context.env.NVIDIA_BASE_URL) || DEFAULT_BASE_URL;
     const providerResponse = await callNemotron({
       apiKey,
       baseUrl,
-      model,
+      models: buildModelPlan(model, fallbackModel),
       request,
     });
 
     return jsonResponse({
-      content: providerResponse,
-      model,
+      content: providerResponse.content,
+      model: providerResponse.model,
       action: request.action,
       generatedAt: new Date().toISOString(),
     });
@@ -141,9 +144,42 @@ function cleanText(value) {
   return value.replace(/\s+/g, " ").trim().slice(0, 1_200);
 }
 
-async function callNemotron({ apiKey, baseUrl, model, request }) {
+function buildModelPlan(primaryModel, fallbackModel) {
+  const plan = [{ model: primaryModel, timeoutMs: PRIMARY_TIMEOUT_MS }];
+  if (fallbackModel && fallbackModel !== primaryModel) {
+    plan.push({ model: fallbackModel, timeoutMs: FALLBACK_TIMEOUT_MS });
+  }
+  return plan;
+}
+
+async function callNemotron({ apiKey, baseUrl, models, request }) {
+  let lastError;
+
+  for (const [index, entry] of models.entries()) {
+    try {
+      const content = await callNemotronModel({
+        apiKey,
+        baseUrl,
+        model: entry.model,
+        request,
+        timeoutMs: entry.timeoutMs,
+      });
+      return { content, model: entry.model };
+    } catch (error) {
+      lastError = error;
+      const canFallback = index < models.length - 1 && isRetryableProviderError(error);
+      if (!canFallback) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError ?? new TutorRequestError("AI tạm thời chưa phản hồi. Thử lại sau vài giây.", 502, true);
+}
+
+async function callNemotronModel({ apiKey, baseUrl, model, request, timeoutMs }) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
@@ -177,20 +213,35 @@ async function callNemotron({ apiKey, baseUrl, model, request }) {
     }
 
     const payload = await response.json();
-    const content = payload?.choices?.[0]?.message?.content;
+    const content = cleanAiContent(payload?.choices?.[0]?.message?.content ?? "");
     if (typeof content !== "string" || !content.trim()) {
-      throw new TutorRequestError("AI trả về phản hồi rỗng.", 502);
+      throw new TutorRequestError("AI trả về phản hồi rỗng.", 502, true);
     }
 
     return content.trim();
   } catch (error) {
     if (error?.name === "AbortError") {
-      throw new TutorRequestError("AI xử lý quá lâu. Thử lại với câu hỏi ngắn hơn.", 504);
+      throw new TutorRequestError("AI xử lý quá lâu. Thử lại với câu hỏi ngắn hơn.", 504, true);
     }
     throw error;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function isRetryableProviderError(error) {
+  return error instanceof TutorRequestError && error.retryable;
+}
+
+function cleanAiContent(content) {
+  if (typeof content !== "string") {
+    return "";
+  }
+
+  return content
+    .replace(/^Okay,?\s+[^.\n]{0,220}\.\s*/i, "")
+    .replace(/^The user is asking[^.\n]{0,220}\.\s*/i, "")
+    .trim();
 }
 
 function buildSystemPrompt() {
@@ -201,6 +252,7 @@ function buildSystemPrompt() {
     "Không bịa là nội dung chính thức của đề thi hay giáo trình. Nếu dữ liệu chưa đủ, nói rõ cần kiểm tra lại.",
     "Không chép dài bài khóa, đề thi, sách hoặc nội dung có bản quyền. Chỉ tạo ví dụ học tập mới, ngắn và sát từ hiện tại.",
     "Nếu người học nhập sai, phân tích khác biệt giữa đáp án mong đợi và phần người học đã gõ; tập trung vào chữ thiếu, chữ thừa, hoặc chữ dễ nhầm.",
+    "Không hiển thị quá trình suy nghĩ nội bộ. Không mở đầu bằng 'Okay' hoặc tự mô tả việc bạn đang phân tích.",
     "Giữ phản hồi trong 4-8 câu hoặc 3-5 gạch đầu dòng. Không dùng emoji. Không lan man.",
   ].join("\n");
 }
@@ -242,7 +294,7 @@ function providerError(status) {
   if (status === 429) {
     return new TutorRequestError("NVIDIA đang giới hạn lượt gọi. Chờ một chút rồi thử lại.", 429);
   }
-  return new TutorRequestError("NVIDIA tạm thời chưa phản hồi ổn định.", 502);
+  return new TutorRequestError("NVIDIA tạm thời chưa phản hồi ổn định.", 502, status >= 500);
 }
 
 function jsonResponse(payload, status = 200) {
@@ -257,8 +309,9 @@ function jsonError(error, status) {
 }
 
 class TutorRequestError extends Error {
-  constructor(message, status) {
+  constructor(message, status, retryable = false) {
     super(message);
     this.status = status;
+    this.retryable = retryable;
   }
 }
