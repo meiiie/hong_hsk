@@ -16,6 +16,8 @@ export interface AppEventHandlers {
   revealAnswer(): void;
   hideAnswer(): void;
   askAiTutor(action: AiTutorAction, question?: string): void | Promise<void>;
+  cancelAiTutor(): void;
+  clearAiTutorSession(): void;
   selectStrokeChar(index: number): void;
   runStrokeAction(action: string): void | Promise<void>;
   updateSetting(input: HTMLInputElement | HTMLSelectElement): void | Promise<void>;
@@ -198,6 +200,14 @@ function bindStudy(root: HTMLElement, handlers: AppEventHandlers): void {
     button.addEventListener("click", () => {
       void handlers.askAiTutor(button.dataset.aiAction as AiTutorAction);
     });
+  });
+
+  root.querySelector<HTMLButtonElement>("[data-ai-cancel]")?.addEventListener("click", () => {
+    handlers.cancelAiTutor();
+  });
+
+  root.querySelector<HTMLButtonElement>("[data-ai-clear]")?.addEventListener("click", () => {
+    handlers.clearAiTutorSession();
   });
 
   root.querySelector<HTMLFormElement>("[data-ai-form]")?.addEventListener("submit", (event) => {

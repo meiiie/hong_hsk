@@ -4,7 +4,12 @@ import { bindAppEvents } from "./events/app-event-binder";
 import { registerServiceWorker } from "./service-worker";
 import type { AiTutorAction } from "../application/ports/ai-tutor-client";
 import { MockExamWorkflow } from "./workflows/mock-exam-workflow";
-import { AiTutorWorkflow, buildAiTutorRequest } from "./workflows/ai-tutor-workflow";
+import {
+  AiTutorWorkflow,
+  aiTutorUserPrompt,
+  buildAiTutorMemoryMarkdown,
+  buildAiTutorRequest,
+} from "./workflows/ai-tutor-workflow";
 import { applySettingInput } from "./workflows/settings-workflow";
 import { StudyWorkflow } from "./workflows/study-workflow";
 import { registerHskWebMcpTools } from "./webmcp/hsk-webmcp";
@@ -49,6 +54,7 @@ class HskApp {
   private sidebarMotionState: SidebarMotionState | undefined;
   private mobileMoreOpen = false;
   private accountMenuOpen = false;
+  private aiTutorAbort: AbortController | undefined;
   private studyMotionState: StudyMotionState | undefined;
   private versionCheck: AppVersionCheck | undefined;
   private lessonAudio: LessonListeningViewState = {
@@ -224,6 +230,8 @@ class HskApp {
       revealAnswer: () => this.revealAnswer(),
       hideAnswer: () => this.hideAnswer(),
       askAiTutor: (action, question) => this.askAiTutor(action, question),
+      cancelAiTutor: () => this.cancelAiTutor(),
+      clearAiTutorSession: () => this.clearAiTutorSession(),
       selectStrokeChar: (index) => this.selectStrokeChar(index),
       runStrokeAction: (action) => this.dependencies.strokePractice.run(action),
       updateSetting: (input) => this.updateSetting(input),
@@ -256,6 +264,9 @@ class HskApp {
   }
 
   private navigate(view: View): void {
+    if (view !== "study") {
+      this.cancelAiTutor();
+    }
     this.activeView = view;
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
@@ -328,6 +339,7 @@ class HskApp {
   }
 
   private startStudy(mode: StudyMode): void {
+    this.cancelAiTutor();
     this.study.start(mode);
     this.aiTutor.reset();
     this.activeView = "study";
@@ -452,6 +464,7 @@ class HskApp {
   }
 
   private nextCard(): void {
+    this.cancelAiTutor();
     this.study.nextCard();
     this.render();
     this.focusHanziInput();
@@ -467,13 +480,70 @@ class HskApp {
       return;
     }
 
-    this.aiTutor.start(item.id, action, question);
+    this.cancelAiTutor();
+    const userPrompt = aiTutorUserPrompt(action, item, question);
+    const assistantMessageId = this.aiTutor.startTurn(item.id, action, userPrompt, question);
     this.render();
 
     try {
-      const response = await this.dependencies.aiTutorClient.ask(
-        buildAiTutorRequest(this.state, item, this.study.mode, action, feedback, question),
+      const memoryMarkdown = buildAiTutorMemoryMarkdown(this.state, item, this.study.mode);
+      const request = buildAiTutorRequest(
+        this.state,
+        item,
+        this.study.mode,
+        action,
+        feedback,
+        question,
+        this.aiTutor.sessionId(),
+        this.aiTutor.requestMessages(),
+        memoryMarkdown,
+        true,
       );
+      const abort = new AbortController();
+      this.aiTutorAbort = abort;
+      let pendingDelta = "";
+      let deltaFrame = 0;
+      const flushDelta = () => {
+        deltaFrame = 0;
+        if (!pendingDelta) {
+          return;
+        }
+        const delta = pendingDelta;
+        pendingDelta = "";
+        this.aiTutor.appendDelta(assistantMessageId, delta);
+        this.patchAiTutorMessage(assistantMessageId);
+      };
+      const scheduleDelta = (delta: string) => {
+        pendingDelta += delta;
+        if (deltaFrame) {
+          return;
+        }
+        deltaFrame = window.requestAnimationFrame(flushDelta);
+      };
+      const response = this.dependencies.aiTutorClient.stream
+        ? await this.dependencies.aiTutorClient.stream(
+            request,
+            {
+              onStatus: (message) => {
+                this.aiTutor.setStatusNote(message);
+                this.patchAiTutorStatus(message);
+              },
+              onDelta: (delta) => {
+                scheduleDelta(delta);
+              },
+              onError: (error) => {
+                flushDelta();
+                this.aiTutor.fail(error);
+                this.render();
+              },
+            },
+            abort.signal,
+          )
+        : await this.dependencies.aiTutorClient.ask({ ...request, stream: false });
+      if (deltaFrame) {
+        window.cancelAnimationFrame(deltaFrame);
+      }
+      flushDelta();
       if (this.study.currentItem()?.id !== item.id) {
         return;
       }
@@ -483,8 +553,52 @@ class HskApp {
         return;
       }
       this.aiTutor.fail(error instanceof Error ? error.message : "AI tạm thời chưa phản hồi.");
+    } finally {
+      this.aiTutorAbort = undefined;
     }
     this.render();
+  }
+
+  private cancelAiTutor(): void {
+    this.aiTutorAbort?.abort();
+    this.aiTutorAbort = undefined;
+  }
+
+  private clearAiTutorSession(): void {
+    this.cancelAiTutor();
+    this.aiTutor.clearSession();
+    this.render();
+  }
+
+  private patchAiTutorStatus(message: string): void {
+    const target = this.root.querySelector<HTMLElement>("[data-ai-status-note]");
+    if (target) {
+      target.textContent = message;
+    }
+  }
+
+  private patchAiTutorMessage(messageId: string): void {
+    const target = this.root.querySelector<HTMLElement>(`[data-ai-message-content="${CSS.escape(messageId)}"]`);
+    const message = this.aiTutor
+      .stateForItem(this.study.currentItem()?.id)
+      .messages?.find((candidate) => candidate.id === messageId);
+    if (!target || !message) {
+      return;
+    }
+    target.innerHTML = this.formatStreamingAiContent(message.content);
+    const messages = this.root.querySelector<HTMLElement>("[data-ai-messages]");
+    if (messages) {
+      messages.scrollTop = messages.scrollHeight;
+    }
+  }
+
+  private formatStreamingAiContent(content: string): string {
+    return content
+      .trim()
+      .split(/\n{2,}/)
+      .filter(Boolean)
+      .map((paragraph) => `<p>${escapeAiHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+      .join("");
   }
 
   private revealAnswer(): void {
@@ -702,4 +816,13 @@ function saveLessonTranscripts(transcripts: Record<string, string>): void {
   } catch {
     // Transcript notes are helpful, but the core review app should still work when storage is unavailable.
   }
+}
+
+function escapeAiHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

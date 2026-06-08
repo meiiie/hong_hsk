@@ -33,7 +33,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/app/workflows/mock-exam-workflow.ts` | Mock exam session state: selected set, active paper, question index, answers, timing. |
 | `src/app/workflows/settings-workflow.ts` | Applies typed settings changes from form controls. |
 | `src/app/workflows/stroke-practice-workflow.ts` | Coordinates Hanzi Writer mounting and stroke actions after render. |
-| `src/app/workflows/ai-tutor-workflow.ts` | Per-card AI tutor state and compact request building. |
+| `src/app/workflows/ai-tutor-workflow.ts` | AI tutor chat session state, compact markdown memory, stream message assembly, and request building. |
 | `src/app/webmcp/hsk-webmcp.ts` | Progressive WebMCP tool registration for model-context-aware browsers/agents. |
 | `src/app/views/app-shell-view.ts` | Sidebar, topbar, language switcher, and route title shell rendering. |
 | `src/app/views/dashboard-view.ts` | Daily overview, data readiness, and queue preview rendering. |
@@ -64,7 +64,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/infrastructure/hanzi/hanzi-stroke-trainer.ts` | Hanzi Writer integration for stroke practice. |
 | `src/infrastructure/speech/chinese-speech.ts` | Browser speech synthesis adapter for Chinese playback. |
 | `src/infrastructure/version/http-version-checker.ts` | Fetches `/version.json` to detect deployed app updates. |
-| `src/infrastructure/ai/hsk-ai-client.ts` | Browser-side adapter that calls the same-origin AI tutor gateway. |
+| `src/infrastructure/ai/hsk-ai-client.ts` | Browser-side adapter that calls the same-origin AI tutor gateway with JSON fallback and SSE token streaming. |
 | `src/presentation/styles.css` | Mobile-first UI, design tokens, layout, states. |
 | `src/presentation/i18n.ts` | Vietnamese/English UI labels. |
 | `src/presentation/icons.ts` | Lucide icon wrappers. |
@@ -79,7 +79,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `scripts/check_agent_context.mjs` | Validates the agent context map and key workflow assumptions. |
 | `scripts/check_architecture.mjs` | Enforces DDD-lite source-layer dependency rules. |
 | `tests/unit/*.test.ts` | Vitest unit coverage for review policy/service and mock exam domain behavior. |
-| `tests/unit/ai-tutor-workflow.test.ts` | Unit coverage for per-card AI tutor state and request context. |
+| `tests/unit/ai-tutor-workflow.test.ts` | Unit coverage for AI tutor chat session streaming, markdown memory, and request context. |
 | `tests/unit/factories.ts` | Typed factories for deterministic unit tests. |
 | `tests/verify_hsk_pwa.py` | Desktop learning flow, answer reveal/hide, stroke trainer, wrong-list check. |
 | `tests/verify_hsk_mobile_mock.py` | Data load, mock exam, and mobile viewport checks. |

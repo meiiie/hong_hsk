@@ -1,4 +1,4 @@
-import type { AiTutorAction, AiTutorPanelState } from "../../application/ports/ai-tutor-client";
+import type { AiTutorAction, AiTutorMessage, AiTutorPanelState } from "../../application/ports/ai-tutor-client";
 import type { AppState, StudyMode, VocabItem } from "../../domain/types";
 import { bookLabel, reviewStatusLabel, studyModeLabel } from "../../presentation/i18n";
 import { icon, labelWithIcon } from "../../presentation/icons";
@@ -162,28 +162,55 @@ function renderAiTutorPanel(
   }
 
   const isLoading = aiTutor.status === "loading";
-  const wrongDisabled = feedback?.correct === false && !isLoading ? "" : "disabled";
-  const response = aiTutor.status === "ready" && aiTutor.response ? formatAiResponse(aiTutor.response.content) : "";
+  const isStreaming = aiTutor.status === "streaming";
+  const busy = isLoading || isStreaming;
+  const wrongDisabled = feedback?.correct === false && !busy ? "" : "disabled";
+  const messages = aiTutor.messages ?? [];
   const activeAction = aiTutor.action;
+  const memoryLine = buildVisibleMemoryLine(item, feedback);
+  const statusLine = aiTutor.statusNote ?? (messages.length ? "Đang giữ ngữ cảnh phiên học" : "Sẵn sàng giải thích sau khi chấm");
 
   return `
-    <section class="ai-tutor-panel" data-motion="study-ai" aria-live="polite">
+    <section class="ai-tutor-panel ai-chat-panel" data-motion="study-ai" aria-live="polite">
       <div class="ai-tutor-head">
         <div>
           <p class="eyebrow">Gia sư HSK</p>
           <h3>Hỏi về ${escapeHtml(item.hanzi)}</h3>
+          <small data-ai-status-note>${escapeHtml(statusLine)}</small>
         </div>
-        <span>Nemotron Tutor</span>
+        <div class="ai-tutor-head-actions">
+          <span>Nemotron</span>
+          ${
+            messages.length
+              ? `<button class="ai-icon-button" type="button" data-ai-clear title="Xóa phiên gia sư" aria-label="Xóa phiên gia sư">${icon("trash")}</button>`
+              : ""
+          }
+        </div>
+      </div>
+      <div class="ai-memory-strip" title="Bộ nhớ phiên học hiện tại">
+        <span>${icon("book")}</span>
+        <p>${escapeHtml(memoryLine)}</p>
+      </div>
+      <div class="ai-chat-messages" data-ai-messages>
+        ${
+          messages.length
+            ? messages.map(renderAiMessage).join("")
+            : renderAiTutorWelcome(item, feedback)
+        }
       </div>
       <div class="ai-tutor-actions">
-        ${aiActionButton("explain", "Giải thích", activeAction, isLoading)}
-        ${aiActionButton("examples", "Ví dụ", activeAction, isLoading)}
-        ${aiActionButton("memory_tip", "Mẹo nhớ", activeAction, isLoading)}
+        ${aiActionButton("explain", "Giải thích", activeAction, busy)}
+        ${aiActionButton("examples", "Ví dụ", activeAction, busy)}
+        ${aiActionButton("memory_tip", "Mẹo nhớ", activeAction, busy)}
         <button type="button" data-ai-action="why_wrong" class="${activeAction === "why_wrong" ? "active" : ""}" ${wrongDisabled}>Sửa lỗi</button>
       </div>
       ${
-        aiTutor.status === "loading"
-          ? `<div class="ai-tutor-response loading" data-motion="study-ai-response"><span></span><p>Gia sư đang phân tích từ này...</p></div>`
+        busy
+          ? `<div class="ai-tutor-streambar" data-motion="study-ai-response">
+              <span></span>
+              <p>${escapeHtml(aiTutor.statusNote ?? "Gia sư đang trả lời...")}</p>
+              <button type="button" data-ai-cancel>Dừng</button>
+            </div>`
           : ""
       }
       ${
@@ -192,19 +219,16 @@ function renderAiTutorPanel(
           : ""
       }
       ${
-        response
-          ? `<div class="ai-tutor-response" data-motion="study-ai-response">${response}<small>AI hỗ trợ học, không thay dữ liệu gốc. Model: ${escapeHtml(aiTutor.response?.model ?? "NVIDIA")}</small></div>`
-          : ""
-      }
-      ${
-        aiTutor.status === "idle"
-          ? `<p class="ai-tutor-empty">Chọn một gợi ý hoặc hỏi trực tiếp sau khi đã xem đáp án.</p>`
+        aiTutor.response?.model
+          ? `<p class="ai-tutor-model-note">AI hỗ trợ học, không thay dữ liệu gốc. Model: ${escapeHtml(aiTutor.response.model)}</p>`
           : ""
       }
       <form class="ai-tutor-form" data-ai-form>
         <label for="ai-question">Hỏi thêm</label>
-        <textarea id="ai-question" data-ai-question rows="3" maxlength="400" placeholder="Ví dụ: từ này khác gì với từ gần nghĩa?" ${isLoading ? "disabled" : ""}>${escapeHtml(aiTutor.question ?? "")}</textarea>
-        <button type="submit" class="primary-button" ${isLoading ? "disabled" : ""}>${labelWithIcon("arrowRight", "Hỏi gia sư")}</button>
+        <div class="ai-composer">
+          <textarea id="ai-question" data-ai-question rows="2" maxlength="400" placeholder="Ví dụ: từ này dùng trong câu nào?" ${busy ? "disabled" : ""}>${escapeHtml(aiTutor.question ?? "")}</textarea>
+          <button type="submit" class="primary-button" ${busy ? "disabled" : ""}>${icon("arrowRight")}<span>Gửi</span></button>
+        </div>
       </form>
     </section>
   `;
@@ -214,6 +238,23 @@ function aiActionButton(action: AiTutorAction, label: string, activeAction: AiTu
   return `<button type="button" data-ai-action="${action}" class="${activeAction === action ? "active" : ""}" ${disabled ? "disabled" : ""}>${escapeHtml(label)}</button>`;
 }
 
+function renderAiTutorWelcome(item: VocabItem, feedback: StudyFeedback | undefined): string {
+  const wrongHint = feedback?.correct === false
+    ? `<button type="button" data-ai-action="why_wrong">Vì sao em sai?</button>`
+    : "";
+  return `
+    <div class="ai-tutor-welcome">
+      <strong>Gia sư đang theo thẻ ${escapeHtml(item.hanzi)}.</strong>
+      <p>Hồng có thể hỏi ngắn, app sẽ gửi kèm bài, đáp án vừa chấm và bộ nhớ lỗi gần đây.</p>
+      <div class="ai-chat-suggestions">
+        <button type="button" data-ai-action="explain">Cách dùng nhanh</button>
+        <button type="button" data-ai-action="examples">Cho ví dụ HSK4</button>
+        ${wrongHint}
+      </div>
+    </div>
+  `;
+}
+
 function formatAiResponse(content: string): string {
   return content
     .trim()
@@ -221,6 +262,32 @@ function formatAiResponse(content: string): string {
     .filter(Boolean)
     .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
     .join("");
+}
+
+function renderAiMessage(message: AiTutorMessage): string {
+  const model = message.model ? `<small>${escapeHtml(message.model)}</small>` : "";
+  const status = message.status === "streaming" ? `<em>đang viết</em>` : message.status === "error" ? `<em>Lỗi</em>` : "";
+  return `
+    <article class="ai-message ${message.role} ${message.status ?? ""}" data-ai-message-id="${escapeAttribute(message.id)}">
+      <div class="ai-message-meta">
+        <span>${message.role === "user" ? "Hồng" : "Gia sư"}</span>
+        ${status || model}
+      </div>
+      <div class="ai-message-content" data-ai-message-content="${escapeAttribute(message.id)}">
+        ${message.content ? formatAiResponse(message.content) : `<p class="ai-typing-placeholder">Đang chuẩn bị câu trả lời...</p>`}
+      </div>
+    </article>
+  `;
+}
+
+function buildVisibleMemoryLine(item: VocabItem, feedback: StudyFeedback | undefined): string {
+  if (feedback?.correct === false) {
+    return `Nhớ lỗi vừa gõ "${feedback.input || "trống"}" và sửa quanh từ ${item.hanzi}.`;
+  }
+  if (feedback?.revealed) {
+    return `Đang ở đáp án ${item.hanzi}; ưu tiên giải thích ngắn, ví dụ sát HSK4.`;
+  }
+  return `Đang học ${item.book} bài ${item.lesson}; gia sư chỉ mở sau khi đã chấm hoặc hiện đáp án.`;
 }
 
 function usefulStudyExample(example: string, hanzi: string): string {
