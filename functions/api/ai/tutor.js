@@ -1,14 +1,15 @@
 const DEFAULT_MODEL = "mistralai/mistral-nemotron";
 const DEFAULT_FALLBACK_MODEL = "nvidia/nemotron-3-super-120b-a12b";
+const LOCAL_FALLBACK_MODEL = "local-hsk-fallback";
 const DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1";
 const MAX_BODY_BYTES = 24_000;
 const MAX_QUESTION_CHARS = 400;
 const MAX_MEMORY_CHARS = 2_400;
 const MAX_HISTORY_MESSAGES = 10;
 const DEFAULT_OUTPUT_TOKENS = 340;
-const PRIMARY_TIMEOUT_MS = 9_000;
-const FALLBACK_TIMEOUT_MS = 22_000;
-const STREAM_COMPLETION_TIMEOUT_MS = 24_000;
+const PRIMARY_TIMEOUT_MS = 6_500;
+const FALLBACK_TIMEOUT_MS = 10_000;
+const STREAM_COMPLETION_TIMEOUT_MS = 18_000;
 
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -228,9 +229,19 @@ async function callNemotron({ apiKey, baseUrl, models, request }) {
       const canFallback = index < models.length - 1 && isRetryableProviderError(error);
       logProviderAttempt(canFallback ? "ai_tutor_provider_retry" : "ai_tutor_provider_final_error", request, entry.model, error, attemptStartedAt);
       if (!canFallback) {
+        if (isRetryableProviderError(error)) {
+          continue;
+        }
         throw error;
       }
     }
+  }
+
+  if (lastError && isRetryableProviderError(lastError)) {
+    return {
+      content: buildLocalTutorFallback(request),
+      model: LOCAL_FALLBACK_MODEL,
+    };
   }
 
   throw lastError ?? new TutorRequestError("AI tạm thời chưa phản hồi. Thử lại sau vài giây.", 502, true);
@@ -368,9 +379,22 @@ async function streamNemotron({ apiKey, baseUrl, models, request, onStatus, onDe
       const canFallback = index < models.length - 1 && isRetryableProviderError(error);
       logProviderAttempt(canFallback ? "ai_tutor_provider_retry" : "ai_tutor_provider_final_error", request, entry.model, error, attemptStartedAt);
       if (!canFallback) {
+        if (isRetryableProviderError(error)) {
+          continue;
+        }
         throw error;
       }
     }
+  }
+
+  if (lastError && isRetryableProviderError(lastError)) {
+    const content = buildLocalTutorFallback(request);
+    onDelta(content);
+    return {
+      content,
+      model: LOCAL_FALLBACK_MODEL,
+      partial: true,
+    };
   }
 
   throw lastError ?? new TutorRequestError("AI tạm thời chưa phản hồi. Thử lại sau vài giây.", 502, true);
@@ -626,6 +650,56 @@ function buildUserPrompt(request) {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function buildLocalTutorFallback(request) {
+  const item = request.item;
+  const hanzi = item.hanzi;
+  const pinyin = item.pinyin || "chưa có pinyin";
+  const meaning = item.meaningVi || item.meaningEn || "chưa có nghĩa tiếng Việt";
+  const example = item.exampleHan
+    ? `${item.exampleHan}${item.examplePinyin ? ` | ${item.examplePinyin}` : ""}${item.exampleVi ? ` | ${item.exampleVi}` : ""}`
+    : "";
+  const prefix = "Gia sư AI đang chậm, mình dùng gợi ý nhanh từ dữ liệu thẻ hiện tại.";
+
+  if (request.action === "examples" || looksLikeExampleQuestion(request.question)) {
+    return [
+      prefix,
+      `1. ${example || `课文里有“${hanzi}”这个词。 | kewen li you "${pinyin}" zhe ge ci. | Trong bài khóa có từ "${meaning}".`}`,
+      `2. 我今天复习“${hanzi}”。 | wo jintian fuxi "${pinyin}". | Hôm nay tôi ôn từ "${meaning}".`,
+      `3. 我还不太会用“${hanzi}”。 | wo hai bu tai hui yong "${pinyin}". | Tôi vẫn chưa biết dùng "${meaning}" thật tốt.`,
+    ].join("\n");
+  }
+
+  if (request.action === "why_wrong") {
+    const input = request.feedback?.input || request.question || "phần vừa nhập";
+    return [
+      prefix,
+      `Đáp án cần nhớ là: ${hanzi}.`,
+      `Bạn vừa nhập: ${input}. Hãy so từng chữ với đáp án, ưu tiên nhớ đúng thứ tự và số chữ.`,
+      `Pinyin: ${pinyin}. Nghĩa: ${meaning}.`,
+    ].join("\n");
+  }
+
+  if (request.action === "memory_tip") {
+    return [
+      prefix,
+      `Mẹo nhớ nhanh: đọc ${pinyin}, gắn ngay với nghĩa "${meaning}".`,
+      `Sau đó tự viết ${hanzi} 2 lần và đặt một câu rất ngắn có từ này.`,
+      example ? `Ví dụ dữ liệu: ${example}` : "",
+    ].filter(Boolean).join("\n");
+  }
+
+  return [
+    prefix,
+    `${hanzi} (${pinyin}) nghĩa là: ${meaning}.`,
+    `${item.book ? `${item.book} ` : ""}${item.lesson ? `Bài ${item.lesson}.` : ""}`.trim(),
+    example ? `Ví dụ dữ liệu: ${example}` : "Hãy thử tự đặt một câu ngắn rồi hỏi gia sư sửa lỗi.",
+  ].filter(Boolean).join("\n");
+}
+
+function looksLikeExampleQuestion(question) {
+  return /v[iíìỉĩị]\s*d[uụ]|\bvd\b|đ[ặa]t\s*c[aâ]u|cho\s*v[ií]\s*d[uụ]|example/i.test(question || "");
 }
 
 function outputTokenBudget(request) {

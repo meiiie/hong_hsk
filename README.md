@@ -154,7 +154,7 @@ npm run deploy:cf
 
 `CLOUDFLARE_API_TOKEN` nên là token hẹp quyền, tối thiểu `Account > Cloudflare Pages > Edit`. Không commit token vào repo.
 
-AI Tutor mặc định dùng `mistralai/mistral-nemotron` qua Cloudflare Pages Function `/api/ai/tutor`, với fallback `nvidia/nemotron-3-super-120b-a12b` khi provider timeout hoặc trả lỗi 5xx. `nvidia/nemotron-3-ultra-550b-a55b` vẫn có thể dùng bằng Pages secret `NVIDIA_MODEL` cho các lượt cần suy luận sâu, nhưng không nên làm mặc định cho phiên học nhanh. Có thể override bằng Pages secrets `NVIDIA_MODEL`, `NVIDIA_FALLBACK_MODEL` và `NVIDIA_BASE_URL`, nhưng không đưa API key vào frontend hoặc file cấu hình commit.
+AI Tutor mặc định dùng `mistralai/mistral-nemotron` qua Cloudflare Pages Function `/api/ai/tutor`, với fallback `nvidia/nemotron-3-super-120b-a12b` khi provider timeout hoặc trả lỗi tạm thời. Nếu cả provider chính và dự phòng đều chậm, gateway trả một gợi ý nội bộ ngắn từ dữ liệu thẻ hiện tại để người học không bị kẹt ở trạng thái lỗi. `nvidia/nemotron-3-ultra-550b-a55b` vẫn có thể dùng bằng Pages secret `NVIDIA_MODEL` cho các lượt cần suy luận sâu, nhưng không nên làm mặc định cho phiên học nhanh. Có thể override bằng Pages secrets `NVIDIA_MODEL`, `NVIDIA_FALLBACK_MODEL` và `NVIDIA_BASE_URL`, nhưng không đưa API key vào frontend hoặc file cấu hình commit.
 
 Custom domain production hiện tại là `hsk4.holilihu.online`.
 

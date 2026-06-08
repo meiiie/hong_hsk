@@ -303,6 +303,7 @@ function displayAiModel(model: string): string {
     "nvidia/nemotron-3-super-120b-a12b": "Nemotron 3 Super 120B",
     "nvidia/nemotron-3-ultra-550b-a55b": "Nemotron 3 Ultra",
     "meta/llama-3.3-70b-instruct": "Llama 3.3 70B",
+    "local-hsk-fallback": "Gợi ý nội bộ",
   };
   return known[model] ?? model.replace(/^[^/]+\//, "");
 }
