@@ -179,7 +179,7 @@ function renderAiTutorPanel(
           <small data-ai-status-note>${escapeHtml(statusLine)}</small>
         </div>
         <div class="ai-tutor-head-actions">
-          <span>Nemotron</span>
+          <span>AI Tutor</span>
           ${
             messages.length
               ? `<button class="ai-icon-button" type="button" data-ai-clear title="Xóa phiên gia sư" aria-label="Xóa phiên gia sư">${icon("trash")}</button>`
@@ -215,12 +215,19 @@ function renderAiTutorPanel(
       }
       ${
         aiTutor.status === "error"
-          ? `<div class="ai-tutor-response error" data-motion="study-ai-response"><strong>Chưa gọi được AI</strong><p>${escapeHtml(aiTutor.error ?? "Thử lại sau vài giây.")}</p></div>`
+          ? `<div class="ai-tutor-recovery" data-motion="study-ai-response">
+              <strong>Kết nối đang chậm</strong>
+              <p>${escapeHtml(aiTutor.error ?? "Thử lại bằng một câu hỏi ngắn hơn.")}</p>
+              <div>
+                <button type="button" data-ai-action="examples">Thử ví dụ ngắn</button>
+                <button type="button" data-ai-action="explain">Giải thích nhanh</button>
+              </div>
+            </div>`
           : ""
       }
       ${
         aiTutor.response?.model
-          ? `<p class="ai-tutor-model-note">AI hỗ trợ học, không thay dữ liệu gốc. Model: ${escapeHtml(aiTutor.response.model)}</p>`
+          ? `<p class="ai-tutor-model-note">Model: ${escapeHtml(displayAiModel(aiTutor.response.model))} · AI chỉ hỗ trợ học.</p>`
           : ""
       }
       <form class="ai-tutor-form" data-ai-form>
@@ -265,7 +272,7 @@ function formatAiResponse(content: string): string {
 }
 
 function renderAiMessage(message: AiTutorMessage): string {
-  const model = message.model ? `<small>${escapeHtml(message.model)}</small>` : "";
+  const model = message.model ? `<small>${escapeHtml(displayAiModel(message.model))}</small>` : "";
   const status = message.status === "streaming" ? `<em>đang viết</em>` : message.status === "error" ? `<em>Lỗi</em>` : "";
   return `
     <article class="ai-message ${message.role} ${message.status ?? ""}" data-ai-message-id="${escapeAttribute(message.id)}">
@@ -288,6 +295,16 @@ function buildVisibleMemoryLine(item: VocabItem, feedback: StudyFeedback | undef
     return `Đang ở đáp án ${item.hanzi}; ưu tiên giải thích ngắn, ví dụ sát HSK4.`;
   }
   return `Đang học ${item.book} bài ${item.lesson}; gia sư chỉ mở sau khi đã chấm hoặc hiện đáp án.`;
+}
+
+function displayAiModel(model: string): string {
+  const known: Record<string, string> = {
+    "mistralai/mistral-nemotron": "Mistral-Nemotron",
+    "nvidia/nemotron-3-super-120b-a12b": "Nemotron 3 Super 120B",
+    "nvidia/nemotron-3-ultra-550b-a55b": "Nemotron 3 Ultra",
+    "meta/llama-3.3-70b-instruct": "Llama 3.3 70B",
+  };
+  return known[model] ?? model.replace(/^[^/]+\//, "");
 }
 
 function usefulStudyExample(example: string, hanzi: string): string {

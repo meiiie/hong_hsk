@@ -108,8 +108,8 @@ The AI tutor also needs a Cloudflare Pages secret:
 
 Optional AI overrides:
 
-- `NVIDIA_MODEL` defaults to `nvidia/nemotron-3-ultra-550b-a55b`.
-- `NVIDIA_FALLBACK_MODEL` defaults to `nvidia/nemotron-3-super-120b-a12b` and is used for retryable provider failures such as timeout or 5xx; streaming requests try Ultra briefly, then move to Super to avoid long blank waits.
+- `NVIDIA_MODEL` defaults to `mistralai/mistral-nemotron` for fast study-card tutoring.
+- `NVIDIA_FALLBACK_MODEL` defaults to `nvidia/nemotron-3-super-120b-a12b` and is used for retryable provider failures such as timeout or 5xx; Ultra-class models can be tested through overrides but should not be the default for quick learning turns.
 - `NVIDIA_BASE_URL` defaults to `https://integrate.api.nvidia.com/v1`.
 
 This prevents noisy red deploy runs while the token is not configured, but still shows that the workflow was triggered.
