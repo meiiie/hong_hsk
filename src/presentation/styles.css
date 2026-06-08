@@ -2299,9 +2299,9 @@ button:disabled {
 }
 
 .ai-message.error .ai-message-content {
-  color: var(--red);
-  border-color: rgba(199, 53, 63, 0.22);
-  background: var(--red-soft);
+  color: #7f2632;
+  border-color: rgba(159, 39, 52, 0.18);
+  background: #fff4f5;
 }
 
 .ai-message-content p {
@@ -2421,6 +2421,52 @@ button:disabled {
 
 .ai-tutor-response.error strong {
   color: var(--red);
+}
+
+.ai-tutor-recovery {
+  display: grid;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid rgba(159, 39, 52, 0.16);
+  border-radius: 8px;
+  background: #fff6f6;
+}
+
+.ai-tutor-recovery strong {
+  color: #7f2632;
+  font-size: 0.82rem;
+}
+
+.ai-tutor-recovery p {
+  margin: 0;
+  color: #69545a;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.ai-tutor-recovery div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-tutor-recovery button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(159, 39, 52, 0.2);
+  border-radius: 999px;
+  color: var(--brand);
+  background: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 860;
+}
+
+.ai-tutor-model-note {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 720;
+  line-height: 1.35;
 }
 
 .ai-tutor-response.loading {

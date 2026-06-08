@@ -1,14 +1,14 @@
-const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
+const DEFAULT_MODEL = "mistralai/mistral-nemotron";
 const DEFAULT_FALLBACK_MODEL = "nvidia/nemotron-3-super-120b-a12b";
 const DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1";
 const MAX_BODY_BYTES = 24_000;
 const MAX_QUESTION_CHARS = 400;
 const MAX_MEMORY_CHARS = 2_400;
 const MAX_HISTORY_MESSAGES = 10;
-const MAX_OUTPUT_TOKENS = 520;
-const PRIMARY_TIMEOUT_MS = 7_000;
-const FALLBACK_TIMEOUT_MS = 42_000;
-const STREAM_COMPLETION_TIMEOUT_MS = 38_000;
+const DEFAULT_OUTPUT_TOKENS = 340;
+const PRIMARY_TIMEOUT_MS = 9_000;
+const FALLBACK_TIMEOUT_MS = 22_000;
+const STREAM_COMPLETION_TIMEOUT_MS = 24_000;
 
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -250,7 +250,7 @@ async function callNemotronModel({ apiKey, baseUrl, model, request, timeoutMs })
         messages: buildProviderMessages(request),
         temperature: 0.2,
         top_p: 0.75,
-        max_tokens: MAX_OUTPUT_TOKENS,
+        max_tokens: outputTokenBudget(request),
         stream: false,
       }),
       signal: controller.signal,
@@ -283,6 +283,7 @@ function streamResponse({ apiKey, baseUrl, models, request }) {
   const stream = new ReadableStream({
     async start(controller) {
       let keepAlive;
+      const startedAt = Date.now();
       const send = (event, data) => {
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
       };
@@ -306,13 +307,27 @@ function streamResponse({ apiKey, baseUrl, models, request }) {
           model: providerResponse.model,
           generatedAt: new Date().toISOString(),
           sessionId: request.sessionId || "",
+          partial: Boolean(providerResponse.partial),
         });
         send("done", { ok: true });
+        console.log(JSON.stringify({
+          event: "ai_tutor_stream_ok",
+          action: request.action,
+          model: providerResponse.model,
+          partial: Boolean(providerResponse.partial),
+          durationMs: Date.now() - startedAt,
+        }));
       } catch (error) {
         const message = error instanceof TutorRequestError
           ? error.message
           : "AI tạm thời chưa phản hồi. Thử lại sau vài giây.";
         send("error", { error: message });
+        console.log(JSON.stringify({
+          event: "ai_tutor_stream_error",
+          action: request.action,
+          error: message,
+          durationMs: Date.now() - startedAt,
+        }));
       } finally {
         if (keepAlive) {
           clearInterval(keepAlive);
@@ -333,8 +348,8 @@ async function streamNemotron({ apiKey, baseUrl, models, request, onStatus, onDe
 
   for (const [index, entry] of models.entries()) {
     try {
-      onStatus(index === 0 ? "Đang thử Nemotron Ultra..." : "Ultra chậm, chuyển sang Nemotron Super...");
-      const content = await streamNemotronModel({
+      onStatus(index === 0 ? "Đang gọi gia sư nhanh..." : "Model chính chậm, chuyển sang dự phòng...");
+      const result = await streamNemotronModel({
         apiKey,
         baseUrl,
         model: entry.model,
@@ -342,7 +357,7 @@ async function streamNemotron({ apiKey, baseUrl, models, request, onStatus, onDe
         timeoutMs: entry.timeoutMs,
         onDelta,
       });
-      return { content, model: entry.model };
+      return { ...result, model: entry.model };
     } catch (error) {
       lastError = error;
       const canFallback = index < models.length - 1 && isRetryableProviderError(error);
@@ -382,7 +397,7 @@ async function streamNemotronModel({ apiKey, baseUrl, model, request, timeoutMs,
         messages: buildProviderMessages(request),
         temperature: 0.2,
         top_p: 0.75,
-        max_tokens: MAX_OUTPUT_TOKENS,
+        max_tokens: outputTokenBudget(request),
         stream: true,
       }),
       signal: controller.signal,
@@ -446,15 +461,19 @@ async function streamNemotronModel({ apiKey, baseUrl, model, request, timeoutMs,
     if (!cleaned) {
       throw new TutorRequestError("AI trả về phản hồi rỗng.", 502, true);
     }
-    return cleaned;
+    return { content: cleaned, partial: false };
   } catch (error) {
     if (error?.name === "AbortError") {
+      const cleaned = cleanAiContent(content);
+      if (sawFirstDelta && cleaned) {
+        const suffix = "\n\nMình tạm dừng tại đây để không bắt Hồng chờ quá lâu. Nếu cần, hãy hỏi tiếp một ý cụ thể hơn.";
+        onDelta(suffix);
+        return { content: `${cleaned}${suffix}`, partial: true };
+      }
       throw new TutorRequestError(
-        sawFirstDelta
-          ? "AI bị ngắt giữa câu trả lời. Hỏi lại ngắn hơn hoặc thử lại sau vài giây."
-          : "AI xử lý quá lâu. Thử lại với model nhanh hơn.",
+        "Kết nối AI đang chậm. Thử lại bằng câu hỏi ngắn hơn hoặc dùng model dự phòng.",
         504,
-        !sawFirstDelta,
+        true,
       );
     }
     throw error;
@@ -512,17 +531,17 @@ function buildProviderMessages(request) {
     },
   ];
 
+  messages.push({
+    role: "user",
+    content: buildUserPrompt(request),
+  });
+
   if (request.messages?.length) {
     request.messages.forEach((message) => {
       messages.push({
         role: message.role,
         content: message.content,
       });
-    });
-  } else {
-    messages.push({
-      role: "user",
-      content: buildUserPrompt(request),
     });
   }
 
@@ -567,7 +586,8 @@ function buildSystemPrompt() {
     "Không chép dài bài khóa, đề thi, sách hoặc nội dung có bản quyền. Chỉ tạo ví dụ học tập mới, ngắn và sát từ hiện tại.",
     "Nếu người học nhập sai, phân tích khác biệt giữa đáp án mong đợi và phần người học đã gõ; tập trung vào chữ thiếu, chữ thừa, hoặc chữ dễ nhầm.",
     "Không hiển thị quá trình suy nghĩ nội bộ. Không mở đầu bằng 'Okay' hoặc tự mô tả việc bạn đang phân tích.",
-    "Giữ phản hồi trong 4-8 câu hoặc 3-5 gạch đầu dòng. Không dùng emoji. Không lan man.",
+    "Giữ phản hồi ngắn: 90-180 từ. Với ví dụ, dùng đúng 3 ví dụ, mỗi ví dụ một dòng gồm chữ Hán, pinyin, nghĩa Việt.",
+    "Không dùng emoji. Không lan man. Nếu người học hỏi tiếp, trả lời trực tiếp vào câu hỏi.",
   ].join("\n");
 }
 
@@ -585,9 +605,21 @@ function buildUserPrompt(request) {
     `Hành động cần làm: ${actionInstruction}`,
     `Từ cần tập trung: ${item.hanzi}`,
     request.question ? `Câu hỏi riêng của người học: ${request.question}` : "",
+    "Yêu cầu tốc độ: trả lời đủ dùng cho học ngay, tránh giải thích dài.",
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function outputTokenBudget(request) {
+  const budgets = {
+    explain: 300,
+    examples: 320,
+    why_wrong: 260,
+    memory_tip: 240,
+    ask: 320,
+  };
+  return budgets[request.action] ?? DEFAULT_OUTPUT_TOKENS;
 }
 
 function providerError(status) {

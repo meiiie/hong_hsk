@@ -70,7 +70,7 @@ This split keeps render functions mostly pure while the controller keeps side ef
 
 ## AI Boundary
 
-The browser never calls NVIDIA directly. `src/infrastructure/ai/hsk-ai-client.ts` calls the same-origin `/api/ai/tutor` endpoint, and `functions/api/ai/tutor.js` reads `NVIDIA_API_KEY` from Cloudflare Pages secrets before calling `nvidia/nemotron-3-ultra-550b-a55b` with fallback to `nvidia/nemotron-3-super-120b-a12b`.
+The browser never calls NVIDIA directly. `src/infrastructure/ai/hsk-ai-client.ts` calls the same-origin `/api/ai/tutor` endpoint, and `functions/api/ai/tutor.js` reads `NVIDIA_API_KEY` from Cloudflare Pages secrets before calling `mistralai/mistral-nemotron` with fallback to `nvidia/nemotron-3-super-120b-a12b`.
 
 The preferred browser path is SSE token streaming. The app stores a lightweight tutor chat session in localStorage, sends recent messages plus compact markdown memory, and persists completed turns rather than writing storage on every token.
 
