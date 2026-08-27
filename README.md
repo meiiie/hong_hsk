@@ -93,7 +93,7 @@ Các module chính:
 
 Yêu cầu:
 
-- Node.js 22+
+- Node.js 22.23.2 theo `.nvmrc` (Vite 8 yêu cầu tối thiểu Node 22.12.0)
 - npm
 - Python 3.12+ nếu chạy Playwright harness
 

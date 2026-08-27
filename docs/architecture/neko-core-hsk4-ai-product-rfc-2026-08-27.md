@@ -319,9 +319,28 @@ interface TutorTurn {
   asksLearnerToRespond: boolean;
   confidence: "verified" | "model-assisted" | "uncertain";
 }
+
+interface TutorEventEnvelope {
+  schemaVersion: 1;
+  sessionId: string;
+  requestId: string;
+  eventId: string; // `${requestId}:${sequence}`
+  sequence: number; // Starts at 1 and increases within one request.
+  final: boolean;
+  turn: TutorTurn;
+}
 ```
 
-The gateway validates schema and length. `verified` is allowed only when every factual field matches project data or a deterministic checker. Other model content is `model-assisted` or `uncertain`.
+The bridge validates schema and length. `verified` is allowed only when every factual field matches project data or a deterministic checker. Other model content is `model-assisted` or `uncertain`.
+
+### Browser transport and replay
+
+- The PWA creates a UUID `requestId` for each explicit tutor action and opens an authenticated WebSocket to the bridge. HTTPS is used only for health/auth bootstrap; tutor streaming and cancellation use the WebSocket.
+- The bridge assigns `sequence` from `1` for that request and derives the stable `eventId` from `requestId` plus `sequence`. The PWA renders an event only once and only in sequence; a gap requests replay from the last acknowledged sequence.
+- The bridge keeps a bounded in-memory buffer of unacknowledged events until the request finishes or expires. There is no Durable Object and no second durable session store. Neko remains the durable conversational-session authority.
+- If the bridge process restarts mid-request, the request fails closed. The PWA does not silently retry a model call; the learner may explicitly retry with a new `requestId` after the UI reports the interruption.
+- Cancellation names the exact `requestId`. After the bridge acknowledges cancellation, it discards later output for that request and the PWA must not render it.
+- Reconnect may replay the same envelope, so both bridge and PWA tests must prove `eventId` deduplication and ordering. Logs contain identifiers and timing only, never tutor text, learner text, or credentials.
 
 ## Evaluation plan and release gates
 
@@ -349,7 +368,7 @@ Each case records allowed tutor acts, forbidden disclosures, verified facts, exp
 - At least 98% exact factual agreement on verified-card fields; every mismatch is release-blocking until reviewed.
 - No high/critical dependency finding in shipped runtime paths.
 - No secret, raw provider error, internal prompt, or cross-session data in output.
-- Streaming cancellation leaves no duplicated tutor event or unknown mutation.
+- Replay, reconnect, and streaming cancellation leave no duplicated, reordered, or post-cancel tutor event and no unknown mutation.
 - Warm first-token p95 target under 2.5 seconds; cold-start p95 is measured separately and shown honestly.
 
 ### Pedagogy review
