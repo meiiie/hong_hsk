@@ -36,6 +36,12 @@ npm run build
 npm run test:harness
 ```
 
+With Neko installed and signed in, run the opt-in real-model smoke separately so CI does not depend on a personal provider session:
+
+```bash
+npm run test:neko-local
+```
+
 Install browser-test prerequisites when needed:
 
 ```bash
@@ -64,6 +70,7 @@ Desktop:
 - Reveal and hide answer controls work.
 - Wrong answer creates a wrong-list item.
 - Retired tutor session storage is removed and no legacy tutor control appears after checking an answer.
+- The developer-local Neko card is locked during recall and exposes its question action only after check/reveal.
 - Correct answer is recognized.
 - Data screen renders.
 
@@ -80,7 +87,8 @@ Mobile/mock:
 - It does not prove every Vietnamese meaning is final-quality.
 - It does not validate official HSK licensing.
 - It does not guarantee Cloudflare deploy unless `CLOUDFLARE_API_TOKEN` is configured.
-- It does not implement or validate the proposed Neko Core tutor; that work remains gated by the product and evaluation RFC.
+- The normal harness validates only the local Neko control's pedagogical gate; it does not call a provider.
+- The opt-in `npm run test:neko-local` smoke verifies one real browser-to-ACP response, but does not prove factual accuracy, learning outcomes, or production isolation.
 - It validates lesson-audio URL wiring and controls but stubs the external MP3 response so CI does not depend on third-party DNS or media availability.
 - It does not replace human mobile UX review on a real phone.
 - It does not prove the current architecture is final; it only prevents obvious inward/outward dependency violations.

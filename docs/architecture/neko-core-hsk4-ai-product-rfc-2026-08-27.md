@@ -1,7 +1,7 @@
 # Neko Core AI for Hồng HSK4 Studio — Product and Architecture RFC
 
 - Date: 2026-08-27
-- Status: research complete; legacy AI removed; single-learner host architecture selected; integration not yet implemented
+- Status: research complete; legacy AI removed; developer-local ACP UX pilot implemented; networked integration not yet implemented
 - Scope owner: Hồng HSK4 Studio
 - Upstream examined: `meiiie/neko-core` stable release `v1.2.1`, commit `901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13`
 
@@ -22,6 +22,8 @@ The integration must preserve these boundaries:
 - AI assistance appears only at a pedagogically useful point. It does not interrupt recall or reveal an answer before the learner checks or explicitly reveals it.
 
 No new AI UI should ship until the learning contract, evaluation corpus, Neko host profile, persistence design, and privacy controls below are implemented and tested.
+
+A developer-only UX pilot is allowed before that release gate. It may call the owner's installed ordinary `neko acp` process only from loopback Vite, in `plan` mode and an empty workspace with MCP, outside-workspace reads, and the extra verification loop disabled for that child process. This exception is for testing post-answer placement and tutor usefulness; production builds hide it, and it must not be connected to a Tunnel or public host.
 
 The learner can install and use Neko Core in its terminal immediately. Integration inside the HSK4 PWA still requires the HSK host profile and bridge because a browser cannot directly launch or speak ACP's local `stdio` transport.
 

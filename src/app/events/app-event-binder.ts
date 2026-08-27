@@ -16,6 +16,7 @@ export interface AppEventHandlers {
   hideAnswer(): void;
   selectStrokeChar(index: number): void;
   runStrokeAction(action: string): void | Promise<void>;
+  askNeko(question: string): void | Promise<void>;
   updateSetting(input: HTMLInputElement | HTMLSelectElement): void | Promise<void>;
   fileSelected(fileName: string): void;
   importFile(): void | Promise<void>;
@@ -190,6 +191,21 @@ function bindStudy(root: HTMLElement, handlers: AppEventHandlers): void {
     button.addEventListener("click", () => {
       void handlers.runStrokeAction(button.dataset.strokeAction ?? "");
     });
+  });
+
+  root.querySelectorAll<HTMLButtonElement>("[data-neko-question]").forEach((button) => {
+    button.addEventListener("click", () => {
+      void handlers.askNeko(button.dataset.nekoQuestion ?? "");
+    });
+  });
+
+  const nekoQuestionForm = root.querySelector<HTMLFormElement>("[data-neko-question-form]");
+  nekoQuestionForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = nekoQuestionForm.querySelector<HTMLInputElement>("input[name='question']");
+    if (input?.value.trim()) {
+      void handlers.askNeko(input.value);
+    }
   });
 
 }

@@ -25,7 +25,11 @@ Cloudflare deploy secrets are configured and the production deploy workflow has 
 
 The current technology decision is recorded in [Technology Review](../architecture/technology-review-2026-05-26.md): keep the static Vite/TypeScript PWA, IndexedDB, Hanzi Writer, Cloudflare Pages, and Playwright harness for now. Revisit a backend only when sync/accounts or multi-user workflows become real.
 
-The legacy NVIDIA tutor has been removed from the PWA, Pages Functions, tests, and documentation. Startup performs a narrow cleanup of the retired tutor-session localStorage key so old chat content does not remain on the learner's device. There is no AI runtime or tutor UI in the current application. The future one-learner pilot will use an official pinned Neko Core binary on one trusted computer, local Neko durable sessions, Cloudflare Tunnel/Access, a minimal browser-to-ACP bridge, exact read-only HSK tools, and delayed-learning evaluation. See [Neko Core HSK4 AI Product RFC](../architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md) and [single-learner host runbook](../deployment/neko-single-learner-host.md).
+The legacy NVIDIA tutor has been removed from the PWA, Pages Functions, tests, and documentation. Startup performs a narrow cleanup of the retired tutor-session localStorage key so old chat content does not remain on the learner's device.
+
+A stacked local-only branch, `codex/neko-local-pilot`, now adds a post-answer Neko UX pilot without changing the cleanup PR. Vite launches the owner's installed ordinary `neko acp` on demand; a same-origin loopback route passes bounded card/attempt context into an ACP session running in `plan` mode, low effort, an empty temporary workspace, no configured MCP, no outside reads, and no extra verification loop. The locked Neko card is visible during recall, while the question button appears only after check/reveal. `npm run test:neko-local` proves a real Neko response in Chromium. Production builds omit the tutor dependency and Vite middleware, so this branch is for local product evaluation, not deployment.
+
+The future networked one-learner pilot still requires an official pinned Neko Core binary on one trusted computer, local Neko durable sessions, Cloudflare Tunnel/Access, a minimal browser-to-ACP bridge, the `hsk4-studio` authority profile with exact read-only HSK tools, and delayed-learning evaluation. See [Neko Core HSK4 AI Product RFC](../architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md) and [single-learner host runbook](../deployment/neko-single-learner-host.md).
 
 ## Preferred Next Workflow
 
@@ -49,5 +53,6 @@ gh pr create --draft --base main --head codex/<task>
 - Do not reveal stroke-practice answers during recall by default.
 - Do not add a general backend/SQLite for ordinary PWA state. The one-learner Neko pilot uses the trusted computer's local Neko sessions and does not need Worker/Durable Object/Container infrastructure.
 - Do not reimplement Neko's agent loop in this repo. Product-specific work is limited to the HSK profile upstream, the browser-to-ACP bridge, verified HSK tools, tutor schema, and UI.
+- Keep the ordinary-ACP tutor path developer-local. A networked pilot must replace that exception with the reviewed `hsk4-studio` host profile and packaged bridge.
 - Do not use Cloudflare/GitHub secrets outside GitHub Secrets or approved interactive prompts.
 - Version management now uses compile-time app metadata and `/version.json`; keep schema constants in `src/domain/app-version.ts` aligned with real data migrations.

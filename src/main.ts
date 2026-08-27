@@ -10,6 +10,7 @@ import {
   importVocabFile,
 } from "./infrastructure/import-export/workbook-io";
 import { HanziStrokeTrainer } from "./infrastructure/hanzi/hanzi-stroke-trainer";
+import { HttpNekoTutor } from "./infrastructure/neko/http-neko-tutor";
 import { speakChinese } from "./infrastructure/speech/chinese-speech";
 import { loadState, resetState, saveState } from "./infrastructure/storage/indexeddb-state-store";
 import { checkAppVersion, currentAppVersion } from "./infrastructure/version/http-version-checker";
@@ -38,4 +39,5 @@ mountHskApp({
     current: currentAppVersion,
     check: checkAppVersion,
   },
+  nekoTutor: import.meta.env.DEV ? new HttpNekoTutor() : undefined,
 });

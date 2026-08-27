@@ -1,7 +1,7 @@
 # Neko Core Host Runbook for One Learner
 
 - Date: 2026-08-27
-- Status: Neko can be installed now; HSK4-in-app integration waits for the `hsk4-studio` profile and bridge releases
+- Status: developer-local ACP pilot available; networked learner pilot still waits for the `hsk4-studio` profile and bridge releases
 
 ## Decision
 
@@ -35,7 +35,20 @@ Inside Neko, use `/login` to choose a supported provider route and `/model` to c
 
 Direct binaries and their `.sha256` sidecars are available from the [Neko Core v1.2.1 release](https://github.com/meiiie/neko-core/releases/tag/v1.2.1). For the integrated pilot, install the exact release named by Hồng HSK4 rather than silently tracking `latest`.
 
-Installing Neko now enables its normal terminal interface. It does **not** yet add AI buttons to the HSK4 PWA.
+Installing Neko enables its normal terminal interface. On the developer-local pilot branch, Vite also shows a Neko control in the study view after the learner checks or reveals an answer. The production build still contains no active Neko endpoint or control.
+
+## Developer-Local Pilot
+
+The local UX pilot deliberately uses ordinary `neko acp`, as requested by the owner, without copying Neko's runtime. It is a bounded exception for evaluating the learning flow on one trusted machine:
+
+- Vite launches the installed `neko acp` binary on demand and communicates through ACP v1 over `stdio`.
+- The browser can call only the same-origin `POST /api/neko/tutor` route on loopback.
+- The ACP session uses `plan` mode, low reasoning effort, an empty temporary workspace, no configured MCP servers, no reads outside that workspace, and no extra verification loop.
+- The Vite launcher removes `NVIDIA_API_KEY`, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID` from the Neko child environment; Neko uses its own selected provider login instead.
+- The learner sees a locked Neko card during recall; questions are enabled only after checking or explicitly revealing the answer.
+- Provider credentials remain inside Neko. They are never returned to the browser or added to Cloudflare.
+
+Run `npm run dev`, open `http://127.0.0.1:5173/`, then use `npm run test:neko-local` for a real one-turn browser/ACP smoke test. This path exists to judge tutoring usefulness and UI placement before a merge. It is not a deployable bridge and must never be exposed with a router port or Tunnel.
 
 ## What Must Exist Before In-App AI
 
@@ -46,7 +59,7 @@ Two small product-specific releases are still required:
 
 The bridge is not an AI core. Neko still owns provider authentication, model calls, planning, tool dispatch, streaming, cancellation, permissions, checkpoints, and durable sessions.
 
-Do not use ordinary `neko acp` for the PWA pilot. Without the launch-authorized HSK host profile it includes Neko's normal tool environment, which is broader than a language tutor needs. Do not expose ACP or a generic terminal session directly to the internet.
+Do not use ordinary `neko acp` for the networked or production PWA pilot. The developer-local exception above reduces its effective surface for one trusted machine, but only the launch-authorized HSK host profile can make the exact tutor tool surface a Neko-enforced authority ceiling. Do not expose ACP or a generic terminal session directly to the internet.
 
 ## Target Host Layout
 

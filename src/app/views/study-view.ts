@@ -2,7 +2,7 @@ import type { AppState, StudyMode, VocabItem } from "../../domain/types";
 import { bookLabel, reviewStatusLabel, studyModeLabel } from "../../presentation/i18n";
 import { icon, labelWithIcon } from "../../presentation/icons";
 import { formatDateVi } from "../../shared/date-utils";
-import type { StudyFeedback } from "../app-types";
+import type { NekoTutorViewState, StudyFeedback } from "../app-types";
 import { displayMeaning, escapeAttribute, escapeHtml, extractHanziChars, percent } from "./view-helpers";
 
 interface StudyViewModel {
@@ -12,10 +12,21 @@ interface StudyViewModel {
   studyIndex: number;
   strokeCharIndex: number;
   feedback: StudyFeedback | undefined;
+  nekoTutorAvailable: boolean;
+  nekoTutor: NekoTutorViewState | undefined;
 }
 
 export function renderStudyView(model: StudyViewModel): string {
-  const { state, studyMode, studyQueue, studyIndex, strokeCharIndex, feedback: studyFeedback } = model;
+  const {
+    state,
+    studyMode,
+    studyQueue,
+    studyIndex,
+    strokeCharIndex,
+    feedback: studyFeedback,
+    nekoTutorAvailable,
+    nekoTutor,
+  } = model;
 
   const item = studyQueue[studyIndex];
   if (!item) {
@@ -130,6 +141,7 @@ export function renderStudyView(model: StudyViewModel): string {
 
       <aside class="study-side">
         ${renderStrokeLab(selectedChar, hanziChars, canUseStroke, strokeCharIndex)}
+        ${renderNekoTutor(item, feedback, nekoTutorAvailable, nekoTutor)}
         ${review ? `<section class="review-panel">
             <h3>Trạng thái từ này</h3>
             ${renderReviewDetail(state, item)}
@@ -145,6 +157,100 @@ export function renderStudyView(model: StudyViewModel): string {
         </section>
       </aside>
     </section>
+  `;
+}
+
+function renderNekoTutor(
+  item: VocabItem,
+  feedback: StudyFeedback | undefined,
+  available: boolean,
+  state: NekoTutorViewState | undefined,
+): string {
+  if (!available) {
+    return "";
+  }
+  if (!feedback) {
+    return `
+      <section class="neko-tutor neko-tutor-locked" data-neko-tutor>
+        <div class="neko-tutor-head">
+          <span class="neko-tutor-icon">${icon("sparkles")}</span>
+          <span>
+            <strong>Neko AI</strong>
+            <small>Mở sau khi chấm hoặc hiện đáp án.</small>
+          </span>
+        </div>
+      </section>
+    `;
+  }
+
+  const current = state?.itemId === item.id ? state : undefined;
+  const defaultQuestion = feedback.revealed
+    ? "Giải thích ngắn gọn từ này và cho tôi một mẹo ghi nhớ."
+    : feedback.correct
+      ? "Giải thích cách dùng từ này và cho tôi một ví dụ HSK4 ngắn."
+      : "Chỉ ra lỗi trong câu trả lời của tôi và giải thích cách nhớ đáp án đúng.";
+
+  return `
+    <section class="neko-tutor" data-neko-tutor>
+      <div class="neko-tutor-head">
+        <span class="neko-tutor-icon">${icon("sparkles")}</span>
+        <span>
+          <strong>Neko AI</strong>
+          <small>ACP local · chỉ hỗ trợ sau khi trả lời</small>
+        </span>
+      </div>
+      ${
+        !current
+          ? `<button type="button" class="primary-button neko-primary" data-neko-question="${escapeAttribute(defaultQuestion)}">
+              ${labelWithIcon("sparkles", "Hỏi Neko về câu này")}
+            </button>`
+          : ""
+      }
+      ${
+        current?.status === "loading"
+          ? `<div class="neko-loading" role="status" aria-live="polite">
+              <span class="neko-pulse" aria-hidden="true"></span>
+              <span>Neko đang xem câu trả lời của bạn…</span>
+            </div>`
+          : ""
+      }
+      ${
+        current?.status === "ready"
+          ? `<div class="neko-answer" role="status" aria-live="polite">
+              <p>${escapeHtml(current.answer ?? "").replaceAll("\n", "<br />")}</p>
+            </div>
+            ${renderNekoFollowups()}`
+          : ""
+      }
+      ${
+        current?.status === "error"
+          ? `<div class="neko-error" role="alert">
+              <p>${escapeHtml(current.error ?? "Neko chưa trả lời được.")}</p>
+              <button type="button" class="ghost-button" data-neko-question="${escapeAttribute(current.question)}">Thử lại</button>
+            </div>`
+          : ""
+      }
+    </section>
+  `;
+}
+
+function renderNekoFollowups(): string {
+  const questions = [
+    "Phân biệt từ này với một từ HSK4 dễ nhầm.",
+    "Cho tôi hai ví dụ ngắn có dịch tiếng Việt.",
+    "Tạo một câu hỏi thử lại, chưa đưa đáp án.",
+  ];
+  return `
+    <div class="neko-suggestions" aria-label="Câu hỏi gợi ý">
+      ${questions.map((question) => `<button type="button" data-neko-question="${escapeAttribute(question)}">${escapeHtml(question)}</button>`).join("")}
+    </div>
+    <form class="neko-question-form" data-neko-question-form>
+      <label for="neko-question-input">Hỏi tiếp về từ này</label>
+      <div>
+        <input id="neko-question-input" name="question" maxlength="600" autocomplete="off" placeholder="Ví dụ: Khi nào dùng từ này?" />
+        <button type="submit" class="primary-button">Hỏi</button>
+      </div>
+    </form>
   `;
 }
 

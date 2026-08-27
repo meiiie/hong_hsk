@@ -47,6 +47,7 @@ Mục tiêu không phải làm một app học tiếng Trung chung chung. Dự �
 | Dữ liệu | Nhập Excel/CSV, xuất backup, nạp bộ 4A/4B tham khảo, glossary Việt hóa |
 | Thi thử | 4 bộ đề mô phỏng, đồng hồ 105 phút, điểm theo Nghe/Đọc/Viết |
 | Mobile UX | Bottom nav, vùng bấm lớn, bố cục ưu tiên một hành động chính |
+| Neko local pilot | Nút hậu kiểm gọi trực tiếp Neko ACP đã cài; chỉ có khi chạy Vite local, không bật trong production build |
 | Deploy | Cloudflare Pages, custom domain, security headers, Docker/nginx fallback |
 
 ## Trạng Thái Dữ Liệu
@@ -86,7 +87,7 @@ Các module chính:
 - `src/infrastructure/import-export/workbook-io.ts`: nhập/xuất Excel, CSV, JSON.
 - `src/infrastructure/storage/indexeddb-state-store.ts`: IndexedDB/local state.
 - `src/presentation/i18n.ts`: nhãn tiếng Việt/Anh.
-- `docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`: nghiên cứu nhu cầu người học và hợp đồng chuẩn bị cho AI mới dùng trực tiếp Neko Core; chưa có AI runtime trong bản hiện tại.
+- `docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`: nghiên cứu nhu cầu người học và hợp đồng cho AI mới dùng trực tiếp Neko Core; nhánh thử nghiệm local đã có ACP UX hậu kiểm nhưng production vẫn chờ host profile/bridge.
 - `docs/deployment/neko-single-learner-host.md`: cách cài Neko trên một máy tin cậy cho pilot một người học, ranh giới bridge ACP và credential.
 
 ## Chạy Local
@@ -96,6 +97,7 @@ Yêu cầu:
 - Node.js 22.23.2 theo `.nvmrc` (Vite 8 yêu cầu tối thiểu Node 22.12.0)
 - npm
 - Python 3.12+ nếu chạy Playwright harness
+- Neko Core đã đăng nhập provider nếu muốn thử nút Neko local
 
 ```bash
 npm ci
@@ -103,6 +105,16 @@ npm run dev
 ```
 
 Mở `http://127.0.0.1:5173/`.
+
+Trong luồng Học tập, thẻ Neko bị khóa khi đang nhớ đáp án và chỉ mở sau khi chấm/hiện đáp án. Kiểm tra một lượt ACP thật bằng:
+
+```bash
+neko --version
+neko doctor
+npm run test:neko-local
+```
+
+Lệnh này dùng provider đã đăng nhập trong Neko. Nó không chạy trong CI và không đưa credential vào trình duyệt.
 
 Build production:
 

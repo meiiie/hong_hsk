@@ -1,5 +1,5 @@
 import type { HskAppDependencies } from "./app-dependencies";
-import type { View } from "./app-types";
+import type { NekoTutorViewState, View } from "./app-types";
 import { bindAppEvents } from "./events/app-event-binder";
 import { registerServiceWorker } from "./service-worker";
 import { MockExamWorkflow } from "./workflows/mock-exam-workflow";
@@ -49,6 +49,7 @@ class HskApp {
   private accountMenuOpen = false;
   private studyMotionState: StudyMotionState | undefined;
   private versionCheck: AppVersionCheck | undefined;
+  private nekoTutor: NekoTutorViewState | undefined;
   private lessonAudio: LessonListeningViewState = {
     playbackRate: 1,
     transcripts: {},
@@ -190,6 +191,8 @@ class HskApp {
       studyIndex: this.study.index,
       strokeCharIndex: this.study.strokeCharIndex,
       feedback: this.study.feedback,
+      nekoTutorAvailable: Boolean(this.dependencies.nekoTutor),
+      nekoTutor: this.nekoTutor,
     });
   }
 
@@ -219,6 +222,7 @@ class HskApp {
       hideAnswer: () => this.hideAnswer(),
       selectStrokeChar: (index) => this.selectStrokeChar(index),
       runStrokeAction: (action) => this.dependencies.strokePractice.run(action),
+      askNeko: (question) => this.askNeko(question),
       updateSetting: (input) => this.updateSetting(input),
       fileSelected: (fileName) => this.updateFileLabel(fileName),
       importFile: () => this.handleImport(),
@@ -254,6 +258,7 @@ class HskApp {
     this.accountMenuOpen = false;
     if (view !== "study") {
       this.study.clear();
+      this.nekoTutor = undefined;
     }
     this.render();
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -321,6 +326,7 @@ class HskApp {
 
   private startStudy(mode: StudyMode): void {
     this.study.start(mode);
+    this.nekoTutor = undefined;
     this.activeView = "study";
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
@@ -444,18 +450,21 @@ class HskApp {
 
   private nextCard(): void {
     this.study.nextCard();
+    this.nekoTutor = undefined;
     this.render();
     this.focusHanziInput();
   }
 
   private revealAnswer(): void {
     if (this.study.revealCurrentAnswer()) {
+      this.nekoTutor = undefined;
       this.render();
     }
   }
 
   private hideAnswer(): void {
     if (this.study.hideRevealedAnswer()) {
+      this.nekoTutor = undefined;
       this.render();
       this.focusHanziInput();
     }
@@ -567,8 +576,74 @@ class HskApp {
       return;
     }
     this.state = result.state;
+    this.nekoTutor = undefined;
     this.study.recordFeedback(result.itemId, result.input, result.correct);
     await this.persist();
+    this.render();
+  }
+
+  private async askNeko(question: string): Promise<void> {
+    const tutor = this.dependencies.nekoTutor;
+    const item = this.study.currentItem();
+    const feedback = item && this.study.feedback?.itemId === item.id ? this.study.feedback : undefined;
+    const trimmedQuestion = question.trim();
+    if (!tutor || !item || !feedback || !trimmedQuestion || this.nekoTutor?.status === "loading") {
+      return;
+    }
+
+    const itemId = item.id;
+    const conversationId = this.nekoTutor?.itemId === itemId ? this.nekoTutor.conversationId : undefined;
+    this.nekoTutor = {
+      itemId,
+      status: "loading",
+      question: trimmedQuestion,
+      conversationId,
+    };
+    this.render();
+
+    try {
+      const result = await tutor.ask({
+        card: {
+          id: item.id,
+          book: item.book,
+          lesson: item.lesson,
+          hanzi: item.hanzi,
+          pinyin: item.pinyin,
+          meaningVi: item.meaningVi,
+          meaningEn: item.meaningEn,
+          partOfSpeech: item.partOfSpeech,
+          exampleHan: item.exampleHan,
+          examplePinyin: item.examplePinyin,
+          exampleVi: item.exampleVi,
+        },
+        learnerAnswer: feedback.input,
+        correct: feedback.correct,
+        revealed: Boolean(feedback.revealed),
+        question: trimmedQuestion,
+        conversationId,
+      });
+      if (this.study.currentItem()?.id !== itemId) {
+        return;
+      }
+      this.nekoTutor = {
+        itemId,
+        status: "ready",
+        question: trimmedQuestion,
+        answer: result.answer,
+        conversationId: result.conversationId,
+      };
+    } catch (error) {
+      if (this.study.currentItem()?.id !== itemId) {
+        return;
+      }
+      this.nekoTutor = {
+        itemId,
+        status: "error",
+        question: trimmedQuestion,
+        conversationId,
+        error: error instanceof Error ? error.message : "Neko chưa trả lời được. Hãy thử lại.",
+      };
+    }
     this.render();
   }
 

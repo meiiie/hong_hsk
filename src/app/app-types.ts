@@ -17,3 +17,12 @@ export interface StudyFeedback {
   correct: boolean;
   revealed?: boolean;
 }
+
+export interface NekoTutorViewState {
+  itemId: string;
+  status: "loading" | "ready" | "error";
+  question: string;
+  conversationId?: string;
+  answer?: string;
+  error?: string;
+}
