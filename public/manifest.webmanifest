@@ -1,7 +1,7 @@
 {
   "name": "Hồng HSK4 Studio",
   "short_name": "Hồng HSK4",
-  "description": "Gia sư HSK4 4A/4B cho Hồng: học theo bài, gõ chữ Hán, luyện nét, ôn giãn cách, thi thử và hỏi AI sau khi chấm.",
+  "description": "Ứng dụng HSK4 4A/4B cho Hồng: học theo bài, gõ chữ Hán, luyện nét, ôn giãn cách và thi thử.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

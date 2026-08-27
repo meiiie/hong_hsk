@@ -5,7 +5,7 @@
 <h1 align="center">Hồng HSK4 Studio</h1>
 
 <p align="center">
-  Mobile-first PWA cho người Việt ôn HSK4 4A/4B theo bài, gõ chữ Hán, luyện nét, thi thử và hỏi gia sư AI sau khi chấm đáp án.
+  Mobile-first PWA cho người Việt ôn HSK4 4A/4B theo bài, gõ chữ Hán, luyện nét, ôn giãn cách và thi thử.
 </p>
 
 <p align="center">
@@ -44,7 +44,6 @@ Mục tiêu không phải làm một app học tiếng Trung chung chung. Dự �
 | Học từ | Hàng đợi hôm nay, theo bài, từ sai, tự chấm chữ Hán |
 | Luyện nét | Hanzi Writer, nét mẫu, quiz nét, chế độ ẩn/hiện đáp án phù hợp khi học |
 | Ôn giãn cách | Sai ôn lại sớm, đúng liên tiếp tăng khoảng cách, lưu trạng thái trong IndexedDB |
-| Gia sư AI | Cloudflare Pages Function gọi NVIDIA, mặc định dùng Mistral-Nemotron tốc độ nhanh và fallback Nemotron Super khi provider timeout/5xx, để giải thích nghĩa, tạo ví dụ, mẹo nhớ và sửa lỗi sau khi người học đã chấm |
 | Dữ liệu | Nhập Excel/CSV, xuất backup, nạp bộ 4A/4B tham khảo, glossary Việt hóa |
 | Thi thử | 4 bộ đề mô phỏng, đồng hồ 105 phút, điểm theo Nghe/Đọc/Viết |
 | Mobile UX | Bottom nav, vùng bấm lớn, bố cục ưu tiên một hành động chính |
@@ -70,9 +69,6 @@ flowchart LR
   C --> D["Review Queue"]
   D --> E["Gõ chữ Hán"]
   D --> F["Luyện nét Hanzi Writer"]
-  E --> J["AI Tutor Gateway"]
-  J --> K["Mistral-Nemotron"]
-  J -.fallback.-> L["Nemotron 3 Super"]
   C --> G["Mock Exam"]
   H["Cloudflare Pages"] --> I["PWA trên điện thoại"]
   I --> C
@@ -90,6 +86,7 @@ Các module chính:
 - `src/infrastructure/import-export/workbook-io.ts`: nhập/xuất Excel, CSV, JSON.
 - `src/infrastructure/storage/indexeddb-state-store.ts`: IndexedDB/local state.
 - `src/presentation/i18n.ts`: nhãn tiếng Việt/Anh.
+- `docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`: nghiên cứu nhu cầu người học và hợp đồng chuẩn bị cho AI mới dựa trên Neko Core; chưa có AI runtime trong bản hiện tại.
 
 ## Chạy Local
 
@@ -150,11 +147,8 @@ npm run deploy:cf
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
-- `NVIDIA_API_KEY` nếu bật gia sư AI trên production.
 
 `CLOUDFLARE_API_TOKEN` nên là token hẹp quyền, tối thiểu `Account > Cloudflare Pages > Edit`. Không commit token vào repo.
-
-AI Tutor mặc định dùng `mistralai/mistral-nemotron` qua Cloudflare Pages Function `/api/ai/tutor`, với fallback `nvidia/nemotron-3-super-120b-a12b` khi provider timeout hoặc trả lỗi tạm thời. Nếu cả provider chính và dự phòng đều chậm, gateway trả một gợi ý nội bộ ngắn từ dữ liệu thẻ hiện tại để người học không bị kẹt ở trạng thái lỗi. `nvidia/nemotron-3-ultra-550b-a55b` vẫn có thể dùng bằng Pages secret `NVIDIA_MODEL` cho các lượt cần suy luận sâu, nhưng không nên làm mặc định cho phiên học nhanh. Có thể override bằng Pages secrets `NVIDIA_MODEL`, `NVIDIA_FALLBACK_MODEL` và `NVIDIA_BASE_URL`, nhưng không đưa API key vào frontend hoặc file cấu hình commit.
 
 Custom domain production hiện tại là `hsk4.holilihu.online`.
 

@@ -2,14 +2,7 @@ import type { HskAppDependencies } from "./app-dependencies";
 import type { View } from "./app-types";
 import { bindAppEvents } from "./events/app-event-binder";
 import { registerServiceWorker } from "./service-worker";
-import type { AiTutorAction } from "../application/ports/ai-tutor-client";
 import { MockExamWorkflow } from "./workflows/mock-exam-workflow";
-import {
-  AiTutorWorkflow,
-  aiTutorUserPrompt,
-  buildAiTutorMemoryMarkdown,
-  buildAiTutorRequest,
-} from "./workflows/ai-tutor-workflow";
 import { applySettingInput } from "./workflows/settings-workflow";
 import { StudyWorkflow } from "./workflows/study-workflow";
 import { registerHskWebMcpTools } from "./webmcp/hsk-webmcp";
@@ -41,20 +34,19 @@ import { clamp } from "../shared/number-utils";
 
 const SIDEBAR_COLLAPSED_KEY = "hong-hsk4-sidebar-collapsed";
 const LESSON_TRANSCRIPTS_KEY = "hong-hsk4-lesson-transcripts-v1";
+const RETIRED_LOCAL_STORAGE_KEYS = ["hong-hsk4-ai-tutor-session-v1"];
 const LESSON_AUDIO_RATES = [0.75, 1, 1.25] as const;
 
 class HskApp {
   private state!: AppState;
   private activeView: View = "dashboard";
   private readonly study = new StudyWorkflow();
-  private readonly aiTutor = new AiTutorWorkflow();
   private readonly mockExam = new MockExamWorkflow();
   private examClockId: number | undefined;
   private sidebarCollapsed = false;
   private sidebarMotionState: SidebarMotionState | undefined;
   private mobileMoreOpen = false;
   private accountMenuOpen = false;
-  private aiTutorAbort: AbortController | undefined;
   private studyMotionState: StudyMotionState | undefined;
   private versionCheck: AppVersionCheck | undefined;
   private lessonAudio: LessonListeningViewState = {
@@ -68,6 +60,7 @@ class HskApp {
   ) {}
 
   async init(): Promise<void> {
+    removeRetiredLocalStorage();
     this.state = await this.dependencies.stateStore.load();
     this.sidebarCollapsed = loadSidebarCollapsed();
     this.lessonAudio.transcripts = loadLessonTranscripts();
@@ -117,12 +110,10 @@ class HskApp {
       {
         navigate: (view) => this.navigate(view),
         startStudy: (mode) => this.startStudy(mode),
-        askAiTutor: (action, question) => this.askAiTutor(action, question),
       },
       {
         activeView: this.activeView,
         currentItem: this.createWebMcpCurrentItem(),
-        aiUnlocked: Boolean(this.study.feedback && this.activeView === "study"),
         dueToday: stats.dueToday,
         wrongOpen: stats.wrongOpen,
         selectedLesson: this.state.settings.selectedLesson,
@@ -142,8 +133,6 @@ class HskApp {
       itemId: item?.id,
       feedbackKind,
       strokeUnlocked: feedbackKind !== "none",
-      aiUnlocked: feedbackKind !== "none",
-      aiStatus: this.aiTutor.stateForItem(item?.id).status,
     };
   }
 
@@ -201,7 +190,6 @@ class HskApp {
       studyIndex: this.study.index,
       strokeCharIndex: this.study.strokeCharIndex,
       feedback: this.study.feedback,
-      aiTutor: this.aiTutor.stateForItem(this.study.currentItem()?.id),
     });
   }
 
@@ -229,9 +217,6 @@ class HskApp {
       nextCard: () => this.nextCard(),
       revealAnswer: () => this.revealAnswer(),
       hideAnswer: () => this.hideAnswer(),
-      askAiTutor: (action, question) => this.askAiTutor(action, question),
-      cancelAiTutor: () => this.cancelAiTutor(),
-      clearAiTutorSession: () => this.clearAiTutorSession(),
       selectStrokeChar: (index) => this.selectStrokeChar(index),
       runStrokeAction: (action) => this.dependencies.strokePractice.run(action),
       updateSetting: (input) => this.updateSetting(input),
@@ -264,15 +249,11 @@ class HskApp {
   }
 
   private navigate(view: View): void {
-    if (view !== "study") {
-      this.cancelAiTutor();
-    }
     this.activeView = view;
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
     if (view !== "study") {
       this.study.clear();
-      this.aiTutor.reset();
     }
     this.render();
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -339,9 +320,7 @@ class HskApp {
   }
 
   private startStudy(mode: StudyMode): void {
-    this.cancelAiTutor();
     this.study.start(mode);
-    this.aiTutor.reset();
     this.activeView = "study";
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
@@ -464,141 +443,9 @@ class HskApp {
   }
 
   private nextCard(): void {
-    this.cancelAiTutor();
     this.study.nextCard();
     this.render();
     this.focusHanziInput();
-  }
-
-  private async askAiTutor(action: AiTutorAction, question?: string): Promise<void> {
-    const item = this.study.currentItem();
-    const feedback =
-      item && this.study.feedback?.itemId === item.id
-        ? this.study.feedback
-        : undefined;
-    if (!item || !feedback) {
-      return;
-    }
-
-    this.cancelAiTutor();
-    const userPrompt = aiTutorUserPrompt(action, item, question);
-    const assistantMessageId = this.aiTutor.startTurn(item.id, action, userPrompt, question);
-    this.render();
-
-    try {
-      const memoryMarkdown = buildAiTutorMemoryMarkdown(this.state, item, this.study.mode);
-      const request = buildAiTutorRequest(
-        this.state,
-        item,
-        this.study.mode,
-        action,
-        feedback,
-        question,
-        this.aiTutor.sessionId(),
-        this.aiTutor.requestMessages(),
-        memoryMarkdown,
-        true,
-      );
-      const abort = new AbortController();
-      this.aiTutorAbort = abort;
-      let pendingDelta = "";
-      let deltaFrame = 0;
-      const flushDelta = () => {
-        deltaFrame = 0;
-        if (!pendingDelta) {
-          return;
-        }
-        const delta = pendingDelta;
-        pendingDelta = "";
-        this.aiTutor.appendDelta(assistantMessageId, delta);
-        this.patchAiTutorMessage(assistantMessageId);
-      };
-      const scheduleDelta = (delta: string) => {
-        pendingDelta += delta;
-        if (deltaFrame) {
-          return;
-        }
-        deltaFrame = window.requestAnimationFrame(flushDelta);
-      };
-      const response = this.dependencies.aiTutorClient.stream
-        ? await this.dependencies.aiTutorClient.stream(
-            request,
-            {
-              onStatus: (message) => {
-                this.aiTutor.setStatusNote(message);
-                this.patchAiTutorStatus(message);
-              },
-              onDelta: (delta) => {
-                scheduleDelta(delta);
-              },
-              onError: (error) => {
-                flushDelta();
-                this.aiTutor.fail(error);
-                this.render();
-              },
-            },
-            abort.signal,
-          )
-        : await this.dependencies.aiTutorClient.ask({ ...request, stream: false });
-      if (deltaFrame) {
-        window.cancelAnimationFrame(deltaFrame);
-      }
-      flushDelta();
-      if (this.study.currentItem()?.id !== item.id) {
-        return;
-      }
-      this.aiTutor.complete(response);
-    } catch (error) {
-      if (this.study.currentItem()?.id !== item.id) {
-        return;
-      }
-      this.aiTutor.fail(error instanceof Error ? error.message : "AI tạm thời chưa phản hồi.");
-    } finally {
-      this.aiTutorAbort = undefined;
-    }
-    this.render();
-  }
-
-  private cancelAiTutor(): void {
-    this.aiTutorAbort?.abort();
-    this.aiTutorAbort = undefined;
-  }
-
-  private clearAiTutorSession(): void {
-    this.cancelAiTutor();
-    this.aiTutor.clearSession();
-    this.render();
-  }
-
-  private patchAiTutorStatus(message: string): void {
-    const target = this.root.querySelector<HTMLElement>("[data-ai-status-note]");
-    if (target) {
-      target.textContent = message;
-    }
-  }
-
-  private patchAiTutorMessage(messageId: string): void {
-    const target = this.root.querySelector<HTMLElement>(`[data-ai-message-content="${CSS.escape(messageId)}"]`);
-    const message = this.aiTutor
-      .stateForItem(this.study.currentItem()?.id)
-      .messages?.find((candidate) => candidate.id === messageId);
-    if (!target || !message) {
-      return;
-    }
-    target.innerHTML = this.formatStreamingAiContent(message.content);
-    const messages = this.root.querySelector<HTMLElement>("[data-ai-messages]");
-    if (messages) {
-      messages.scrollTop = messages.scrollHeight;
-    }
-  }
-
-  private formatStreamingAiContent(content: string): string {
-    return content
-      .trim()
-      .split(/\n{2,}/)
-      .filter(Boolean)
-      .map((paragraph) => `<p>${escapeAiHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
-      .join("");
   }
 
   private revealAnswer(): void {
@@ -818,11 +665,10 @@ function saveLessonTranscripts(transcripts: Record<string, string>): void {
   }
 }
 
-function escapeAiHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function removeRetiredLocalStorage(): void {
+  try {
+    RETIRED_LOCAL_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+  } catch {
+    // Retired state cleanup must not block the offline learning app when storage is unavailable.
+  }
 }

@@ -1,4 +1,3 @@
-import type { AiTutorAction } from "../../application/ports/ai-tutor-client";
 import type { StudyMode } from "../../domain/types";
 import type { View } from "../app-types";
 
@@ -22,7 +21,6 @@ interface WebMcpRegistry {
 interface HskWebMcpHandlers {
   navigate(view: View): void;
   startStudy(mode: StudyMode): void;
-  askAiTutor(action: AiTutorAction, question?: string): void | Promise<void>;
 }
 
 interface HskWebMcpState {
@@ -35,7 +33,6 @@ interface HskWebMcpState {
     book: string;
     lesson: number;
   };
-  aiUnlocked: boolean;
   dueToday: number;
   wrongOpen: number;
   selectedLesson: number;
@@ -54,11 +51,9 @@ declare global {
 
 let registered = false;
 let latestHandlers: HskWebMcpHandlers | undefined;
-let latestState: HskWebMcpState | undefined;
 
 export function registerHskWebMcpTools(handlers: HskWebMcpHandlers, state: HskWebMcpState): void {
   latestHandlers = handlers;
-  latestState = state;
 
   const registry = resolveRegistry();
   if (!registry) {
@@ -96,7 +91,6 @@ function updateModelContext(registry: WebMcpRegistry, state: HskWebMcpState): vo
     app: "Hong HSK4 Studio",
     activeView: state.activeView,
     currentItem: state.currentItem,
-    aiTutorAvailable: state.aiUnlocked,
     dueToday: state.dueToday,
     wrongOpen: state.wrongOpen,
     selectedLesson: state.selectedLesson,
@@ -149,36 +143,6 @@ function createToolDefinitions(): WebMcpToolDefinition[] {
         return { ok: true, mode };
       },
     },
-    {
-      name: "hsk_ask_tutor",
-      description: "Ask the AI tutor about the current HSK4 card after the learner has checked the answer.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          action: {
-            type: "string",
-            enum: ["explain", "examples", "why_wrong", "memory_tip", "ask"],
-          },
-          question: {
-            type: "string",
-            maxLength: 400,
-          },
-        },
-        required: ["action"],
-      },
-      execute: async (input) => {
-        const action = readString(input, "action") as AiTutorAction;
-        const question = readString(input, "question");
-        if (!isAiAction(action) || !latestHandlers) {
-          return { ok: false, reason: "action_not_available" };
-        }
-        if (!latestState?.aiUnlocked) {
-          return { ok: false, reason: "answer_not_checked_yet" };
-        }
-        await latestHandlers.askAiTutor(action, question || undefined);
-        return { ok: true, action };
-      },
-    },
   ];
 }
 
@@ -204,8 +168,4 @@ function isView(value: string): value is View {
 
 function isStudyMode(value: string): value is StudyMode {
   return ["today", "lesson", "wrong", "all"].includes(value);
-}
-
-function isAiAction(value: string): value is AiTutorAction {
-  return ["explain", "examples", "why_wrong", "memory_tip", "ask"].includes(value);
 }

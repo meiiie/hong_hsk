@@ -14,6 +14,20 @@ interface BuildManifest {
 const buildManifest = createBuildManifest();
 
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "hsk4-vocab",
+              test: /hsk4-excel-vocab\.ts$/,
+            },
+          ],
+        },
+      },
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(buildManifest.version),
     __APP_BUILD_SHA__: JSON.stringify(buildManifest.buildSha),

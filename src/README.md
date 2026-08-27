@@ -36,7 +36,6 @@ Ports live in `src/application/ports/`:
 - `VocabularyImporter`: import uploaded vocab and load the bundled 4A/4B reference.
 - `StudyDataExporter`: export backup/template files.
 - `ChineseSpeechPlayer`: play Mandarin audio through a browser adapter.
-- `AiTutorClient`: ask or stream from the server-side HSK tutor gateway for explanations, examples, mistake repair, memory tips, and learner questions.
 
 `src/main.ts` wires those ports to browser adapters in `src/infrastructure/`. This keeps the app controller testable and prevents accidental direct coupling to IndexedDB, Excel libraries, or speech synthesis.
 
@@ -51,7 +50,6 @@ App workflow code is split by responsibility:
 - `workflows/mock-exam-workflow.ts`: selected mock set, active exam session, question index, answer storage, submit/reset, and clock state.
 - `workflows/settings-workflow.ts`: settings form normalization and bounds.
 - `workflows/stroke-practice-workflow.ts`: Hanzi Writer mounting and stroke actions after render.
-- `workflows/ai-tutor-workflow.ts`: tutor chat session state, compact markdown memory, stream message assembly, and request context.
 - `webmcp/hsk-webmcp.ts`: progressive WebMCP tool registration for browsers/agents that expose a model context API.
 
 Workflow rendering lives under `src/app/views/`:
@@ -68,13 +66,11 @@ Workflow rendering lives under `src/app/views/`:
 
 This split keeps render functions mostly pure while the controller keeps side effects in one place.
 
-## AI Boundary
+## Future AI Boundary
 
-The browser never calls NVIDIA directly. `src/infrastructure/ai/hsk-ai-client.ts` calls the same-origin `/api/ai/tutor` endpoint, and `functions/api/ai/tutor.js` reads `NVIDIA_API_KEY` from Cloudflare Pages secrets before calling `mistralai/mistral-nemotron` with fallback to `nvidia/nemotron-3-super-120b-a12b`. When provider calls still fail, the gateway can stream `local-hsk-fallback`, a deterministic recovery answer built from the current vocabulary card.
+There is no AI client, tutor UI, provider gateway, or model credential in the current application. The next AI implementation is intentionally gated on the product, pedagogy, security, evaluation, persistence, and licensing contracts in [`docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`](../docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md).
 
-The preferred browser path is SSE token streaming. The app stores a lightweight tutor chat session in localStorage, sends recent messages plus compact markdown memory, and persists completed turns rather than writing storage on every token.
-
-AI is a tutor overlay, not a data source of record. It can explain, generate practice examples, and repair mistakes after the learner has checked an answer; it must not silently mutate vocabulary, review logs, or verified translations.
+If that design is implemented, the static PWA remains separate from the Neko Core process. The browser communicates with a bounded authenticated gateway; a server-side ACP host owns the pinned Neko runtime and exposes only reviewed, read-only HSK tools. Model output never becomes verified vocabulary or review state automatically.
 
 ## Test Boundaries
 

@@ -24,6 +24,10 @@ Do not reset the project to a backend, SQLite/D1, Next.js, Unity, or native app 
 
 The source dependency rule is documented in `src/README.md`: domain code stays browser-adapter-free, infrastructure owns IndexedDB/Excel/Hanzi adapters, and `src/app` composes the workflows.
 
+### 2026-08-27 AI addendum
+
+The static PWA and browser-local learner state remain the default architecture. A future Neko Core tutor is a narrow exception that requires server execution: it must live behind a separate authenticated ACP host and may use Worker/Durable Object/Container infrastructure only for bounded tutor sessions. It must not move ordinary PWA state to a backend or import the AGPL Neko core into the browser bundle. See [Neko Core HSK4 AI Product RFC](neko-core-hsk4-ai-product-rfc-2026-08-27.md) for the learner-needs evidence, pedagogy contract, security model, licensing boundary, and release gates.
+
 ## Source Review
 
 | Domain | Sources checked | What matters for this project |

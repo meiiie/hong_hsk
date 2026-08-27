@@ -29,16 +29,16 @@
     "docker:run": "docker run --rm -p 8080:80 hong-hsk4-studio:local"
   },
   "dependencies": {
-    "animejs": "^4.4.1",
+    "animejs": "^4.5.0",
     "hanzi-writer": "^3.7.3",
-    "lucide": "^1.16.0",
-    "read-excel-file": "^9.0.10",
-    "write-excel-file": "^4.0.7"
+    "lucide": "^1.34.0",
+    "read-excel-file": "^9.3.10",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "vite": "^8.0.14",
-    "vitest": "^4.1.7",
-    "wrangler": "^4.94.0"
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.127.0"
   }
 }

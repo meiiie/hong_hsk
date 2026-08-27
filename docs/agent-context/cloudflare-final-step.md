@@ -1,17 +1,18 @@
-# Cloudflare Final Step
+# Cloudflare Credential Rotation
 
 The app is already public at:
 
 - https://hsk4.holilihu.online/
 - https://hong-hsk4-studio.pages.dev/
 
-The remaining CI/CD step is to add a scoped Cloudflare API token to GitHub Secrets so the `Deploy Cloudflare Pages` workflow can deploy automatically after CI passes on `main`.
+CI/CD is configured, but the deploy token used during setup was exposed in chat. The remaining security step is to replace it with a newly scoped token, verify deployment, and revoke the old token.
 
 ## Current State
 
 - GitHub secret `CLOUDFLARE_ACCOUNT_ID` exists.
-- GitHub secret `CLOUDFLARE_API_TOKEN` is still missing.
-- Deploy workflow triggers after CI, but skips deploy until the API token exists.
+- GitHub secret `CLOUDFLARE_API_TOKEN` exists; `gh secret list` reported its last update as `2026-05-25T14:35:40Z` on 2026-08-27.
+- That timestamp predates the exposure warning, so the repository cannot claim the token was rotated.
+- Deploy workflow triggers after successful CI on `main` and can use the configured token.
 
 Check from local:
 
@@ -26,7 +27,7 @@ Do not scrape, infer, or copy tokens from Chrome sessions, Cloudflare local conf
 
 The user should create a fresh scoped token in Cloudflare and add it to GitHub Secrets. The token value is shown only once by Cloudflare.
 
-## Create The Cloudflare Token
+## Create A Replacement Cloudflare Token
 
 Use Cloudflare Dashboard:
 
@@ -52,7 +53,7 @@ CLOUDFLARE_API_TOKEN
 
 Reference: https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/
 
-## Add Token To GitHub
+## Replace The GitHub Secret
 
 Option A, GitHub UI:
 
@@ -72,7 +73,7 @@ Paste the token when prompted. Do not put the token directly in a shell command.
 
 GitHub secret docs: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets
 
-## Verify Deploy
+## Verify Deploy And Revoke The Old Token
 
 After the secret is added, trigger deploy with one of these:
 
@@ -98,6 +99,8 @@ Invoke-WebRequest -Uri 'https://hsk4.holilihu.online/og-image.png' -UseBasicPars
 ```
 
 Expected result: HTTP `200` for all three.
+
+After the new secret completes a successful deploy, return to Cloudflare API Tokens and revoke the previously exposed token. Do not revoke first: preserving one known-good deploy credential makes the rotation recoverable.
 
 ## Chrome Assistance Boundary
 

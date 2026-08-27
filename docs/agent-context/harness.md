@@ -51,7 +51,6 @@ python -m playwright install chromium
 - Due, wrong, lesson, and today queue ordering.
 - Mock exam shape, deterministic generation, scoring, and timer formatting.
 - App workflow state for study sessions, mock exams, settings normalization, and starter-data replacement.
-- AI tutor workflow state and compact request context.
 - Application use cases for typed-answer submission and imported-vocabulary replacement.
 
 ## What The Browser Harness Covers
@@ -64,6 +63,7 @@ Desktop:
 - Stroke practice starts hidden during recall.
 - Reveal and hide answer controls work.
 - Wrong answer creates a wrong-list item.
+- Retired tutor session storage is removed and no legacy tutor control appears after checking an answer.
 - Correct answer is recognized.
 - Data screen renders.
 
@@ -80,7 +80,8 @@ Mobile/mock:
 - It does not prove every Vietnamese meaning is final-quality.
 - It does not validate official HSK licensing.
 - It does not guarantee Cloudflare deploy unless `CLOUDFLARE_API_TOKEN` is configured.
-- It does not call NVIDIA or prove AI quality; local/CI checks only prove the gateway contract and UI wiring.
+- It does not implement or validate the proposed Neko Core tutor; that work remains gated by the product and evaluation RFC.
+- It validates lesson-audio URL wiring and controls but stubs the external MP3 response so CI does not depend on third-party DNS or media availability.
 - It does not replace human mobile UX review on a real phone.
 - It does not prove the current architecture is final; it only prevents obvious inward/outward dependency violations.
 
@@ -101,16 +102,6 @@ Deploy will skip build/deploy steps if either Cloudflare secret is missing:
 
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_API_TOKEN`
-
-The AI tutor also needs a Cloudflare Pages secret:
-
-- `NVIDIA_API_KEY`
-
-Optional AI overrides:
-
-- `NVIDIA_MODEL` defaults to `mistralai/mistral-nemotron` for fast study-card tutoring.
-- `NVIDIA_FALLBACK_MODEL` defaults to `nvidia/nemotron-3-super-120b-a12b` and is used for retryable provider failures such as timeout or 5xx; Ultra-class models can be tested through overrides but should not be the default for quick learning turns.
-- `NVIDIA_BASE_URL` defaults to `https://integrate.api.nvidia.com/v1`.
 
 This prevents noisy red deploy runs while the token is not configured, but still shows that the workflow was triggered.
 

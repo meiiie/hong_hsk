@@ -1,6 +1,6 @@
 # Agent Context Index
 
-Last updated: 2026-05-26.
+Last updated: 2026-08-27.
 
 This folder is the shared memory layer for Hồng HSK4 Studio. It exists so an AI agent or teammate can join the project without rediscovering the same facts, rules, and deployment caveats every session.
 
@@ -12,9 +12,10 @@ The design follows the practical lesson from Anthropic's large-codebase guidance
 2. [Collaboration Rules](collaboration-rules.md): safe branch/PR workflow for a shared GitHub account.
 3. [Project Map](project-map.md): where product, data, review, mock exam, PWA, deploy, and tests live.
 4. [Technology Review](../architecture/technology-review-2026-05-26.md): researched stack decision and comparable project notes.
-5. [Harness](harness.md): deterministic checks, CI/CD, and local verification matrix.
-6. [Cloudflare Final Step](cloudflare-final-step.md): how to finish production deploy secret setup without leaking tokens.
-7. [Handoff Notes](handoff-notes.md): current state, unresolved work, and things to re-check.
+5. [Neko Core HSK4 AI Product RFC](../architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md): learner needs, pedagogy, architecture, security, licensing, and evaluation gates for future AI work.
+6. [Harness](harness.md): deterministic checks, CI/CD, and local verification matrix.
+7. [Cloudflare Credential Rotation](cloudflare-final-step.md): how to replace the exposed production deploy token without leaking credentials.
+8. [Handoff Notes](handoff-notes.md): current state, unresolved work, and things to re-check.
 
 ## Context Graph
 
@@ -27,6 +28,7 @@ flowchart TD
   B --> F["cloudflare-final-step.md"]
   B --> G["handoff-notes.md"]
   B --> N["technology-review-2026-05-26.md"]
+  B --> O["neko-core-hsk4-ai-product-rfc-2026-08-27.md"]
   E --> H["scripts/run_harness.mjs"]
   E --> I["tests/verify_hsk_pwa.py"]
   E --> J["tests/verify_hsk_mobile_mock.py"]
