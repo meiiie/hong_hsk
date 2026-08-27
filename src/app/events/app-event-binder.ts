@@ -1,5 +1,5 @@
 import type { View } from "../app-types";
-import type { StudyMode } from "../../domain/types";
+import type { StudyDirection, StudyMode } from "../../domain/types";
 
 export interface AppEventHandlers {
   navigate(view: View): void;
@@ -9,6 +9,7 @@ export interface AppEventHandlers {
   toggleMobileMore(): void;
   closeMobileMore(): void;
   startStudy(mode: StudyMode): void;
+  setStudyDirection(direction: StudyDirection): void | Promise<void>;
   selectLesson(lesson: number): void | Promise<void>;
   submitAnswer(): void | Promise<void>;
   nextCard(): void;
@@ -158,6 +159,12 @@ function bindMobileMoreDrag(sheet: HTMLElement, handlers: AppEventHandlers): voi
 }
 
 function bindStudy(root: HTMLElement, handlers: AppEventHandlers): void {
+  root.querySelectorAll<HTMLButtonElement>("[data-study-direction]").forEach((button) => {
+    button.addEventListener("click", () => {
+      void handlers.setStudyDirection(button.dataset.studyDirection as StudyDirection);
+    });
+  });
+
   root.querySelectorAll<HTMLButtonElement>("[data-lesson]").forEach((button) => {
     button.addEventListener("click", () => {
       void handlers.selectLesson(Number(button.dataset.lesson));

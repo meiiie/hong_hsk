@@ -1,9 +1,10 @@
 import type { StudyFeedback } from "../app-types";
-import type { AppState, StudyMode, VocabItem } from "../../domain/types";
-import { queueForMode } from "../../domain/review/review-service";
+import type { AppState, StudyDirection, StudyMode, VocabItem } from "../../domain/types";
+import { expectedAnswer, queueForMode } from "../../domain/review/review-service";
 
 export class StudyWorkflow {
   mode: StudyMode = "today";
+  direction: StudyDirection = "vi-to-zh";
   queue: VocabItem[] = [];
   index = 0;
   cardStartedAt = Date.now();
@@ -14,13 +15,21 @@ export class StudyWorkflow {
     if (this.queue.length) {
       return;
     }
-    this.queue = queueForMode(state, this.mode);
+    this.queue = queueForMode(state, this.mode, this.direction);
     this.index = 0;
     this.cardStartedAt = Date.now();
   }
 
   start(mode: StudyMode): void {
     this.mode = mode;
+    this.clear();
+  }
+
+  setDirection(direction: StudyDirection): void {
+    if (this.direction === direction) {
+      return;
+    }
+    this.direction = direction;
     this.clear();
   }
 
@@ -40,7 +49,12 @@ export class StudyWorkflow {
     if (!item) {
       return false;
     }
-    this.feedback = { itemId: item.id, input: item.hanzi, correct: true, revealed: true };
+    this.feedback = {
+      itemId: item.id,
+      input: expectedAnswer(item, this.direction),
+      correct: true,
+      revealed: true,
+    };
     return true;
   }
 

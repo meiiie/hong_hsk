@@ -223,6 +223,8 @@ Nội dung bài học:
 ${JSON.stringify(card, null, 2)}
 
 Kết quả vừa rồi:
+- Chiều luyện: ${payload.direction === "zh-to-vi" ? "nhìn chữ Hán rồi nhập nghĩa tiếng Việt" : "nhìn nghĩa tiếng Việt rồi nhập chữ Hán"}
+- Đáp án được chấm: ${JSON.stringify(payload.direction === "zh-to-vi" ? card.meaningVi : card.hanzi)}
 - Câu trả lời của người học: ${JSON.stringify(payload.learnerAnswer)}
 - Đúng: ${payload.correct ? "có" : "không"}
 - Người học chủ động hiện đáp án: ${payload.revealed ? "có" : "không"}
@@ -274,9 +276,13 @@ function validateTutorRequest(value) {
   if (typeof value.correct !== "boolean" || typeof value.revealed !== "boolean") {
     throw httpError(400, "Trạng thái câu trả lời không hợp lệ.");
   }
+  if (value.direction !== "vi-to-zh" && value.direction !== "zh-to-vi") {
+    throw httpError(400, "Chiều luyện không hợp lệ.");
+  }
   return {
     card,
     learnerAnswer: boundedText(value.learnerAnswer, "learnerAnswer", 300),
+    direction: value.direction,
     correct: value.correct,
     revealed: value.revealed,
     question: boundedText(value.question, "question", 600),

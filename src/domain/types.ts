@@ -1,5 +1,7 @@
 export type StudyMode = "today" | "lesson" | "wrong" | "all";
 
+export type StudyDirection = "vi-to-zh" | "zh-to-vi";
+
 export type ReviewQuality = "again" | "hard" | "good" | "easy";
 
 export type ReviewStatus = "new" | "learning" | "review" | "mastered";
@@ -32,6 +34,7 @@ export interface Attempt {
   itemId: string;
   lesson: number;
   mode: StudyMode;
+  direction: StudyDirection;
   at: string;
   expected: string;
   input: string;
@@ -63,6 +66,7 @@ export interface StudySettings {
   dailyNewTarget: number;
   dailyReviewTarget: number;
   selectedLesson: number;
+  studyDirection: StudyDirection;
   locale: LocaleCode;
   revealPinyin: boolean;
   revealMeaning: boolean;
@@ -74,6 +78,7 @@ export interface AppState {
   items: VocabItem[];
   attempts: Attempt[];
   reviews: Record<string, ReviewState>;
+  recognitionReviews: Record<string, ReviewState>;
   settings: StudySettings;
   updatedAt: string;
 }
@@ -82,6 +87,9 @@ export interface DashboardStats {
   totalItems: number;
   learned: number;
   mastered: number;
+  recognitionLearned: number;
+  recognitionMastered: number;
+  recognitionDueToday: number;
   dueToday: number;
   wrongOpen: number;
   accuracy: number;

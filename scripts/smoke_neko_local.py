@@ -19,6 +19,8 @@ def main() -> None:
             expect(neko.get_by_text("Neko AI", exact=True)).to_be_visible()
             expect(neko.get_by_text("Mở sau khi chấm hoặc hiện đáp án.")).to_be_visible()
 
+            page.locator('[data-study-direction="zh-to-vi"]').click()
+            expect(page.get_by_label("Nhập nghĩa tiếng Việt")).to_be_visible()
             page.locator("[data-reveal-answer]").click()
             page.get_by_role("button", name="Hỏi Neko về câu này").click()
             expect(page.locator(".neko-answer")).to_be_visible(timeout=120_000)

@@ -30,26 +30,26 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/app/app-types.ts` | App-only view/data-health/feedback types. |
 | `src/app/events/app-event-binder.ts` | DOM event binding layer that maps data attributes to typed app handlers. |
 | `src/app/service-worker.ts` | Service worker registration. |
-| `src/app/workflows/study-workflow.ts` | Transient study session state: queue, current card, answer feedback, stroke selection. |
+| `src/app/workflows/study-workflow.ts` | Transient study session state: queue, Việt/Trung recall direction, current card, answer feedback, stroke selection. |
 | `src/app/workflows/mock-exam-workflow.ts` | Mock exam session state: selected set, active paper, question index, answers, timing. |
 | `src/app/workflows/settings-workflow.ts` | Applies typed settings changes from form controls. |
 | `src/app/workflows/stroke-practice-workflow.ts` | Coordinates Hanzi Writer mounting and stroke actions after render. |
 | `src/app/webmcp/hsk-webmcp.ts` | Progressive WebMCP tool registration for model-context-aware browsers/agents. |
 | `src/app/views/app-shell-view.ts` | Sidebar, topbar, language switcher, and route title shell rendering. |
 | `src/app/views/dashboard-view.ts` | Daily overview, data readiness, and queue preview rendering. |
-| `src/app/views/study-view.ts` | Study card, answer feedback, stroke lab shell, and review detail rendering. |
+| `src/app/views/study-view.ts` | Bidirectional study selector/card, answer feedback, stroke lab, Neko hậu kiểm, and direction-specific review detail. |
 | `src/app/views/lesson-views.ts` | Lesson browser and wrong-word rendering. |
 | `src/app/views/mock-exam-view.ts` | Mock exam intro, runner, question, and result rendering. |
 | `src/app/views/plan-view.ts` | 30-day plan rendering. |
 | `src/app/views/data-view.ts` | Import/export and data-health rendering. |
 | `src/app/views/view-helpers.ts` | Shared HTML/view helpers for app views. |
-| `src/domain/types.ts` | Domain types for vocab, review, attempts, settings. |
+| `src/domain/types.ts` | Domain types for vocab, direction-tagged attempts, separate writing/recognition reviews, and settings. |
 | `src/domain/app-version.ts` | App/build version metadata, schema constants, and version comparison helpers. |
 | `src/domain/locale.ts` | Locale normalization shared by UI and persistence. |
 | `src/domain/hsk4/hsk4-excel-vocab.ts` | Imported/curated HSK4 Excel vocabulary source. |
 | `src/domain/hsk4/hsk4-vi-glossary.ts` | Vietnamese glossary fallback/enrichment. |
 | `src/domain/review/review-policy.ts` | SRS constants and recall quality calculation. |
-| `src/domain/review/review-service.ts` | Review queue, answer checking, attempts, stats. |
+| `src/domain/review/review-service.ts` | Direction-aware review queues, Hanzi/Vietnamese answer checking, attempts, and stats. |
 | `src/domain/exam/mock-exam.ts` | HSK4 mock exam generation and scoring. |
 | `src/domain/hsk4/hsk4-targets.ts` | Target counts for HSK4 data quality messaging. |
 | `src/application/bootstrap/initial-state.ts` | Lesson names and initial app state. |
@@ -59,8 +59,8 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/application/vocab/item-collection.ts` | Collection helpers for replacing starter/reference vocabulary safely. |
 | `src/application/vocab/replace-vocabulary.ts` | Use case for replacing starter/reference vocabulary with imported data. |
 | `src/application/review/submit-study-answer.ts` | Use case for trimming, checking, logging, and scheduling one typed answer. |
-| `src/infrastructure/storage/indexeddb-state-store.ts` | IndexedDB/local persistence. |
-| `src/infrastructure/import-export/workbook-io.ts` | Excel/CSV/JSON import and export. |
+| `src/infrastructure/storage/indexeddb-state-store.ts` | IndexedDB persistence and schema migration; schema 2 adds recognition review state and attempt direction. |
+| `src/infrastructure/import-export/workbook-io.ts` | Excel/CSV/JSON import and export, including separate writing/recognition review backups. |
 | `src/infrastructure/hanzi/hanzi-stroke-trainer.ts` | Hanzi Writer integration for stroke practice. |
 | `src/infrastructure/speech/chinese-speech.ts` | Browser speech synthesis adapter for Chinese playback. |
 | `src/infrastructure/version/http-version-checker.ts` | Fetches `/version.json` to detect deployed app updates. |

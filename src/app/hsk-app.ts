@@ -17,7 +17,7 @@ import { renderStudyView } from "./views/study-view";
 import { submitStudyAnswer as applyStudyAnswer } from "../application/review/submit-study-answer";
 import { replaceStarterVocabulary } from "../application/vocab/replace-vocabulary";
 import type { AppVersionCheck } from "../application/ports/app-version-checker";
-import type { AppState, StudyMode } from "../domain/types";
+import type { AppState, StudyDirection, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
 import { findLessonListeningTrack } from "../domain/hsk4/lesson-listening";
 import { computeStats } from "../domain/review/review-service";
@@ -63,6 +63,7 @@ class HskApp {
   async init(): Promise<void> {
     removeRetiredLocalStorage();
     this.state = await this.dependencies.stateStore.load();
+    this.study.setDirection(this.state.settings.studyDirection);
     this.sidebarCollapsed = loadSidebarCollapsed();
     this.lessonAudio.transcripts = loadLessonTranscripts();
     this.versionCheck = {
@@ -187,6 +188,7 @@ class HskApp {
     return renderStudyView({
       state: this.state,
       studyMode: this.study.mode,
+      studyDirection: this.study.direction,
       studyQueue: this.study.queue,
       studyIndex: this.study.index,
       strokeCharIndex: this.study.strokeCharIndex,
@@ -215,6 +217,7 @@ class HskApp {
       toggleMobileMore: () => this.toggleMobileMore(),
       closeMobileMore: () => this.closeMobileMore(),
       startStudy: (mode) => this.startStudy(mode),
+      setStudyDirection: (direction) => this.setStudyDirection(direction),
       selectLesson: (lesson) => this.selectLesson(lesson),
       submitAnswer: () => this.submitAnswer(),
       nextCard: () => this.nextCard(),
@@ -330,6 +333,18 @@ class HskApp {
     this.activeView = "study";
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
+    this.render();
+    this.focusHanziInput();
+  }
+
+  private async setStudyDirection(direction: StudyDirection): Promise<void> {
+    if (direction !== "vi-to-zh" && direction !== "zh-to-vi") {
+      return;
+    }
+    this.state.settings.studyDirection = direction;
+    this.study.setDirection(direction);
+    this.nekoTutor = undefined;
+    await this.persist();
     this.render();
     this.focusHanziInput();
   }
@@ -571,7 +586,14 @@ class HskApp {
       return;
     }
 
-    const result = applyStudyAnswer(this.state, item, input.value, this.study.mode, this.study.cardLatencyMs());
+    const result = applyStudyAnswer(
+      this.state,
+      item,
+      input.value,
+      this.study.mode,
+      this.study.cardLatencyMs(),
+      this.study.direction,
+    );
     if (!result) {
       return;
     }
@@ -617,6 +639,7 @@ class HskApp {
           exampleVi: item.exampleVi,
         },
         learnerAnswer: feedback.input,
+        direction: this.study.direction,
         correct: feedback.correct,
         revealed: Boolean(feedback.revealed),
         question: trimmedQuestion,

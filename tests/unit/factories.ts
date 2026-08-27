@@ -48,6 +48,7 @@ export function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
     itemId: overrides.itemId ?? "item-1",
     lesson: overrides.lesson ?? 1,
     mode: overrides.mode ?? "today",
+    direction: overrides.direction ?? "vi-to-zh",
     at: overrides.at ?? "2026-05-25T08:00:00.000Z",
     expected: overrides.expected ?? "爱情",
     input: overrides.input ?? "爱情",
@@ -63,6 +64,7 @@ export function makeAppState(overrides: Partial<AppState> = {}): AppState {
     items: overrides.items ?? [makeVocabItem()],
     attempts: overrides.attempts ?? [],
     reviews: overrides.reviews ?? {},
+    recognitionReviews: overrides.recognitionReviews ?? {},
     settings: overrides.settings ?? {
       displayName: "Hồng",
       avatarInitial: "H",
@@ -70,6 +72,7 @@ export function makeAppState(overrides: Partial<AppState> = {}): AppState {
       dailyNewTarget: 30,
       dailyReviewTarget: 80,
       selectedLesson: 1,
+      studyDirection: "vi-to-zh",
       locale: "vi",
       revealPinyin: true,
       revealMeaning: true,

@@ -1,4 +1,4 @@
-export const APP_DATA_SCHEMA_VERSION = 1;
+export const APP_DATA_SCHEMA_VERSION = 2;
 export const INDEXEDDB_SCHEMA_VERSION = 1;
 
 export interface AppVersionManifest {

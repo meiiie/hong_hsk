@@ -1,3 +1,5 @@
+import type { StudyDirection } from "../../domain/types";
+
 export interface NekoTutorCard {
   id: string;
   book: string;
@@ -15,6 +17,7 @@ export interface NekoTutorCard {
 export interface NekoTutorRequest {
   card: NekoTutorCard;
   learnerAnswer: string;
+  direction: StudyDirection;
   correct: boolean;
   revealed: boolean;
   question: string;

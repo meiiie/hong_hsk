@@ -46,7 +46,7 @@ Ports live in `src/application/ports/`:
 App workflow code is split by responsibility:
 
 - `events/app-event-binder.ts`: DOM event binding only; it translates data attributes into typed handlers.
-- `workflows/study-workflow.ts`: transient study queue, current card, answer feedback, and stroke-character selection.
+- `workflows/study-workflow.ts`: transient study queue, selected recall direction, current card, answer feedback, and stroke-character selection.
 - `workflows/mock-exam-workflow.ts`: selected mock set, active exam session, question index, answer storage, submit/reset, and clock state.
 - `workflows/settings-workflow.ts`: settings form normalization and bounds.
 - `workflows/stroke-practice-workflow.ts`: Hanzi Writer mounting and stroke actions after render.
@@ -56,7 +56,7 @@ Workflow rendering lives under `src/app/views/`:
 
 - `app-shell-view.ts`: sidebar, topbar, language switcher, route title, and shared app chrome.
 - `dashboard-view.ts`: daily overview, data readiness, queue preview.
-- `study-view.ts`: recall card, answer feedback, stroke lab shell, per-card review detail.
+- `study-view.ts`: bidirectional recall selector/card, answer feedback, stroke lab shell, Neko hậu kiểm, and per-card review detail.
 - `lesson-views.ts`: lesson browser and wrong-word table.
 - `mock-exam-view.ts`: exam intro, runner, question rendering, result rendering.
 - `plan-view.ts`: 30-day plan and schedule settings.
@@ -66,15 +66,15 @@ Workflow rendering lives under `src/app/views/`:
 
 This split keeps render functions mostly pure while the controller keeps side effects in one place.
 
-## Future AI Boundary
+## AI Boundary
 
-There is no AI client, tutor UI, provider gateway, or model credential in the current application. The next AI implementation is intentionally gated on the product, pedagogy, security, evaluation, persistence, and licensing contracts in [`docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`](../docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md).
+The developer-local pilot has a typed Neko tutor port, a post-answer UI, and a loopback-only Vite/ACP adapter. Production builds still contain no tutor dependency or model credential. Any networked implementation remains gated on the product, pedagogy, security, evaluation, persistence, and licensing contracts in [`docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`](../docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md).
 
 If that design is implemented, the static PWA remains separate from the Neko Core process. The browser communicates with a bounded authenticated gateway; a server-side ACP host owns the pinned Neko runtime and exposes only reviewed, read-only HSK tools. Model output never becomes verified vocabulary or review state automatically.
 
 ## Test Boundaries
 
-- Unit tests under `tests/unit/` cover pure domain behavior: spaced-review policy, answer matching, queue ordering, and mock-exam generation/scoring.
+- Unit tests under `tests/unit/` cover pure domain behavior: two-direction answer matching and SRS isolation, review policy, queue ordering, and mock-exam generation/scoring.
 - Application use-case tests cover answer submission and vocabulary replacement.
 - Browser harness tests under `tests/` cover full user workflows: study, reveal/hide answer, stroke practice, data loading, mobile layout, and mock exam.
 - When adding business rules, prefer a unit test in `tests/unit/` before relying on the browser harness.

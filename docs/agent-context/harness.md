@@ -52,7 +52,8 @@ python -m playwright install chromium
 ## What The Unit Tests Cover
 
 - Spaced-review policy boundaries, including wrong-answer recovery and ease caps.
-- Hanzi answer normalization before comparing typed recall with the expected answer.
+- Hanzi normalization and accent-insensitive Vietnamese meaning matching.
+- Separate Việt → Trung and Trung → Việt queues, attempts, and review-state updates.
 - Review-state updates after correct and incorrect attempts.
 - Due, wrong, lesson, and today queue ordering.
 - Mock exam shape, deterministic generation, scoring, and timer formatting.
@@ -66,6 +67,7 @@ Desktop:
 - App loads with Hồng HSK4 Studio visible.
 - Removed stale headers stay absent.
 - Study input exists.
+- Switching to Trung → Việt changes the prompt/input contract and accepts an accentless correct meaning.
 - Stroke practice starts hidden during recall.
 - Reveal and hide answer controls work.
 - Wrong answer creates a wrong-list item.
@@ -80,7 +82,7 @@ Mobile/mock:
 - Data count reaches the expected current course count.
 - Mock exam set selection works.
 - Mock runner starts with clock and 100-question flow.
-- Mobile study and mock screens render in a narrow viewport.
+- Mobile study direction selector, recognition prompt, and mock screens render in a narrow viewport.
 
 ## What The Harness Does Not Prove
 

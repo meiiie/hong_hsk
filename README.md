@@ -27,7 +27,8 @@ Mục tiêu không phải làm một app học tiếng Trung chung chung. Dự �
 
 - Học theo bài 1-20 của giáo trình chuẩn HSK4 4A/4B.
 - Ưu tiên nghĩa tiếng Việt, pinyin, ví dụ và trạng thái chất lượng dữ liệu.
-- Gõ chữ Hán rồi app tự so đáp án, giữ nguyên chữ đã gõ và phản hồi xanh/đỏ.
+- Luyện hai chiều: từ nghĩa Việt tự viết chữ Hán, hoặc nhìn chữ Hán rồi nhập nghĩa Việt.
+- Hai chiều có log, lịch ôn và tiến độ riêng để nhận ra nghĩa không bị tính nhầm thành đã nhớ cách viết.
 - Ôn từ sai và từ đến hạn theo lịch giãn cách.
 - Thi thử HSK4 cũ: 100 câu, 105 phút, ba phần Nghe, Đọc, Viết.
 
@@ -41,9 +42,9 @@ Mục tiêu không phải làm một app học tiếng Trung chung chung. Dự �
 
 | Nhóm | Hiện có |
 | --- | --- |
-| Học từ | Hàng đợi hôm nay, theo bài, từ sai, tự chấm chữ Hán |
+| Học từ | Hàng đợi hôm nay, theo bài, từ sai, Việt → Trung và Trung → Việt với tiến độ tách riêng |
 | Luyện nét | Hanzi Writer, nét mẫu, quiz nét, chế độ ẩn/hiện đáp án phù hợp khi học |
-| Ôn giãn cách | Sai ôn lại sớm, đúng liên tiếp tăng khoảng cách, lưu trạng thái trong IndexedDB |
+| Ôn giãn cách | Sai ôn lại sớm, đúng liên tiếp tăng khoảng cách, hai lịch SRS riêng trong IndexedDB |
 | Dữ liệu | Nhập Excel/CSV, xuất backup, nạp bộ 4A/4B tham khảo, glossary Việt hóa |
 | Thi thử | 4 bộ đề mô phỏng, đồng hồ 105 phút, điểm theo Nghe/Đọc/Viết |
 | Mobile UX | Bottom nav, vùng bấm lớn, bố cục ưu tiên một hành động chính |
@@ -68,7 +69,8 @@ flowchart LR
   A["Excel/CSV 4A/4B"] --> B["Import & Enrichment"]
   B --> C["IndexedDB"]
   C --> D["Review Queue"]
-  D --> E["Gõ chữ Hán"]
+  D --> E["Việt → Trung"]
+  D --> J["Trung → Việt"]
   D --> F["Luyện nét Hanzi Writer"]
   C --> G["Mock Exam"]
   H["Cloudflare Pages"] --> I["PWA trên điện thoại"]

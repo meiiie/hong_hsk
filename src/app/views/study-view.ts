@@ -1,4 +1,13 @@
-import type { AppState, StudyMode, VocabItem } from "../../domain/types";
+import type {
+  AppState,
+  StudyDirection,
+  StudyMode,
+  VocabItem,
+} from "../../domain/types";
+import {
+  expectedAnswer,
+  reviewsForDirection,
+} from "../../domain/review/review-service";
 import { bookLabel, reviewStatusLabel, studyModeLabel } from "../../presentation/i18n";
 import { icon, labelWithIcon } from "../../presentation/icons";
 import { formatDateVi } from "../../shared/date-utils";
@@ -8,6 +17,7 @@ import { displayMeaning, escapeAttribute, escapeHtml, extractHanziChars, percent
 interface StudyViewModel {
   state: AppState;
   studyMode: StudyMode;
+  studyDirection: StudyDirection;
   studyQueue: VocabItem[];
   studyIndex: number;
   strokeCharIndex: number;
@@ -20,6 +30,7 @@ export function renderStudyView(model: StudyViewModel): string {
   const {
     state,
     studyMode,
+    studyDirection,
     studyQueue,
     studyIndex,
     strokeCharIndex,
@@ -33,7 +44,8 @@ export function renderStudyView(model: StudyViewModel): string {
     return `
       <section class="empty-state">
         <h2>Phiên học đã xong</h2>
-        <p>Không còn thẻ trong hàng đợi hiện tại. Bạn có thể đổi bài, import thêm dữ liệu, hoặc ôn lại từ sai.</p>
+        <p>Không còn thẻ trong hàng đợi hiện tại. Bạn có thể đổi chiều luyện, đổi bài hoặc ôn lại từ sai.</p>
+        ${renderDirectionBar(studyDirection)}
         <div class="action-row">
           <button class="primary-button" data-study-mode="today">${labelWithIcon("calendarCheck", "Tạo lại hàng đợi hôm nay")}</button>
           <button class="ghost-button" data-view="dashboard">${labelWithIcon("layout", "Về tổng quan")}</button>
@@ -42,25 +54,34 @@ export function renderStudyView(model: StudyViewModel): string {
     `;
   }
 
-  const review = state.reviews[item.id];
+  const reviews = reviewsForDirection(state, studyDirection);
+  const review = reviews[item.id];
   const feedback = studyFeedback?.itemId === item.id ? studyFeedback : undefined;
   const inputClass = feedback ? (feedback.correct ? "is-correct" : "is-wrong") : "";
   const position = `${studyIndex + 1}/${studyQueue.length}`;
   const hanziChars = extractHanziChars(item.hanzi);
   const selectedChar = hanziChars[Math.min(strokeCharIndex, hanziChars.length - 1)] ?? item.hanzi;
-  const canUseStroke = Boolean(feedback);
   const answerVisible = Boolean(feedback);
   const sessionProgress = percent(studyIndex + 1, studyQueue.length);
   const modeLabel = studyModeLabel(studyMode, state.settings.locale);
   const bookName = bookLabel(item.book, state.settings.locale);
-  const feedbackLabel = feedback?.revealed ? "Đáp án" : feedback?.correct ? "Đúng" : "Sai";
-  const feedbackText = feedback?.revealed ? item.hanzi : `Đáp án: ${item.hanzi}`;
+  const feedbackLabel = !feedback ? "" : feedback.revealed ? "Đáp án" : feedback.correct ? "Đúng" : "Sai";
+  const expected = expectedAnswer(item, studyDirection);
+  const feedbackText = feedback?.revealed ? expected : `Đáp án: ${expected}`;
   const exampleHan = usefulStudyExample(item.exampleHan, item.hanzi);
   const exampleVi = usefulStudyExample(item.exampleVi, item.hanzi);
+  const isRecognition = studyDirection === "zh-to-vi";
+  const promptText = isRecognition
+    ? item.hanzi
+    : displayMeaning(item, state.settings.useEnglishFallback);
+  const promptLabel = isRecognition ? "Nhìn chữ, nhớ nghĩa" : "Gợi nghĩa, viết chữ";
+  const inputLabel = isRecognition ? "Nhập nghĩa tiếng Việt" : "Nhập chữ Hán";
+  const inputPlaceholder = isRecognition ? "Ví dụ: pháp luật…" : "Gõ chữ Hán…";
 
   return `
     <section class="study-layout">
       <article class="study-card" data-motion="study-card" data-study-card-id="${escapeAttribute(item.id)}">
+        ${renderDirectionBar(studyDirection)}
         <div class="session-strip">
           <div>
             <span>${escapeHtml(modeLabel)}</span>
@@ -74,18 +95,12 @@ export function renderStudyView(model: StudyViewModel): string {
           <span>${position}</span>
           <span>${reviewStatusLabel(review?.status ?? "new", state.settings.locale)}</span>
         </div>
-        <div class="prompt">
+        <div class="prompt ${isRecognition ? "prompt-hanzi" : "prompt-meaning"}">
           <div class="prompt-head">
-            <p class="eyebrow">Gõ lại chữ Hán</p>
-            <details class="answer-help">
-              <summary>${labelWithIcon("help", "Cách chấm")}</summary>
-              <div class="answer-help-popover">
-                <p>Gõ chữ Hán bạn nhớ được. Hệ thống bỏ qua khoảng trắng và dấu câu khi so đáp án.</p>
-                <p>Nếu sai do thiếu hoặc thừa chữ, app sẽ nhắc ở phần phản hồi.</p>
-              </div>
-            </details>
+            <p class="eyebrow">${promptLabel}</p>
+            ${renderAnswerHelp(studyDirection)}
           </div>
-          <h2>${escapeHtml(displayMeaning(item, state.settings.useEnglishFallback))}</h2>
+          <h2 ${isRecognition ? 'lang="zh-Hans"' : ""}>${escapeHtml(promptText)}</h2>
           ${
             answerVisible && state.settings.revealPinyin
               ? `<p class="pinyin">${escapeHtml(item.pinyin || "Chưa có pinyin")}</p>`
@@ -94,27 +109,32 @@ export function renderStudyView(model: StudyViewModel): string {
           ${
             answerVisible && (exampleHan || exampleVi)
               ? `<div class="example">
+                  ${exampleHan ? `<strong lang="zh-Hans">${escapeHtml(exampleHan)}</strong>` : ""}
                   ${exampleVi ? `<span>${escapeHtml(exampleVi)}</span>` : ""}
-                  ${exampleHan ? `<strong>${escapeHtml(exampleHan)}</strong>` : ""}
                 </div>`
               : ""
           }
         </div>
 
-        <form class="answer-form" data-answer-form>
-          <label for="hanzi-input">Nhập chữ Hán</label>
+        <form class="answer-form answer-form-${studyDirection}" data-answer-form>
+          <label for="hanzi-input">${inputLabel}</label>
           <input
             id="hanzi-input"
             class="${inputClass}"
             name="answer"
             autocomplete="off"
+            autocapitalize="none"
             data-motion="study-input"
             data-feedback-state="${feedback ? feedbackLabel.toLowerCase() : "none"}"
             inputmode="text"
             value="${escapeAttribute(feedback?.input ?? "")}"
-            placeholder="Gõ chữ Hán..."
+            placeholder="${inputPlaceholder}"
+            aria-describedby="answer-direction-hint"
             ${feedback ? "readonly" : ""}
           />
+          <p class="answer-hint" id="answer-direction-hint">
+            ${isRecognition ? "Có thể nhập có dấu hoặc không dấu; các nghĩa tương đương đã tách bằng dấu phẩy đều được chấp nhận." : "Khoảng trắng và dấu câu không ảnh hưởng kết quả chấm."}
+          </p>
           <div class="answer-actions">
             ${
               feedback?.revealed
@@ -140,11 +160,14 @@ export function renderStudyView(model: StudyViewModel): string {
       </article>
 
       <aside class="study-side">
-        ${renderStrokeLab(selectedChar, hanziChars, canUseStroke, strokeCharIndex)}
-        ${renderNekoTutor(item, feedback, nekoTutorAvailable, nekoTutor)}
+        ${renderStrokeLab(selectedChar, hanziChars, answerVisible, strokeCharIndex)}
+        ${renderNekoTutor(item, feedback, nekoTutorAvailable, nekoTutor, studyDirection)}
         ${review ? `<section class="review-panel">
-            <h3>Trạng thái từ này</h3>
-            ${renderReviewDetail(state, item)}
+            <div class="panel-heading">
+              <p class="eyebrow">${isRecognition ? "Nhận nghĩa" : "Tự viết"}</p>
+              <h3>Tiến độ từ này</h3>
+            </div>
+            ${renderReviewDetail(state, item, studyDirection)}
           </section>` : ""}
         <section class="mode-panel">
           <h3>Đổi hàng đợi</h3>
@@ -160,11 +183,50 @@ export function renderStudyView(model: StudyViewModel): string {
   `;
 }
 
+function renderDirectionBar(direction: StudyDirection): string {
+  const recognition = direction === "zh-to-vi";
+  return `
+    <div class="study-direction-bar">
+      <span class="study-direction-copy">
+        <strong>Chiều luyện</strong>
+        <small>${recognition ? "Nhìn chữ Hán, nhớ nghĩa Việt" : "Từ nghĩa Việt, tự viết chữ Hán"}</small>
+      </span>
+      <div class="study-direction-switch" role="group" aria-label="Chọn chiều luyện từ vựng">
+        <button type="button" data-study-direction="vi-to-zh" class="${recognition ? "" : "active"}" aria-pressed="${recognition ? "false" : "true"}">
+          Việt <span aria-hidden="true">→</span> Trung
+        </button>
+        <button type="button" data-study-direction="zh-to-vi" class="${recognition ? "active" : ""}" aria-pressed="${recognition ? "true" : "false"}">
+          Trung <span aria-hidden="true">→</span> Việt
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderAnswerHelp(direction: StudyDirection): string {
+  const recognition = direction === "zh-to-vi";
+  return `
+    <details class="answer-help">
+      <summary>${labelWithIcon("help", "Cách chấm")}</summary>
+      <div class="answer-help-popover">
+        ${
+          recognition
+            ? `<p>App bỏ qua dấu tiếng Việt, viết hoa và dấu câu. Ví dụ “pháp luật” và “phap luat” được xem là cùng một đáp án.</p>
+               <p>Nếu dữ liệu có nhiều nghĩa tách bằng dấu phẩy, bạn chỉ cần nhập một nghĩa đầy đủ.</p>`
+            : `<p>Gõ chữ Hán bạn nhớ được. Hệ thống bỏ qua khoảng trắng và dấu câu khi so đáp án.</p>
+               <p>Nếu sai do thiếu hoặc thừa chữ, app sẽ nhắc ở phần phản hồi.</p>`
+        }
+      </div>
+    </details>
+  `;
+}
+
 function renderNekoTutor(
   item: VocabItem,
   feedback: StudyFeedback | undefined,
   available: boolean,
   state: NekoTutorViewState | undefined,
+  direction: StudyDirection,
 ): string {
   if (!available) {
     return "";
@@ -184,11 +246,16 @@ function renderNekoTutor(
   }
 
   const current = state?.itemId === item.id ? state : undefined;
+  const recognition = direction === "zh-to-vi";
   const defaultQuestion = feedback.revealed
     ? "Giải thích ngắn gọn từ này và cho tôi một mẹo ghi nhớ."
     : feedback.correct
-      ? "Giải thích cách dùng từ này và cho tôi một ví dụ HSK4 ngắn."
-      : "Chỉ ra lỗi trong câu trả lời của tôi và giải thích cách nhớ đáp án đúng.";
+      ? recognition
+        ? "Giải thích sắc thái nghĩa và cho tôi một ví dụ HSK4 ngắn."
+        : "Giải thích cách dùng từ này và cho tôi một ví dụ HSK4 ngắn."
+      : recognition
+        ? "So sánh nghĩa tôi nhập với đáp án và chỉ ra chỗ chưa đúng."
+        : "Chỉ ra lỗi trong câu trả lời của tôi và giải thích cách nhớ đáp án đúng.";
 
   return `
     <section class="neko-tutor" data-neko-tutor>
@@ -196,7 +263,7 @@ function renderNekoTutor(
         <span class="neko-tutor-icon">${icon("sparkles")}</span>
         <span>
           <strong>Neko AI</strong>
-          <small>ACP local · chỉ hỗ trợ sau khi trả lời</small>
+          <small>ACP local · hậu kiểm sau khi trả lời</small>
         </span>
       </div>
       ${
@@ -322,8 +389,8 @@ function renderStrokeLab(selectedChar: string, hanziChars: string[], canUseStrok
   `;
 }
 
-function renderReviewDetail(state: AppState, item: VocabItem): string {
-  const review = state.reviews[item.id];
+function renderReviewDetail(state: AppState, item: VocabItem, direction: StudyDirection): string {
+  const review = reviewsForDirection(state, direction)[item.id];
   if (!review) {
     return "";
   }
