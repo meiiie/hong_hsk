@@ -7,7 +7,11 @@ describe("IndexedDB state migration", () => {
   it("preserves legacy progress while initializing the recognition schema", () => {
     const current = makeAppState({ attempts: [makeAttempt()] });
     const { recognitionReviews: _recognitionReviews, ...withoutRecognition } = current;
-    const { studyDirection: _studyDirection, ...legacySettings } = current.settings;
+    const {
+      studyDirection: _studyDirection,
+      balanceStudyDirections: _balanceStudyDirections,
+      ...legacySettings
+    } = current.settings;
     const legacyAttempts = current.attempts.map(({ direction: _direction, ...attempt }) => attempt);
     const legacy = {
       ...withoutRecognition,
@@ -18,8 +22,9 @@ describe("IndexedDB state migration", () => {
 
     const migrated = migrateState(legacy);
 
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(3);
     expect(migrated.settings.studyDirection).toBe("vi-to-zh");
+    expect(migrated.settings.balanceStudyDirections).toBe(true);
     expect(migrated.attempts[0].direction).toBe("vi-to-zh");
     expect(migrated.recognitionReviews).toEqual({});
   });

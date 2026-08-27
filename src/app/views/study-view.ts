@@ -45,7 +45,7 @@ export function renderStudyView(model: StudyViewModel): string {
       <section class="empty-state">
         <h2>Phiên học đã xong</h2>
         <p>Không còn thẻ trong hàng đợi hiện tại. Bạn có thể đổi chiều luyện, đổi bài hoặc ôn lại từ sai.</p>
-        ${renderDirectionBar(studyDirection)}
+        ${renderDirectionBar(studyDirection, state.settings.balanceStudyDirections)}
         <div class="action-row">
           <button class="primary-button" data-study-mode="today">${labelWithIcon("calendarCheck", "Tạo lại hàng đợi hôm nay")}</button>
           <button class="ghost-button" data-view="dashboard">${labelWithIcon("layout", "Về tổng quan")}</button>
@@ -81,7 +81,7 @@ export function renderStudyView(model: StudyViewModel): string {
   return `
     <section class="study-layout">
       <article class="study-card" data-motion="study-card" data-study-card-id="${escapeAttribute(item.id)}">
-        ${renderDirectionBar(studyDirection)}
+        ${renderDirectionBar(studyDirection, state.settings.balanceStudyDirections)}
         <div class="session-strip">
           <div>
             <span>${escapeHtml(modeLabel)}</span>
@@ -183,7 +183,7 @@ export function renderStudyView(model: StudyViewModel): string {
   `;
 }
 
-function renderDirectionBar(direction: StudyDirection): string {
+function renderDirectionBar(direction: StudyDirection, balanceEnabled: boolean): string {
   const recognition = direction === "zh-to-vi";
   return `
     <div class="study-direction-bar">
@@ -191,13 +191,22 @@ function renderDirectionBar(direction: StudyDirection): string {
         <strong>Chiều luyện</strong>
         <small>${recognition ? "Nhìn chữ Hán, nhớ nghĩa Việt" : "Từ nghĩa Việt, tự viết chữ Hán"}</small>
       </span>
-      <div class="study-direction-switch" role="group" aria-label="Chọn chiều luyện từ vựng">
-        <button type="button" data-study-direction="vi-to-zh" class="${recognition ? "" : "active"}" aria-pressed="${recognition ? "false" : "true"}">
-          Việt <span aria-hidden="true">→</span> Trung
-        </button>
-        <button type="button" data-study-direction="zh-to-vi" class="${recognition ? "active" : ""}" aria-pressed="${recognition ? "true" : "false"}">
-          Trung <span aria-hidden="true">→</span> Việt
-        </button>
+      <div class="study-direction-controls">
+        <div class="study-direction-switch" role="group" aria-label="Chọn chiều luyện từ vựng cho phiên hiện tại">
+          <button type="button" data-study-direction="vi-to-zh" class="${recognition ? "" : "active"}" aria-pressed="${recognition ? "false" : "true"}">
+            Việt <span aria-hidden="true">→</span> Trung
+          </button>
+          <button type="button" data-study-direction="zh-to-vi" class="${recognition ? "active" : ""}" aria-pressed="${recognition ? "true" : "false"}">
+            Trung <span aria-hidden="true">→</span> Việt
+          </button>
+        </div>
+        <label class="study-balance-toggle">
+          <input type="checkbox" data-setting="balanceStudyDirections" ${balanceEnabled ? "checked" : ""} />
+          <span>
+            <strong>Cân bằng phiên mới</strong>
+            <small>${balanceEnabled ? "Phiên sau ưu tiên chiều ít luyện hơn hôm nay." : "Giữ chiều bạn chọn cho các phiên sau."}</small>
+          </span>
+        </label>
       </div>
     </div>
   `;

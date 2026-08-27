@@ -60,7 +60,7 @@ export function makeAttempt(overrides: Partial<Attempt> = {}): Attempt {
 
 export function makeAppState(overrides: Partial<AppState> = {}): AppState {
   return {
-    version: overrides.version ?? 1,
+    version: overrides.version ?? 3,
     items: overrides.items ?? [makeVocabItem()],
     attempts: overrides.attempts ?? [],
     reviews: overrides.reviews ?? {},
@@ -73,6 +73,7 @@ export function makeAppState(overrides: Partial<AppState> = {}): AppState {
       dailyReviewTarget: 80,
       selectedLesson: 1,
       studyDirection: "vi-to-zh",
+      balanceStudyDirections: true,
       locale: "vi",
       revealPinyin: true,
       revealMeaning: true,

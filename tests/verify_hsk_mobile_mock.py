@@ -31,6 +31,7 @@ def main() -> None:
         desktop.locator("[data-sidebar-toggle]").click()
         expect(desktop.locator(".app-shell")).to_have_class(re.compile("sidebar-collapsed"))
         expect(desktop.locator('[data-view="mock"]').first).to_be_visible()
+        expect(desktop.locator('.nav [data-view="mock"] span').first).to_have_text("Thi thử")
         desktop.locator("[data-sidebar-toggle]").click()
         expect(desktop.locator(".app-shell")).not_to_have_class(re.compile("sidebar-collapsed"))
         desktop.locator('[data-view="mock"]').first.click()

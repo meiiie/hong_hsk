@@ -112,6 +112,27 @@ export function reviewsForDirection(
   return direction === "zh-to-vi" ? state.recognitionReviews : state.reviews;
 }
 
+export function recommendedStudyDirection(
+  state: AppState,
+  today = toDateKey(),
+): StudyDirection {
+  const writingItems = new Set<string>();
+  const recognitionItems = new Set<string>();
+
+  state.attempts.forEach((attempt) => {
+    if (toDateKey(new Date(attempt.at)) !== today) {
+      return;
+    }
+    if (attempt.direction === "zh-to-vi") {
+      recognitionItems.add(attempt.itemId);
+      return;
+    }
+    writingItems.add(attempt.itemId);
+  });
+
+  return writingItems.size > recognitionItems.size ? "zh-to-vi" : "vi-to-zh";
+}
+
 export function dueItems(
   state: AppState,
   today = toDateKey(),

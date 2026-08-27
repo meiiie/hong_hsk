@@ -90,6 +90,7 @@ export function migrateState(state: AppState): AppState {
       avatarInitial: settings.avatarInitial?.trim().slice(0, 2).toUpperCase() || "H",
       locale: normalizeLocale(settings.locale),
       studyDirection: settings.studyDirection === "zh-to-vi" ? "zh-to-vi" : "vi-to-zh",
+      balanceStudyDirections: settings.balanceStudyDirections ?? true,
       useEnglishFallback: settings.useEnglishFallback ?? false,
       revealPinyin: settings.revealPinyin ?? true,
       revealMeaning: settings.revealMeaning ?? true,
@@ -101,6 +102,7 @@ export function migrateState(state: AppState): AppState {
     next.settings.displayName === settings.displayName &&
     next.settings.avatarInitial === settings.avatarInitial &&
     next.settings.studyDirection === settings.studyDirection &&
+    next.settings.balanceStudyDirections === settings.balanceStudyDirections &&
     next.settings.useEnglishFallback === settings.useEnglishFallback &&
     next.settings.revealPinyin === settings.revealPinyin &&
     next.settings.revealMeaning === settings.revealMeaning &&

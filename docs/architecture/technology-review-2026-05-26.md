@@ -28,6 +28,29 @@ The source dependency rule is documented in `src/README.md`: domain code stays b
 
 The static PWA and browser-local learner state remain the default architecture. The future one-learner Neko Core tutor is a narrow exception: run an official pinned Neko binary on one trusted computer, expose a minimal browser-to-ACP bridge through Cloudflare Tunnel/Access, and keep Neko's normal durable sessions on that computer. Do not add Worker, Durable Object, Container, or cloud database infrastructure for this private pilot. Do not move ordinary PWA state to a backend, import the AGPL Neko core into the browser bundle, or reimplement its agent loop. See [Neko Core HSK4 AI Product RFC](neko-core-hsk4-ai-product-rfc-2026-08-27.md) for the learner-needs evidence, pedagogy contract, security model, licensing boundary, and release gates.
 
+### 2026-08-28 bidirectional retrieval addendum
+
+The two study directions should remain separate but coordinated. Recognition and recall are not interchangeable measures of vocabulary knowledge: Laufer and Goldstein found a stable difficulty hierarchy across passive recognition, active recognition, passive recall, and active recall, with each modality contributing different information. Chinese character research also shows that writing strengthens orthographic and character-meaning links, while Pinyin typing emphasizes phonology. For Vietnamese L1 learners of Chinese, handwriting errors frequently involve sub-character component substitutions or omissions, and stronger readers use larger radical structure more effectively.
+
+The product decision is therefore:
+
+- preserve separate SRS state for Việt → Trung writing and Trung → Việt recognition;
+- choose the less-practiced direction only when a new study session begins, using unique cards attempted today rather than raw retry count;
+- keep one direction stable throughout a session, including when the learner changes the queue;
+- break a tie toward Việt → Trung because productive character recall is harder and trains orthography;
+- keep a visible opt-out and allow manual direction changes for the current session;
+- do not alternate directions on every page visit or every card. Interleaving evidence is strongest when learners must discriminate similar categories, while these two response contracts are already visually and cognitively distinct.
+
+This design combines retrieval and spacing without making navigation change the learning task unpredictably. It is an initial transparent heuristic, not a claim that equal daily card counts are an optimized memory model; real attempt logs should be reviewed before adopting FSRS or a more formal scheduler.
+
+Primary evidence:
+
+- Laufer and Goldstein, *Testing Vocabulary Knowledge: Size, Strength, and Computer Adaptiveness*: https://doi.org/10.1111/j.0023-8333.2004.00260.x
+- Nakata, *Does Repeated Practice Make Perfect?*: https://doi.org/10.1017/S0272263116000280
+- Chen et al., *Spacing and Interleaving Effects Require Distinct Theoretical Bases*: https://doi.org/10.1007/s10648-021-09613-w
+- Guan et al., *Writing Strengthens Orthography and Alphabetic-Coding Strengthens Phonology in Learning to Read Chinese*: https://doi.org/10.1037/a0023730
+- Lau, Liang, and Nguyen, *Measuring Orthographic Knowledge of L2 Chinese Learners in Vietnam Using a Handwriting Task*: https://doi.org/10.3389/fpsyg.2022.784019
+
 ## Source Review
 
 | Domain | Sources checked | What matters for this project |

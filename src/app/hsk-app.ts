@@ -20,7 +20,7 @@ import type { AppVersionCheck } from "../application/ports/app-version-checker";
 import type { AppState, StudyDirection, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
 import { findLessonListeningTrack } from "../domain/hsk4/lesson-listening";
-import { computeStats } from "../domain/review/review-service";
+import { computeStats, recommendedStudyDirection } from "../domain/review/review-service";
 import { icon } from "../presentation/icons";
 import {
   animateSidebarToggleMotion,
@@ -64,6 +64,9 @@ class HskApp {
     removeRetiredLocalStorage();
     this.state = await this.dependencies.stateStore.load();
     this.study.setDirection(this.state.settings.studyDirection);
+    if (this.prepareBalancedStudyDirection()) {
+      await this.persist();
+    }
     this.sidebarCollapsed = loadSidebarCollapsed();
     this.lessonAudio.transcripts = loadLessonTranscripts();
     this.versionCheck = {
@@ -256,12 +259,17 @@ class HskApp {
   }
 
   private navigate(view: View): void {
+    const leavingStudy = this.activeView === "study" && view !== "study";
+    const enteringStudy = this.activeView !== "study" && view === "study";
     this.activeView = view;
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
     if (view !== "study") {
       this.study.clear();
       this.nekoTutor = undefined;
+    }
+    if ((leavingStudy || enteringStudy) && this.prepareBalancedStudyDirection()) {
+      void this.persist();
     }
     this.render();
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -328,6 +336,10 @@ class HskApp {
   }
 
   private startStudy(mode: StudyMode): void {
+    const startingNewSession = this.activeView !== "study";
+    if (startingNewSession && this.prepareBalancedStudyDirection()) {
+      void this.persist();
+    }
     this.study.start(mode);
     this.nekoTutor = undefined;
     this.activeView = "study";
@@ -492,8 +504,28 @@ class HskApp {
 
   private async updateSetting(input: HTMLInputElement | HTMLSelectElement): Promise<void> {
     applySettingInput(this.state.settings, input);
+    if (
+      input.dataset.setting === "balanceStudyDirections" &&
+      this.state.settings.balanceStudyDirections &&
+      this.activeView !== "study"
+    ) {
+      this.prepareBalancedStudyDirection();
+    }
     await this.persist();
     this.render();
+  }
+
+  private prepareBalancedStudyDirection(): boolean {
+    if (!this.state.settings.balanceStudyDirections) {
+      this.study.setDirection(this.state.settings.studyDirection);
+      return false;
+    }
+
+    const direction = recommendedStudyDirection(this.state);
+    const changed = direction !== this.state.settings.studyDirection;
+    this.state.settings.studyDirection = direction;
+    this.study.setDirection(direction);
+    return changed;
   }
 
   private updateFileLabel(fileName: string): void {

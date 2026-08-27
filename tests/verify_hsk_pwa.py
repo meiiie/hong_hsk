@@ -39,11 +39,18 @@ def main() -> None:
         assert page.evaluate("window.localStorage.getItem('hong-hsk4-ai-tutor-session-v1')") is None
         expect(page.locator(".brand-copy").get_by_text("Hồng HSK4")).to_be_visible()
         expect(page.get_by_role("heading", name="Hôm nay", exact=True)).to_be_visible()
+        expect(page.locator('.nav [data-view="mock"] span').first).to_have_text("Thi thử")
+        assert page.evaluate("document.fonts.ready.then(() => document.fonts.check('16px \\\"Be Vietnam Pro\\\"'))")
+        assert page.evaluate(
+            "getComputedStyle(document.querySelector('.nav button.active')).boxShadow === 'none'"
+        )
         expect(page.get_by_text("Ôn thi HSK4 trên máy tính")).to_have_count(0)
         expect(page.locator(".topbar .language-switcher")).to_have_count(0)
 
         page.get_by_role("button", name="Bắt đầu ôn").first.click()
         expect(page.locator("#hanzi-input")).to_be_visible()
+        expect(page.locator('[data-setting="balanceStudyDirections"]')).to_be_checked()
+        page.locator('[data-setting="balanceStudyDirections"]').uncheck()
         expect(page.locator('[data-study-direction="vi-to-zh"]')).to_have_attribute("aria-pressed", "true")
         page.locator('[data-study-direction="zh-to-vi"]').click()
         expect(page.locator('[data-study-direction="zh-to-vi"]')).to_have_attribute("aria-pressed", "true")
@@ -135,6 +142,24 @@ def main() -> None:
 
         if errors:
             raise AssertionError("\n".join(errors))
+
+        auto_context = browser.new_context(viewport={"width": 1280, "height": 900})
+        auto_page = auto_context.new_page()
+        auto_page.goto("http://127.0.0.1:5173/", wait_until="networkidle")
+        auto_page.get_by_role("button", name="Bắt đầu ôn").first.click()
+        expect(auto_page.locator('[data-study-direction="vi-to-zh"]')).to_have_attribute("aria-pressed", "true")
+        auto_page.locator('[data-study-mode="lesson"]').click()
+        expect(auto_page.locator('[data-study-direction="vi-to-zh"]')).to_have_attribute("aria-pressed", "true")
+        auto_page.locator("#hanzi-input").fill("法律")
+        auto_page.get_by_role("button", name="Chấm đáp án").click()
+        expect(auto_page.get_by_text("Đúng", exact=True)).to_be_visible()
+        auto_page.locator('.nav [data-view="dashboard"]').click()
+        expect(auto_page.get_by_text("Chiều ôn hiện tại · Trung → Việt")).to_be_visible()
+        auto_page.locator('.nav [data-view="study"]').click()
+        expect(auto_page.locator('[data-study-direction="zh-to-vi"]')).to_have_attribute("aria-pressed", "true")
+        auto_page.locator('[data-study-mode="lesson"]').click()
+        expect(auto_page.locator('[data-study-direction="zh-to-vi"]')).to_have_attribute("aria-pressed", "true")
+        auto_context.close()
 
         browser.close()
 

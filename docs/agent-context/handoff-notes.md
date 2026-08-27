@@ -1,6 +1,6 @@
 # Handoff Notes
 
-Last updated: 2026-08-27.
+Last updated: 2026-08-28.
 
 ## Current Production
 
@@ -31,6 +31,8 @@ A stacked local-only branch, `codex/neko-local-pilot`, now adds a post-answer Ne
 
 The stacked branch `codex/bidirectional-ui-polish` adds the learner-requested Trung → Việt recognition mode and a full visual polish pass on top of the local pilot. Việt → Trung writing recall remains the default; each direction has its own SRS map, attempt direction, wrong/due queue, and per-word review detail. App data schema 2 migrates old attempts to Việt → Trung and initializes recognition progress without touching the IndexedDB object-store version. Vietnamese checking is accent/case/punctuation insensitive and accepts complete comma-separated glossary variants. Dashboard/lesson/wrong views follow the selected direction, Excel backups include `Recognition_State`, and Neko receives the direction plus the answer contract. Be Vietnam Pro is bundled under OFL for offline Latin/Vietnamese UI text; CJK content keeps the dedicated Han font stack.
 
+The same branch now uses app data schema 3 for a transparent `Cân bằng phiên mới` setting. At the start of a genuinely new study session, the app compares unique cards attempted today in each direction, chooses the less-practiced direction, and breaks ties toward Việt → Trung. It never changes direction during a live session or merely because the queue changes. The learner can disable balancing or manually override the current session. The visual pass also removes decorative elevation, inset highlights, fake raised controls, and non-functional gradients; hierarchy now comes from spacing, color, and structural borders.
+
 The future networked one-learner pilot still requires an official pinned Neko Core binary on one trusted computer, local Neko durable sessions, Cloudflare Tunnel/Access, a minimal browser-to-ACP bridge, the `hsk4-studio` authority profile with exact read-only HSK tools, and delayed-learning evaluation. See [Neko Core HSK4 AI Product RFC](../architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md) and [single-learner host runbook](../deployment/neko-single-learner-host.md).
 
 ## Preferred Next Workflow
@@ -59,3 +61,4 @@ gh pr create --draft --base main --head codex/<task>
 - Do not use Cloudflare/GitHub secrets outside GitHub Secrets or approved interactive prompts.
 - Version management now uses compile-time app metadata and `/version.json`; keep schema constants in `src/domain/app-version.ts` aligned with real data migrations.
 - Keep writing and recognition review maps separate. A recognition answer must never advance the Việt → Trung writing schedule.
+- Keep automatic direction balancing at the session boundary. Do not turn it into per-card randomization or page-visit toggling.
