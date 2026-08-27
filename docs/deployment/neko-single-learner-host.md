@@ -76,7 +76,7 @@ Never reuse `CLOUDFLARE_API_TOKEN` as a provider key or a Tunnel credential. Rem
 ## Pilot Readiness Checklist
 
 - [ ] Legacy-AI cleanup PR is merged and the clean static build is deployed.
-- [ ] Legacy `NVIDIA_API_KEY` is deleted from all Cloudflare Pages environments.
+- [x] Legacy `NVIDIA_API_KEY` is deleted from Production; Preview was verified empty on 2026-08-27.
 - [ ] `CLOUDFLARE_API_TOKEN` is rotated and a post-rotation Pages deploy succeeds.
 - [ ] Neko `hsk4-studio` profile tests prove native/global tools are absent.
 - [ ] Exact Neko and bridge releases plus SHA-256 checksums are recorded.

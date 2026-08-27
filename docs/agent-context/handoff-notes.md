@@ -21,7 +21,7 @@ Last updated: 2026-08-27.
 
 ## Current Operational State
 
-Cloudflare deploy secrets are configured and the production deploy workflow has succeeded. `CLOUDFLARE_API_TOKEN` still has its 2026-05-25 update timestamp after the exposure warning, so treat it as compromised and rotate it through an approved interactive flow before treating this as long-lived production infrastructure. It is a Pages deployment credential, not an AI credential; deleting it now would stop future automatic deploys. The retired AI credential is `NVIDIA_API_KEY` in Cloudflare Pages and should be deleted from production/preview only after this cleanup reaches production.
+Cloudflare deploy secrets are configured and the production deploy workflow has succeeded. `CLOUDFLARE_API_TOKEN` still has its 2026-05-25 update timestamp after the exposure warning, so treat it as compromised and rotate it through an approved interactive flow before treating this as long-lived production infrastructure. It is a Pages deployment credential, not an AI credential; deleting it now would stop future automatic deploys. At the user's explicit request, the retired `NVIDIA_API_KEY` was permanently deleted from Pages Production on 2026-08-27; its secret list is now empty, and the Preview environment was inspected and was already empty. Until the cleanup PR deploys, the old production AI endpoint can return its missing-key `503` response.
 
 The current technology decision is recorded in [Technology Review](../architecture/technology-review-2026-05-26.md): keep the static Vite/TypeScript PWA, IndexedDB, Hanzi Writer, Cloudflare Pages, and Playwright harness for now. Revisit a backend only when sync/accounts or multi-user workflows become real.
 
