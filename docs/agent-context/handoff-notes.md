@@ -15,6 +15,9 @@ Last updated: 2026-08-27.
 - Default branch: `main`
 - Baseline for the current Neko preparation work: `c01d793 Tune AI tutor fallback timeout (#25)`.
 - Work must remain PR-based; do not push directly to `main`.
+- `main` protection requires an up-to-date PR and the GitHub Actions check `Typecheck, build, and browser harness`; review conversations must be resolved, force-push and branch deletion are disabled.
+- Required approvals are intentionally `0` for the current single-maintainer repository, and admin enforcement is off to preserve an emergency recovery path.
+- Dependabot vulnerability alerts/security updates and GitHub secret scanning/push protection are enabled.
 
 ## Current Operational State
 
