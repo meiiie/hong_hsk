@@ -43,6 +43,8 @@
   --sidebar-label-size: 0.84rem;
   --sidebar-label-weight: 500;
   --sidebar-label-active-weight: 600;
+  --sidebar-active-bg: #ffebee;
+  --sidebar-hover-bg: #fff6f3;
   --sidebar-paper: #fffaf7;
   --sidebar-paper-soft: #fff4f1;
   --sidebar-red-top: #a32433;
@@ -369,8 +371,8 @@ button:disabled {
   gap: 11px;
   min-height: var(--sidebar-item-size);
   padding: 0 12px;
-  border: 0;
-  border-radius: 0;
+  border: 1px solid transparent;
+  border-radius: var(--sidebar-radius);
   color: #46343b;
   background: transparent;
   font-size: var(--sidebar-label-size);
@@ -403,24 +405,19 @@ button:disabled {
 
 .nav button:hover {
   color: var(--brand-strong);
-  background: transparent;
+  border-color: transparent;
+  background: var(--sidebar-hover-bg);
 }
 
 .nav button.active {
   color: var(--brand-strong);
-  background: transparent;
+  border-color: transparent;
+  background: var(--sidebar-active-bg);
   font-weight: var(--sidebar-label-active-weight);
 }
 
 .nav button.active::before {
-  position: absolute;
-  top: 9px;
-  bottom: 9px;
-  left: 0;
-  width: 2px;
-  border-radius: 999px;
-  background: var(--brand);
-  content: "";
+  content: none;
 }
 
 .nav button.active .icon {
@@ -834,7 +831,8 @@ button:disabled {
 
 .app-shell.sidebar-collapsed .nav button:hover {
   color: var(--brand-strong);
-  background: transparent;
+  border-color: transparent;
+  background: var(--sidebar-hover-bg);
 }
 
 .app-shell.sidebar-collapsed .nav button:hover {
@@ -842,7 +840,8 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed .nav button.active {
-  background: transparent;
+  border-color: transparent;
+  background: var(--sidebar-active-bg);
 }
 
 .app-shell.sidebar-collapsed .nav button.active .icon {
@@ -4460,14 +4459,15 @@ meter {
     padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
     border-top: 1px solid rgba(88, 43, 39, 0.1);
     border-right: 0;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.96);
     color: var(--ink);
+    backdrop-filter: blur(14px);
     pointer-events: none;
   }
 
   .app-shell.sidebar-collapsed .sidebar {
     padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.96);
   }
 
   .sidebar::before,
@@ -4497,9 +4497,9 @@ meter {
     margin: 0 auto;
     padding: 4px;
     overflow: hidden;
-    border: 0;
-    border-radius: 0;
-    background: #ffffff;
+    border: 1px solid rgba(88, 43, 39, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 253, 251, 0.94);
     overscroll-behavior-x: auto;
     scrollbar-width: none;
     pointer-events: auto;
@@ -4530,7 +4530,8 @@ meter {
     min-height: 56px;
     padding: 5px 2px 6px;
     color: #60494f;
-    border-radius: 0;
+    border-color: transparent;
+    border-radius: 12px;
     font-size: 0;
     font-weight: 700;
     line-height: 1.08;
@@ -4595,7 +4596,8 @@ meter {
   .nav button:hover,
   .nav button.active {
     color: var(--blue);
-    background: transparent;
+    border-color: transparent;
+    background: var(--blue-soft);
     transform: none;
   }
 
@@ -4745,7 +4747,8 @@ meter {
   .app-shell.sidebar-collapsed .nav button:hover,
   .app-shell.sidebar-collapsed .nav button.active {
     color: var(--blue);
-    background: transparent;
+    border-color: transparent;
+    background: var(--blue-soft);
   }
 
   .app-shell.sidebar-collapsed .nav button.active .icon {

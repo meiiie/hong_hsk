@@ -86,7 +86,7 @@ def main() -> None:
         mobile.locator('[data-view="study"]').first.click()
         expect(mobile.locator("#hanzi-input")).to_be_visible()
         assert mobile.evaluate(
-            "getComputedStyle(document.querySelector('.nav button.active')).backgroundColor === 'rgba(0, 0, 0, 0)'"
+            "getComputedStyle(document.querySelector('.nav button.active')).backgroundColor !== 'rgba(0, 0, 0, 0)'"
         )
         expect(mobile.locator(".study-direction-switch")).to_be_visible()
         mobile.locator('[data-study-direction="zh-to-vi"]').click()

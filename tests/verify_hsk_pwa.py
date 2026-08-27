@@ -45,10 +45,18 @@ def main() -> None:
             "getComputedStyle(document.querySelector('.nav button.active')).boxShadow === 'none'"
         )
         assert page.evaluate(
-            "getComputedStyle(document.querySelector('.nav button.active')).backgroundColor === 'rgba(0, 0, 0, 0)'"
+            "getComputedStyle(document.querySelector('.nav button.active')).backgroundColor === 'rgb(255, 235, 238)'"
         )
         assert page.evaluate(
-            "getComputedStyle(document.querySelector('.nav button.active')).borderRadius === '0px'"
+            "getComputedStyle(document.querySelector('.nav button.active')).borderRadius === '8px'"
+        )
+        assert page.evaluate(
+            "getComputedStyle(document.querySelector('.nav button.active'), '::before').content === 'none'"
+        )
+        page.locator('.nav [data-view="lessons"]').first.hover()
+        page.wait_for_timeout(200)
+        assert page.evaluate(
+            "getComputedStyle(document.querySelector('.nav [data-view=\"lessons\"]')).backgroundColor === 'rgb(255, 246, 243)'"
         )
         expect(page.get_by_text("Ôn thi HSK4 trên máy tính")).to_have_count(0)
         expect(page.locator(".topbar .language-switcher")).to_have_count(0)
