@@ -1,15 +1,17 @@
 # Neko Core AI for Hồng HSK4 Studio — Product and Architecture RFC
 
-Date: 2026-08-27  
-Status: Research complete; legacy AI removed; new implementation not yet approved for production  
-Scope owner: Hồng HSK4 Studio  
-Upstream examined: `meiiie/neko-core` stable release `v1.2.0` and main commit `901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13` (package `1.2.1`)
+- Date: 2026-08-27
+- Status: research complete; legacy AI removed; single-learner host architecture selected; integration not yet implemented
+- Scope owner: Hồng HSK4 Studio
+- Upstream examined: `meiiie/neko-core` stable release `v1.2.1`, commit `901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13`
 
 ## Decision
 
 Hồng HSK4 Studio will remove the existing NVIDIA-specific tutor and will not replace it with another generic chat sidebar.
 
-The next AI system should be a learning system built on Neko Core through stable Agent Client Protocol (ACP) v1. In this document, the user's phrase "APC Neko Core" is interpreted as ACP because ACP is the stable embedding protocol currently implemented by Neko Core.
+The next AI system should use the official Neko Core binary itself through stable Agent Client Protocol (ACP) v1. It must not copy or recreate Neko's agent loop, provider routing, permission model, or durable-session engine. In this document, the user's phrase "APC Neko Core" is interpreted as ACP because ACP is the stable embedding protocol currently implemented by Neko Core.
+
+The first deployment is explicitly for one learner. Neko will run on one trusted computer owned or administered by the project owner or the learner's trusted friend. Hồng HSK4 contributes only the product-specific pieces Neko cannot supply by itself: a narrow browser-to-ACP bridge, verified HSK tools, typed tutor events, and learning UI. The bridge is an adapter, not a second agent runtime.
 
 The integration must preserve these boundaries:
 
@@ -20,6 +22,8 @@ The integration must preserve these boundaries:
 - AI assistance appears only at a pedagogically useful point. It does not interrupt recall or reveal an answer before the learner checks or explicitly reveals it.
 
 No new AI UI should ship until the learning contract, evaluation corpus, Neko host profile, persistence design, and privacy controls below are implemented and tested.
+
+The learner can install and use Neko Core in its terminal immediately. Integration inside the HSK4 PWA still requires the HSK host profile and bridge because a browser cannot directly launch or speak ACP's local `stdio` transport.
 
 ## What the learner actually needs
 
@@ -180,9 +184,9 @@ It does not currently provide a drop-in web SDK:
 - ACP uses NDJSON-RPC over stdio and expects a host process;
 - the built-in host profile is currently NekoCut, not HSK4 Studio;
 - ACP does not currently advertise image or audio prompts;
-- Neko's session store is local filesystem state, while Cloudflare Container disks are ephemeral after sleep.
+- a browser cannot safely expose or launch the ACP process by itself.
 
-Therefore the PWA must not import Neko Core directly. The integration seam is a separate ACP host process.
+Therefore the PWA must not import Neko Core directly. The integration seam is the unmodified official Neko process plus a small HSK bridge. The trusted computer's normal filesystem is an advantage for this one-learner pilot: Neko can use its existing durable local session store without inventing a cloud persistence adapter.
 
 Sources: [Neko Core](https://github.com/meiiie/neko-core), [Neko ACP contract at the examined commit](https://github.com/meiiie/neko-core/blob/901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13/docs/process/ACP.md), [Neko licensing boundary at the examined commit](https://github.com/meiiie/neko-core/blob/901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13/LICENSING.md), and [ACP v1 overview](https://github.com/agentclientprotocol/agent-client-protocol/blob/main/docs/protocol/v1/overview.mdx).
 
@@ -195,47 +199,56 @@ Hồng HSK4 PWA
   - receives typed tutor events over HTTPS/WebSocket
             |
             v
-HSK AI Gateway Worker
-  - authentication/device binding, CSRF/origin checks
-  - quotas, request bounds, redaction, audit metadata
-  - no provider credential in browser
+Cloudflare Access + named Tunnel
+  - allowlists the single learner identity
+  - carries browser traffic to the trusted computer over an
+    outbound tunnel; no inbound router port is opened
             |
             v
-Durable Object per learner/session
-  - strongly consistent session index and consent state
-  - WebSocket coordination and replay cursor
-  - durable event/session metadata in SQLite
-            |
-            v
-Cloudflare Container: hsk-neko-host
-  - pinned, checksummed Neko Core stable binary
-  - launches: neko acp --host-profile hsk4-studio
-  - ACP client + exact in-band MCP server
-  - provider secret injected only at container start
+hsk-neko-bridge on the trusted computer
+  - validates Access identity, Origin, schema, size, and rate
+  - translates HTTPS/WebSocket to ACP v1 over local stdio
+  - supplies the exact in-band HSK MCP tools
+  - launches a pinned, checksummed official Neko binary:
+    neko acp --host-profile hsk4-studio
             |
             v
 Neko Core agent runtime
+  - owns provider auth, agent loop, streaming, cancellation,
+    permissions, checkpoints, and durable local sessions
   - no shell, filesystem, web, browser, computer, skills,
     subagents, global memory/workflows, or global MCP
   - only the reviewed HSK tool surface below
 ```
 
-Cloudflare Containers are a plausible runtime because they can execute a Linux binary and are controlled by Durable Objects. Container disk is ephemeral, so durable Neko session state must not depend on its default local filesystem without a reviewed persistence adapter. Durable Object SQLite should own the durable application record; R2/FUSE is not an acceptable substitute until Neko's atomic session and lease semantics are tested on it.
+This is deliberately smaller than a Worker, Durable Object, Container, and database stack. One trusted computer and one learner do not need tenancy, cloud session coordination, or a second persistence system. The PWA remains fully usable when the host is asleep or offline; only AI actions show an unavailable state. The host must bind the bridge to loopback so the named tunnel is the only remote entry point.
 
-Sources: [Cloudflare Container lifecycle](https://developers.cloudflare.com/containers/platform-details/architecture/), [Durable Object Containers](https://developers.cloudflare.com/durable-objects/api/container/), and [Durable Object storage](https://developers.cloudflare.com/durable-objects/best-practices/access-durable-objects-storage/).
+Neko provider credentials remain only in Neko's credential store on the trusted computer. The Cloudflare Tunnel credential also remains only on that computer. Neither belongs in the browser, the Pages bundle, IndexedDB, or the Hồng HSK4 GitHub repository.
+
+Sources: [Neko Core v1.2.1 release](https://github.com/meiiie/neko-core/releases/tag/v1.2.1), [Neko ACP contract at the examined commit](https://github.com/meiiie/neko-core/blob/901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13/docs/process/ACP.md), [Cloudflare Tunnel architecture](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/), and [Cloudflare Access applications](https://developers.cloudflare.com/cloudflare-one/applications/).
 
 ## Required Neko Core upstream work
 
-The HSK4 repository should not patch or vendor Neko internals. Changes belong in `meiiie/neko-core` and require their own PR and release:
+The project owner controls both repositories, so the missing HSK capability should be added upstream to Neko Core and released there. Hồng HSK4 then consumes that official release without patching, forking, or vendoring the agent core:
 
 1. Add a reviewed `hsk4-studio` launch-authorized host profile.
 2. Add ACP conformance tests proving native/global tools are absent and the exact HSK tool hash is checkpointed.
-3. Define a supported external durable-session adapter or a documented export/import boundary suitable for an ephemeral container. Do not copy internal session files opportunistically.
-4. Publish an exact stable tag with binaries and SHA-256 sidecars after those contracts pass.
-5. If an Apache ACP client SDK is desired, implement it independently under `sdk/`; the current directory is only a reserved boundary.
-6. Document AGPL section 13 source availability for the deployed Neko service, or execute a separate commercial agreement.
+3. Publish an exact stable tag with Windows, Linux, and macOS binaries plus SHA-256 sidecars after those contracts pass.
+4. Document the HSK profile in Neko's ACP guide and preserve the official install/update path.
 
-The HSK frontend can remain a separate MIT work when it communicates with an unmodified Neko process over ACP. Any modified network-served Neko Core must retain the AGPL source offer. Legal review is required before describing the combined deployment as proprietary.
+No external durable-session adapter is required for the private pilot because the official Neko process runs on a normal persistent computer. The source-offer obligations of Neko's AGPL license still apply when the modified Neko service is used over a network; publishing the profile in the same public Neko repository and official release is the simplest path. Ownership of both projects makes coordination easy but does not make the license text disappear for downstream users.
+
+## What the HSK bridge may and may not do
+
+The bridge is intentionally boring infrastructure. It may:
+
+- launch and supervise the pinned `neko acp --host-profile hsk4-studio` process;
+- implement the ACP client and the profile's exact in-band MCP server;
+- authenticate the one learner, enforce the production Origin, bound requests, and redact logs;
+- translate ACP streaming/cancellation into a browser-safe protocol;
+- validate `TutorTurn` before anything is rendered or recorded.
+
+It must not implement another model/provider layer, agent loop, tool planner, general memory system, session engine, shell, filesystem browser, or generic chat backend. If a capability already belongs to Neko Core, the bridge calls Neko instead of reproducing it.
 
 ## Proposed HSK host profile
 
@@ -376,13 +389,14 @@ The product should not claim that AI improves learning until delayed unaided out
 ### Phase 1 — contracts in separate PRs
 
 - Build the offline HSK tutor evaluation corpus and typed `TutorTurn` schema.
-- Add the Neko `hsk4-studio` host profile upstream.
-- Add external session persistence support upstream.
-- Prototype the ACP host locally with fake provider and fixture data only.
+- Add the Neko `hsk4-studio` host profile and conformance tests upstream, then publish an official pinned release.
+- Build the smallest browser-to-ACP bridge and package it for the trusted computer.
+- Prototype locally with a fake provider and fixture data only.
 
 ### Phase 2 — private one-learner pilot
 
-- Deploy a pinned Neko release behind an authenticated gateway.
+- Install the pinned official Neko release and HSK bridge on the trusted computer.
+- Connect it with a named Cloudflare Tunnel and Access policy allowlisting only the learner.
 - Enable only P0 post-answer repair and sentence retry.
 - Keep AI opt-in and disabled during recall and exams.
 - Run the N-of-1 evaluation and review every factual miss.
@@ -396,6 +410,7 @@ The product should not claim that AI improves learning until delayed unaided out
 ## Explicit non-goals
 
 - A generic always-open chatbot.
+- Reimplementing, copying, or bundling Neko's agent loop in Hồng HSK4.
 - A model that replaces the review scheduler or Hanzi Writer.
 - Live AI help during a timed mock exam.
 - Silent cloud upload of browser learning history.
@@ -406,11 +421,12 @@ The product should not claim that AI improves learning until delayed unaided out
 
 ## Open decisions before implementation
 
-1. Is the first deployment strictly one learner, or must identity and tenant isolation exist immediately?
-2. Which provider route and budget should the Neko host use in the private pilot?
-3. Will Neko Core add a durable external session port, or will the pilot deliberately use non-durable sessions?
-4. Will the deployment comply with AGPL source-offer obligations, or use a separate commercial license?
-5. What retention window should apply to remote tutor transcripts?
-6. Which Vietnamese teacher or reviewer owns the verified HSK evaluation corpus and factual-release gate?
+The single-learner topology, trusted-computer host, official Neko binary, local durable sessions, and Cloudflare Tunnel/Access route are decided. The remaining implementation choices are:
 
-These decisions affect infrastructure, privacy, licensing, and evaluation. They should be resolved in the implementation PR, not hidden inside a model prompt.
+1. Which trusted computer and operating system will stay online during study sessions?
+2. Which Neko provider route, model, and monthly budget will the private pilot use?
+3. What retention window and supported deletion/export flow should apply to local tutor sessions?
+4. Which exact learner email is allowlisted by Cloudflare Access?
+5. Which Vietnamese teacher or reviewer owns the verified HSK evaluation corpus and factual-release gate?
+
+These choices affect operations, privacy, cost, and evaluation. They should be resolved in the implementation PR, not hidden inside a model prompt.

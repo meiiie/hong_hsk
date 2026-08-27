@@ -86,7 +86,8 @@ Các module chính:
 - `src/infrastructure/import-export/workbook-io.ts`: nhập/xuất Excel, CSV, JSON.
 - `src/infrastructure/storage/indexeddb-state-store.ts`: IndexedDB/local state.
 - `src/presentation/i18n.ts`: nhãn tiếng Việt/Anh.
-- `docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`: nghiên cứu nhu cầu người học và hợp đồng chuẩn bị cho AI mới dựa trên Neko Core; chưa có AI runtime trong bản hiện tại.
+- `docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`: nghiên cứu nhu cầu người học và hợp đồng chuẩn bị cho AI mới dùng trực tiếp Neko Core; chưa có AI runtime trong bản hiện tại.
+- `docs/deployment/neko-single-learner-host.md`: cách cài Neko trên một máy tin cậy cho pilot một người học, ranh giới bridge ACP và credential.
 
 ## Chạy Local
 
@@ -149,6 +150,8 @@ npm run deploy:cf
 - `CLOUDFLARE_ACCOUNT_ID`
 
 `CLOUDFLARE_API_TOKEN` nên là token hẹp quyền, tối thiểu `Account > Cloudflare Pages > Edit`. Không commit token vào repo.
+
+Token này chỉ deploy PWA tĩnh, không phải khóa AI. AI Neko tương lai giữ provider credential trên máy chạy Neko; không đưa khóa model vào GitHub Actions hay Cloudflare Pages.
 
 Custom domain production hiện tại là `hsk4.holilihu.online`.
 

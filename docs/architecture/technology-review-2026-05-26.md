@@ -26,7 +26,7 @@ The source dependency rule is documented in `src/README.md`: domain code stays b
 
 ### 2026-08-27 AI addendum
 
-The static PWA and browser-local learner state remain the default architecture. A future Neko Core tutor is a narrow exception that requires server execution: it must live behind a separate authenticated ACP host and may use Worker/Durable Object/Container infrastructure only for bounded tutor sessions. It must not move ordinary PWA state to a backend or import the AGPL Neko core into the browser bundle. See [Neko Core HSK4 AI Product RFC](neko-core-hsk4-ai-product-rfc-2026-08-27.md) for the learner-needs evidence, pedagogy contract, security model, licensing boundary, and release gates.
+The static PWA and browser-local learner state remain the default architecture. The future one-learner Neko Core tutor is a narrow exception: run an official pinned Neko binary on one trusted computer, expose a minimal browser-to-ACP bridge through Cloudflare Tunnel/Access, and keep Neko's normal durable sessions on that computer. Do not add Worker, Durable Object, Container, or cloud database infrastructure for this private pilot. Do not move ordinary PWA state to a backend, import the AGPL Neko core into the browser bundle, or reimplement its agent loop. See [Neko Core HSK4 AI Product RFC](neko-core-hsk4-ai-product-rfc-2026-08-27.md) for the learner-needs evidence, pedagogy contract, security model, licensing boundary, and release gates.
 
 ## Source Review
 

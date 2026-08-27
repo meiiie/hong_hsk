@@ -17,6 +17,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `docs/agent-context/` | Shared agent memory, harness, rules, and deploy notes. |
 | `docs/architecture/technology-review-2026-05-26.md` | Researched technology decision record and comparable project notes. |
 | `docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md` | Learner-needs research and gated product/architecture/evaluation plan for a future Neko Core integration. |
+| `docs/deployment/neko-single-learner-host.md` | Installation boundary, credential map, and readiness checklist for the trusted computer that will run official Neko Core. |
 | `src/README.md` | Source-layer dependency map and DDD-lite boundaries. |
 
 ## Source Modules
@@ -89,6 +90,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `.github/workflows/deploy-cloudflare-pages.yml` | Runs after successful CI on `main`; deploys if Cloudflare secrets exist. |
 | `Dockerfile`, `docker-compose.yml`, `nginx.conf` | Optional static hosting fallback. |
 | `docs/deployment/README.md` | Human deployment runbook. |
+| `docs/deployment/neko-single-learner-host.md` | Future one-learner Neko host runbook; Neko runs on a trusted computer, not inside Pages. |
 
 ## Data Policy
 

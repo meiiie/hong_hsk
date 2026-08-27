@@ -13,9 +13,10 @@ The design follows the practical lesson from Anthropic's large-codebase guidance
 3. [Project Map](project-map.md): where product, data, review, mock exam, PWA, deploy, and tests live.
 4. [Technology Review](../architecture/technology-review-2026-05-26.md): researched stack decision and comparable project notes.
 5. [Neko Core HSK4 AI Product RFC](../architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md): learner needs, pedagogy, architecture, security, licensing, and evaluation gates for future AI work.
-6. [Harness](harness.md): deterministic checks, CI/CD, and local verification matrix.
-7. [Cloudflare Credential Rotation](cloudflare-final-step.md): how to replace the exposed production deploy token without leaking credentials.
-8. [Handoff Notes](handoff-notes.md): current state, unresolved work, and things to re-check.
+6. [Neko Single-Learner Host](../deployment/neko-single-learner-host.md): what a trusted friend can install now, the future bridge boundary, and where each credential belongs.
+7. [Harness](harness.md): deterministic checks, CI/CD, and local verification matrix.
+8. [Cloudflare Credential Rotation](cloudflare-final-step.md): how to replace the exposed production deploy token without leaking credentials.
+9. [Handoff Notes](handoff-notes.md): current state, unresolved work, and things to re-check.
 
 ## Context Graph
 
@@ -29,6 +30,7 @@ flowchart TD
   B --> G["handoff-notes.md"]
   B --> N["technology-review-2026-05-26.md"]
   B --> O["neko-core-hsk4-ai-product-rfc-2026-08-27.md"]
+  O --> P["deployment/neko-single-learner-host.md"]
   E --> H["scripts/run_harness.mjs"]
   E --> I["tests/verify_hsk_pwa.py"]
   E --> J["tests/verify_hsk_mobile_mock.py"]
