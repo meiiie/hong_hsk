@@ -102,10 +102,10 @@ export function renderSettingsView(state: AppState, versionCheck?: AppVersionChe
           </label>
         </div>
         <label class="toggle-row settings-toggle-row">
-          <input type="checkbox" data-setting="balanceStudyDirections" ${settings.balanceStudyDirections ? "checked" : ""} />
+          <input type="checkbox" data-setting="alternateStudyDirections" ${settings.alternateStudyDirections ? "checked" : ""} />
           <span>
-            <strong>Cân bằng hai chiều ở phiên mới</strong>
-            <small>Ưu tiên chiều có ít thẻ khác nhau được luyện hơn trong ngày; không đổi giữa chừng.</small>
+            <strong>Đổi chiều mỗi lần mở Học tập</strong>
+            <small>Lần đầu giữ chiều hiện tại; mỗi lần vào lại dùng chiều còn lại và không đổi giữa phiên.</small>
           </span>
         </label>
         <p class="settings-helper">Giữ mục tiêu vừa sức để app ưu tiên từ đến hạn và từ sai trước khi thêm từ mới.</p>

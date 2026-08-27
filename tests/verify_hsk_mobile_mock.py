@@ -31,7 +31,7 @@ def main() -> None:
         desktop.locator("[data-sidebar-toggle]").click()
         expect(desktop.locator(".app-shell")).to_have_class(re.compile("sidebar-collapsed"))
         expect(desktop.locator('[data-view="mock"]').first).to_be_visible()
-        expect(desktop.locator('.nav [data-view="mock"] span').first).to_have_text("Thi thử")
+        expect(desktop.locator('.nav [data-view="mock"] span').first).to_have_text("Luyện thi")
         desktop.locator("[data-sidebar-toggle]").click()
         expect(desktop.locator(".app-shell")).not_to_have_class(re.compile("sidebar-collapsed"))
         desktop.locator('[data-view="mock"]').first.click()
@@ -85,6 +85,9 @@ def main() -> None:
         expect(mobile.get_by_text("Lịch ôn 30 ngày")).to_be_visible()
         mobile.locator('[data-view="study"]').first.click()
         expect(mobile.locator("#hanzi-input")).to_be_visible()
+        assert mobile.evaluate(
+            "getComputedStyle(document.querySelector('.nav button.active')).backgroundColor === 'rgba(0, 0, 0, 0)'"
+        )
         expect(mobile.locator(".study-direction-switch")).to_be_visible()
         mobile.locator('[data-study-direction="zh-to-vi"]').click()
         expect(mobile.get_by_label("Nhập nghĩa tiếng Việt")).to_be_visible()

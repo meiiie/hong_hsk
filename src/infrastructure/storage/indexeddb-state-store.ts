@@ -3,7 +3,7 @@ import { enrichVietnameseMeanings } from "../../application/vocab/data-enrichmen
 import { APP_DATA_SCHEMA_VERSION, INDEXEDDB_SCHEMA_VERSION } from "../../domain/app-version";
 import { HSK4_EXCEL_SOURCE, createExcelCourseItems } from "../../domain/hsk4/hsk4-excel-vocab";
 import { normalizeLocale } from "../../domain/locale";
-import type { AppState, Attempt, ReviewState, VocabItem } from "../../domain/types";
+import type { AppState, Attempt, ReviewState, StudySettings, VocabItem } from "../../domain/types";
 
 // Keep the legacy IndexedDB name so existing learners do not lose local progress after the product rename.
 const DB_NAME = "hsk4-review-pwa";
@@ -66,7 +66,10 @@ export async function loadState(): Promise<AppState> {
 }
 
 export function migrateState(state: AppState): AppState {
-  const settings = state.settings ?? createInitialState().settings;
+  const settings = (state.settings ?? createInitialState().settings) as StudySettings & {
+    balanceStudyDirections?: boolean;
+  };
+  const { balanceStudyDirections: legacyBalanceStudyDirections, ...settingsWithoutLegacyBalance } = settings;
   const shouldReplaceItems = shouldUseBundledExcelItems(state.items);
   const items = shouldReplaceItems ? createExcelCourseItems() : state.items;
   const learningData = shouldReplaceItems
@@ -85,12 +88,16 @@ export function migrateState(state: AppState): AppState {
     reviews: learningData.reviews,
     recognitionReviews: learningData.recognitionReviews,
     settings: {
-      ...settings,
+      ...settingsWithoutLegacyBalance,
       displayName: settings.displayName?.trim() || "Hồng",
       avatarInitial: settings.avatarInitial?.trim().slice(0, 2).toUpperCase() || "H",
       locale: normalizeLocale(settings.locale),
       studyDirection: settings.studyDirection === "zh-to-vi" ? "zh-to-vi" : "vi-to-zh",
-      balanceStudyDirections: settings.balanceStudyDirections ?? true,
+      alternateStudyDirections: settings.alternateStudyDirections ?? legacyBalanceStudyDirections ?? true,
+      lastStudySessionDirection:
+        settings.lastStudySessionDirection === "vi-to-zh" || settings.lastStudySessionDirection === "zh-to-vi"
+          ? settings.lastStudySessionDirection
+          : undefined,
       useEnglishFallback: settings.useEnglishFallback ?? false,
       revealPinyin: settings.revealPinyin ?? true,
       revealMeaning: settings.revealMeaning ?? true,
@@ -102,7 +109,9 @@ export function migrateState(state: AppState): AppState {
     next.settings.displayName === settings.displayName &&
     next.settings.avatarInitial === settings.avatarInitial &&
     next.settings.studyDirection === settings.studyDirection &&
-    next.settings.balanceStudyDirections === settings.balanceStudyDirections &&
+    next.settings.alternateStudyDirections === settings.alternateStudyDirections &&
+    next.settings.lastStudySessionDirection === settings.lastStudySessionDirection &&
+    legacyBalanceStudyDirections === undefined &&
     next.settings.useEnglishFallback === settings.useEnglishFallback &&
     next.settings.revealPinyin === settings.revealPinyin &&
     next.settings.revealMeaning === settings.revealMeaning &&

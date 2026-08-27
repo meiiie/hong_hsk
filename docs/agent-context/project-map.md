@@ -49,7 +49,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/domain/hsk4/hsk4-excel-vocab.ts` | Imported/curated HSK4 Excel vocabulary source. |
 | `src/domain/hsk4/hsk4-vi-glossary.ts` | Vietnamese glossary fallback/enrichment. |
 | `src/domain/review/review-policy.ts` | SRS constants and recall quality calculation. |
-| `src/domain/review/review-service.ts` | Direction-aware review queues, new-session direction balancing, Hanzi/Vietnamese answer checking, attempts, and stats. |
+| `src/domain/review/review-service.ts` | Direction-aware review queues, deterministic session alternation, Hanzi/Vietnamese answer checking, attempts, and stats. |
 | `src/domain/exam/mock-exam.ts` | HSK4 mock exam generation and scoring. |
 | `src/domain/hsk4/hsk4-targets.ts` | Target counts for HSK4 data quality messaging. |
 | `src/application/bootstrap/initial-state.ts` | Lesson names and initial app state. |
@@ -59,7 +59,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/application/vocab/item-collection.ts` | Collection helpers for replacing starter/reference vocabulary safely. |
 | `src/application/vocab/replace-vocabulary.ts` | Use case for replacing starter/reference vocabulary with imported data. |
 | `src/application/review/submit-study-answer.ts` | Use case for trimming, checking, logging, and scheduling one typed answer. |
-| `src/infrastructure/storage/indexeddb-state-store.ts` | IndexedDB persistence and schema migration; schema 3 adds opt-in-by-default new-session direction balancing on top of separate recognition state. |
+| `src/infrastructure/storage/indexeddb-state-store.ts` | IndexedDB persistence and schema migration; schema 4 persists the last study-session direction and migrates the former balance preference to strict alternation. |
 | `src/infrastructure/import-export/workbook-io.ts` | Excel/CSV/JSON import and export, including separate writing/recognition review backups. |
 | `src/infrastructure/hanzi/hanzi-stroke-trainer.ts` | Hanzi Writer integration for stroke practice. |
 | `src/infrastructure/speech/chinese-speech.ts` | Browser speech synthesis adapter for Chinese playback. |
@@ -110,4 +110,4 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 3. Stroke practice must not reveal the answer during recall unless the learner explicitly asks.
 4. Mock exam should train format and timing, while clearly stating it is simulated content.
 5. UI text defaults to Vietnamese.
-6. New sessions may balance recall directions, but a live session must never change direction automatically.
+6. Each re-entry into Học tập alternates recall direction by default, but a live session must never change direction automatically.

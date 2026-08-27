@@ -18,10 +18,11 @@ export function renderDashboardView(state: AppState, dataHealth: DataHealth): st
   const planProgress = percent(Math.min(stats.planDay, 30), 30);
   const priorityCount = due.length + wrong.length;
   const directionLabel = state.settings.studyDirection === "zh-to-vi" ? "Trung → Việt" : "Việt → Trung";
+  const directionContext = state.settings.alternateStudyDirections ? "Phiên kế tiếp" : "Chiều đã chọn";
 
   return `
     <section class="today-dashboard" aria-label="Kế hoạch học hôm nay">
-      ${renderTodayHero(todayLesson, lessonTitle, due.length + wrong.length + newCards.length, directionLabel)}
+      ${renderTodayHero(todayLesson, lessonTitle, due.length + wrong.length + newCards.length, directionLabel, directionContext)}
       ${renderReadinessStrip(dataHealth)}
       <section class="today-grid">
         ${renderProgressPanel(stats, learnedProgress, recognitionProgress, planProgress, priorityCount)}
@@ -31,7 +32,13 @@ export function renderDashboardView(state: AppState, dataHealth: DataHealth): st
   `;
 }
 
-function renderTodayHero(todayLesson: number, lessonTitle: string, queueCount: number, directionLabel: string): string {
+function renderTodayHero(
+  todayLesson: number,
+  lessonTitle: string,
+  queueCount: number,
+  directionLabel: string,
+  directionContext: string,
+): string {
   return `
     <article class="today-hero">
       <div class="today-hero-head">
@@ -53,7 +60,7 @@ function renderTodayHero(todayLesson: number, lessonTitle: string, queueCount: n
           </span>
         </div>
         <div class="today-start-card">
-          <span>Chiều ôn hiện tại · ${directionLabel}</span>
+          <span>${directionContext} · ${directionLabel}</span>
           <strong>${queueCount} thẻ trong hàng đợi</strong>
           <button class="primary-button today-start-button" data-study-mode="today">
             ${labelWithIcon("playCircle", "Bắt đầu ôn")}

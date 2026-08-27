@@ -35,13 +35,13 @@ The two study directions should remain separate but coordinated. Recognition and
 The product decision is therefore:
 
 - preserve separate SRS state for Việt → Trung writing and Trung → Việt recognition;
-- choose the less-practiced direction only when a new study session begins, using unique cards attempted today rather than raw retry count;
+- use the currently selected direction for the first session, then use the opposite of the persisted last-session direction each time the learner enters Học tập again, even if the previous session recorded no answer;
 - keep one direction stable throughout a session, including when the learner changes the queue;
-- break a tie toward Việt → Trung because productive character recall is harder and trains orthography;
-- keep a visible opt-out and allow manual direction changes for the current session;
-- do not alternate directions on every page visit or every card. Interleaving evidence is strongest when learners must discriminate similar categories, while these two response contracts are already visually and cognitively distinct.
+- treat a manual direction change as the direction of the current session, so the next session alternates from that explicit choice;
+- keep a visible opt-out for learners who want one fixed direction;
+- do not alternate per card or during incidental re-renders. The boundary is a deliberate re-entry from another view into Học tập.
 
-This design combines retrieval and spacing without making navigation change the learning task unpredictably. It is an initial transparent heuristic, not a claim that equal daily card counts are an optimized memory model; real attempt logs should be reviewed before adopting FSRS or a more formal scheduler.
+Research supports training both modalities and keeping their progress separate, but it does not uniquely prescribe a navigation rule. For this one-learner product, deterministic session alternation follows the learner's validated expectation and is made explicit in the UI. It provides variety without changing the response contract mid-session; real attempt logs should still be reviewed before adopting FSRS or a more formal scheduler.
 
 Primary evidence:
 

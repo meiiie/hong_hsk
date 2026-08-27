@@ -12,7 +12,7 @@ describe("settings workflow", () => {
     applySettingInput(settings, { dataset: { setting: "displayName" }, value: "  Hồng Nguyễn  " } as HTMLInputElement);
     applySettingInput(settings, { dataset: { setting: "avatarInitial" }, value: "hn" } as HTMLInputElement);
     applySettingInput(settings, {
-      dataset: { setting: "balanceStudyDirections" },
+      dataset: { setting: "alternateStudyDirections" },
       value: "",
       checked: false,
     } as HTMLInputElement);
@@ -27,7 +27,7 @@ describe("settings workflow", () => {
     expect(settings.locale).toBe("en");
     expect(settings.displayName).toBe("Hồng Nguyễn");
     expect(settings.avatarInitial).toBe("HN");
-    expect(settings.balanceStudyDirections).toBe(false);
+    expect(settings.alternateStudyDirections).toBe(false);
     expect(settings.useEnglishFallback).toBe(true);
   });
 });

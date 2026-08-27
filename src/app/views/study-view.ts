@@ -45,7 +45,7 @@ export function renderStudyView(model: StudyViewModel): string {
       <section class="empty-state">
         <h2>Phiên học đã xong</h2>
         <p>Không còn thẻ trong hàng đợi hiện tại. Bạn có thể đổi chiều luyện, đổi bài hoặc ôn lại từ sai.</p>
-        ${renderDirectionBar(studyDirection, state.settings.balanceStudyDirections)}
+        ${renderDirectionBar(studyDirection, state.settings.alternateStudyDirections)}
         <div class="action-row">
           <button class="primary-button" data-study-mode="today">${labelWithIcon("calendarCheck", "Tạo lại hàng đợi hôm nay")}</button>
           <button class="ghost-button" data-view="dashboard">${labelWithIcon("layout", "Về tổng quan")}</button>
@@ -81,7 +81,7 @@ export function renderStudyView(model: StudyViewModel): string {
   return `
     <section class="study-layout">
       <article class="study-card" data-motion="study-card" data-study-card-id="${escapeAttribute(item.id)}">
-        ${renderDirectionBar(studyDirection, state.settings.balanceStudyDirections)}
+        ${renderDirectionBar(studyDirection, state.settings.alternateStudyDirections)}
         <div class="session-strip">
           <div>
             <span>${escapeHtml(modeLabel)}</span>
@@ -183,7 +183,7 @@ export function renderStudyView(model: StudyViewModel): string {
   `;
 }
 
-function renderDirectionBar(direction: StudyDirection, balanceEnabled: boolean): string {
+function renderDirectionBar(direction: StudyDirection, alternateEnabled: boolean): string {
   const recognition = direction === "zh-to-vi";
   return `
     <div class="study-direction-bar">
@@ -200,11 +200,11 @@ function renderDirectionBar(direction: StudyDirection, balanceEnabled: boolean):
             Trung <span aria-hidden="true">→</span> Việt
           </button>
         </div>
-        <label class="study-balance-toggle">
-          <input type="checkbox" data-setting="balanceStudyDirections" ${balanceEnabled ? "checked" : ""} />
+        <label class="study-alternate-toggle">
+          <input type="checkbox" data-setting="alternateStudyDirections" ${alternateEnabled ? "checked" : ""} />
           <span>
-            <strong>Cân bằng phiên mới</strong>
-            <small>${balanceEnabled ? "Phiên sau ưu tiên chiều ít luyện hơn hôm nay." : "Giữ chiều bạn chọn cho các phiên sau."}</small>
+            <strong>Đổi chiều mỗi phiên</strong>
+            <small>${alternateEnabled ? "Mỗi lần mở lại Học tập, dùng chiều còn lại." : "Giữ chiều bạn chọn cho các phiên sau."}</small>
           </span>
         </label>
       </div>

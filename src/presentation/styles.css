@@ -43,8 +43,6 @@
   --sidebar-label-size: 0.84rem;
   --sidebar-label-weight: 500;
   --sidebar-label-active-weight: 600;
-  --sidebar-active-bg: #ffebee;
-  --sidebar-hover-bg: #fff6f3;
   --sidebar-paper: #fffaf7;
   --sidebar-paper-soft: #fff4f1;
   --sidebar-red-top: #a32433;
@@ -371,8 +369,8 @@ button:disabled {
   gap: 11px;
   min-height: var(--sidebar-item-size);
   padding: 0 12px;
-  border: 1px solid transparent;
-  border-radius: var(--sidebar-radius);
+  border: 0;
+  border-radius: 0;
   color: #46343b;
   background: transparent;
   font-size: var(--sidebar-label-size);
@@ -405,14 +403,12 @@ button:disabled {
 
 .nav button:hover {
   color: var(--brand-strong);
-  border-color: transparent;
-  background: var(--sidebar-hover-bg);
+  background: transparent;
 }
 
 .nav button.active {
   color: var(--brand-strong);
-  border-color: transparent;
-  background: var(--sidebar-active-bg);
+  background: transparent;
   font-weight: var(--sidebar-label-active-weight);
 }
 
@@ -838,8 +834,7 @@ button:disabled {
 
 .app-shell.sidebar-collapsed .nav button:hover {
   color: var(--brand-strong);
-  border-color: transparent;
-  background: var(--sidebar-hover-bg);
+  background: transparent;
 }
 
 .app-shell.sidebar-collapsed .nav button:hover {
@@ -847,8 +842,7 @@ button:disabled {
 }
 
 .app-shell.sidebar-collapsed .nav button.active {
-  border-color: transparent;
-  background: var(--sidebar-active-bg);
+  background: transparent;
 }
 
 .app-shell.sidebar-collapsed .nav button.active .icon {
@@ -1865,7 +1859,7 @@ button:disabled {
   opacity: 0.7;
 }
 
-.study-balance-toggle {
+.study-alternate-toggle {
   display: flex;
   gap: 8px;
   align-items: flex-start;
@@ -1874,7 +1868,7 @@ button:disabled {
   cursor: pointer;
 }
 
-.study-balance-toggle input {
+.study-alternate-toggle input {
   flex: 0 0 auto;
   width: 16px;
   height: 16px;
@@ -1882,20 +1876,20 @@ button:disabled {
   accent-color: var(--brand);
 }
 
-.study-balance-toggle span,
-.study-balance-toggle strong,
-.study-balance-toggle small {
+.study-alternate-toggle span,
+.study-alternate-toggle strong,
+.study-alternate-toggle small {
   display: block;
 }
 
-.study-balance-toggle strong {
+.study-alternate-toggle strong {
   color: var(--ink);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.3;
 }
 
-.study-balance-toggle small {
+.study-alternate-toggle small {
   margin-top: 1px;
   font-size: 0.68rem;
   line-height: 1.35;
@@ -4466,15 +4460,14 @@ meter {
     padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
     border-top: 1px solid rgba(88, 43, 39, 0.1);
     border-right: 0;
-    background: rgba(255, 255, 255, 0.96);
+    background: #ffffff;
     color: var(--ink);
-    backdrop-filter: blur(14px);
     pointer-events: none;
   }
 
   .app-shell.sidebar-collapsed .sidebar {
     padding: 7px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
-    background: rgba(255, 255, 255, 0.96);
+    background: #ffffff;
   }
 
   .sidebar::before,
@@ -4504,9 +4497,9 @@ meter {
     margin: 0 auto;
     padding: 4px;
     overflow: hidden;
-    border: 1px solid rgba(88, 43, 39, 0.08);
-    border-radius: 16px;
-    background: rgba(255, 253, 251, 0.94);
+    border: 0;
+    border-radius: 0;
+    background: #ffffff;
     overscroll-behavior-x: auto;
     scrollbar-width: none;
     pointer-events: auto;
@@ -4537,8 +4530,7 @@ meter {
     min-height: 56px;
     padding: 5px 2px 6px;
     color: #60494f;
-    border-color: transparent;
-    border-radius: 12px;
+    border-radius: 0;
     font-size: 0;
     font-weight: 700;
     line-height: 1.08;
@@ -4603,8 +4595,7 @@ meter {
   .nav button:hover,
   .nav button.active {
     color: var(--blue);
-    border-color: transparent;
-    background: var(--blue-soft);
+    background: transparent;
     transform: none;
   }
 
@@ -4754,8 +4745,7 @@ meter {
   .app-shell.sidebar-collapsed .nav button:hover,
   .app-shell.sidebar-collapsed .nav button.active {
     color: var(--blue);
-    border-color: transparent;
-    background: var(--blue-soft);
+    background: transparent;
   }
 
   .app-shell.sidebar-collapsed .nav button.active .icon {

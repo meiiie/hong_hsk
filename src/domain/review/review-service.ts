@@ -112,25 +112,14 @@ export function reviewsForDirection(
   return direction === "zh-to-vi" ? state.recognitionReviews : state.reviews;
 }
 
-export function recommendedStudyDirection(
-  state: AppState,
-  today = toDateKey(),
+export function alternatingStudyDirection(
+  lastDirection: StudyDirection | undefined,
+  fallback: StudyDirection = "vi-to-zh",
 ): StudyDirection {
-  const writingItems = new Set<string>();
-  const recognitionItems = new Set<string>();
-
-  state.attempts.forEach((attempt) => {
-    if (toDateKey(new Date(attempt.at)) !== today) {
-      return;
-    }
-    if (attempt.direction === "zh-to-vi") {
-      recognitionItems.add(attempt.itemId);
-      return;
-    }
-    writingItems.add(attempt.itemId);
-  });
-
-  return writingItems.size > recognitionItems.size ? "zh-to-vi" : "vi-to-zh";
+  if (!lastDirection) {
+    return fallback;
+  }
+  return lastDirection === "vi-to-zh" ? "zh-to-vi" : "vi-to-zh";
 }
 
 export function dueItems(

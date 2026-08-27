@@ -67,7 +67,8 @@ export interface StudySettings {
   dailyReviewTarget: number;
   selectedLesson: number;
   studyDirection: StudyDirection;
-  balanceStudyDirections: boolean;
+  alternateStudyDirections: boolean;
+  lastStudySessionDirection?: StudyDirection;
   locale: LocaleCode;
   revealPinyin: boolean;
   revealMeaning: boolean;

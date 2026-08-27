@@ -25,8 +25,8 @@ export function applySettingInput(
   if (key === "locale") {
     settings.locale = input.value === "en" ? "en" : "vi";
   }
-  if (key === "balanceStudyDirections") {
-    settings.balanceStudyDirections = "checked" in input ? Boolean(input.checked) : true;
+  if (key === "alternateStudyDirections") {
+    settings.alternateStudyDirections = "checked" in input ? Boolean(input.checked) : true;
   }
   if (key === "useEnglishFallback") {
     settings.useEnglishFallback = "checked" in input ? Boolean(input.checked) : false;

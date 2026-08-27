@@ -22,7 +22,6 @@ export function hydrateSidebarMotion(
   }
 
   const isInitialRender = !previous;
-  const activeViewChanged = previous?.activeView !== current.activeView;
   const mobileMoreOpened = current.mobileMoreOpen && previous?.mobileMoreOpen !== true;
   const progressChanged =
     previous?.learned !== current.learned ||
@@ -32,9 +31,6 @@ export function hydrateSidebarMotion(
 
   if (isInitialRender) {
     void animateSidebarEntrance(root);
-  }
-  if (isInitialRender || activeViewChanged) {
-    void animateActiveNavItem(root);
   }
   if (isInitialRender || progressChanged) {
     void animateSidebarProgress(root);
@@ -94,30 +90,6 @@ async function animateSidebarEntrance(root: ParentNode): Promise<void> {
         duration: motionDurations.slow,
         delay: 80,
         ease: motionEases.emphasized,
-      });
-    }
-  });
-}
-
-async function animateActiveNavItem(root: ParentNode): Promise<void> {
-  await runWithAnime(async ({ animate }) => {
-    const active = root.querySelector<HTMLElement>('[data-motion="sidebar-nav-item"][data-motion-active="true"]');
-    if (!active) {
-      return;
-    }
-
-    animate(active, {
-      scale: [0.985, 1],
-      duration: motionDurations.medium,
-      ease: motionEases.emphasized,
-    });
-
-    const icon = active.querySelector<HTMLElement>(".icon");
-    if (icon) {
-      animate(icon, {
-        translateY: [1, 0],
-        duration: motionDurations.fast,
-        ease: motionEases.standard,
       });
     }
   });

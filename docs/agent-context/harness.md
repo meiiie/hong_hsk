@@ -54,7 +54,7 @@ python -m playwright install chromium
 - Spaced-review policy boundaries, including wrong-answer recovery and ease caps.
 - Hanzi normalization and accent-insensitive Vietnamese meaning matching.
 - Separate Việt → Trung and Trung → Việt queues, attempts, and review-state updates.
-- New-session direction balancing by unique daily cards, with retries deduplicated and a deterministic writing tie-break.
+- Persisted session alternation: first entry keeps the selected direction, subsequent re-entries flip, and queue changes do not.
 - Review-state updates after correct and incorrect attempts.
 - Due, wrong, lesson, and today queue ordering.
 - Mock exam shape, deterministic generation, scoring, and timer formatting.
@@ -69,8 +69,8 @@ Desktop:
 - Removed stale headers stay absent.
 - Study input exists.
 - Switching to Trung → Việt changes the prompt/input contract and accepts an accentless correct meaning.
-- Automatic balancing changes only a new session and remains stable when the queue changes within that session.
-- Desktop navigation renders the exact Vietnamese label `Thi thử`, using the bundled Vietnamese UI font.
+- Automatic alternation happens on every re-entry into Học tập, even without an answer, and remains stable when the queue changes within that session.
+- Desktop navigation renders the unambiguous Vietnamese label `Luyện thi`, using the bundled Vietnamese UI font.
 - Stroke practice starts hidden during recall.
 - Reveal and hide answer controls work.
 - Wrong answer creates a wrong-list item.

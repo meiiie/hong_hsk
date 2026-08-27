@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   applyAttempt,
+  alternatingStudyDirection,
   dueItems,
   isCorrectAnswer,
   isCorrectVietnameseAnswer,
   newItemsForLesson,
   normalizeVietnameseAnswer,
   queueForMode,
-  recommendedStudyDirection,
   wrongItems,
 } from "../../src/domain/review/review-service";
 import { makeAppState, makeAttempt, makeReviewState, makeVocabItem } from "./factories";
@@ -95,24 +95,9 @@ describe("review service", () => {
     expect(newItemsForLesson(state, 1, 10, "zh-to-vi").map((card) => card.id)).toEqual(["word-1"]);
   });
 
-  it("balances new sessions by unique cards practiced today", () => {
-    const state = makeAppState({
-      attempts: [
-        makeAttempt({ id: "write-1", itemId: "word-1", direction: "vi-to-zh" }),
-        makeAttempt({ id: "write-1-retry", itemId: "word-1", direction: "vi-to-zh" }),
-        makeAttempt({ id: "recognize-1", itemId: "word-2", direction: "zh-to-vi" }),
-        makeAttempt({
-          id: "old-recognition",
-          itemId: "word-3",
-          direction: "zh-to-vi",
-          at: "2026-05-24T08:00:00.000Z",
-        }),
-      ],
-    });
-
-    expect(recommendedStudyDirection(state, "2026-05-25")).toBe("vi-to-zh");
-
-    state.attempts.push(makeAttempt({ id: "write-2", itemId: "word-4", direction: "vi-to-zh" }));
-    expect(recommendedStudyDirection(state, "2026-05-25")).toBe("zh-to-vi");
+  it("alternates direction at each new study-session boundary", () => {
+    expect(alternatingStudyDirection(undefined, "vi-to-zh")).toBe("vi-to-zh");
+    expect(alternatingStudyDirection("vi-to-zh")).toBe("zh-to-vi");
+    expect(alternatingStudyDirection("zh-to-vi")).toBe("vi-to-zh");
   });
 });

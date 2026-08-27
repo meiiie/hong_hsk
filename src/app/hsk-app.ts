@@ -20,7 +20,7 @@ import type { AppVersionCheck } from "../application/ports/app-version-checker";
 import type { AppState, StudyDirection, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
 import { findLessonListeningTrack } from "../domain/hsk4/lesson-listening";
-import { computeStats, recommendedStudyDirection } from "../domain/review/review-service";
+import { alternatingStudyDirection, computeStats } from "../domain/review/review-service";
 import { icon } from "../presentation/icons";
 import {
   animateSidebarToggleMotion,
@@ -64,7 +64,7 @@ class HskApp {
     removeRetiredLocalStorage();
     this.state = await this.dependencies.stateStore.load();
     this.study.setDirection(this.state.settings.studyDirection);
-    if (this.prepareBalancedStudyDirection()) {
+    if (this.prepareNextAlternatingDirection()) {
       await this.persist();
     }
     this.sidebarCollapsed = loadSidebarCollapsed();
@@ -268,7 +268,9 @@ class HskApp {
       this.study.clear();
       this.nekoTutor = undefined;
     }
-    if ((leavingStudy || enteringStudy) && this.prepareBalancedStudyDirection()) {
+    if (leavingStudy && this.prepareNextAlternatingDirection()) {
+      void this.persist();
+    } else if (enteringStudy && this.prepareAlternatingStudyDirection()) {
       void this.persist();
     }
     this.render();
@@ -337,7 +339,7 @@ class HskApp {
 
   private startStudy(mode: StudyMode): void {
     const startingNewSession = this.activeView !== "study";
-    if (startingNewSession && this.prepareBalancedStudyDirection()) {
+    if (startingNewSession && this.prepareAlternatingStudyDirection()) {
       void this.persist();
     }
     this.study.start(mode);
@@ -354,6 +356,9 @@ class HskApp {
       return;
     }
     this.state.settings.studyDirection = direction;
+    if (this.state.settings.alternateStudyDirections) {
+      this.state.settings.lastStudySessionDirection = direction;
+    }
     this.study.setDirection(direction);
     this.nekoTutor = undefined;
     await this.persist();
@@ -504,24 +509,41 @@ class HskApp {
 
   private async updateSetting(input: HTMLInputElement | HTMLSelectElement): Promise<void> {
     applySettingInput(this.state.settings, input);
-    if (
-      input.dataset.setting === "balanceStudyDirections" &&
-      this.state.settings.balanceStudyDirections &&
-      this.activeView !== "study"
-    ) {
-      this.prepareBalancedStudyDirection();
+    if (input.dataset.setting === "alternateStudyDirections" && this.state.settings.alternateStudyDirections) {
+      this.state.settings.lastStudySessionDirection = this.state.settings.studyDirection;
+      if (this.activeView !== "study") {
+        this.prepareNextAlternatingDirection();
+      }
     }
     await this.persist();
     this.render();
   }
 
-  private prepareBalancedStudyDirection(): boolean {
-    if (!this.state.settings.balanceStudyDirections) {
+  private prepareAlternatingStudyDirection(): boolean {
+    if (!this.state.settings.alternateStudyDirections) {
       this.study.setDirection(this.state.settings.studyDirection);
       return false;
     }
 
-    const direction = recommendedStudyDirection(this.state);
+    const direction = alternatingStudyDirection(
+      this.state.settings.lastStudySessionDirection,
+      this.state.settings.studyDirection,
+    );
+    const changed =
+      direction !== this.state.settings.studyDirection ||
+      direction !== this.state.settings.lastStudySessionDirection;
+    this.state.settings.studyDirection = direction;
+    this.state.settings.lastStudySessionDirection = direction;
+    this.study.setDirection(direction);
+    return changed;
+  }
+
+  private prepareNextAlternatingDirection(): boolean {
+    if (!this.state.settings.alternateStudyDirections || !this.state.settings.lastStudySessionDirection) {
+      return false;
+    }
+
+    const direction = alternatingStudyDirection(this.state.settings.lastStudySessionDirection);
     const changed = direction !== this.state.settings.studyDirection;
     this.state.settings.studyDirection = direction;
     this.study.setDirection(direction);
