@@ -25,7 +25,7 @@ No networked or production AI UI should ship until the learning contract, evalua
 
 A developer-only UX pilot is allowed before that release gate. It may call the owner's installed ordinary `neko acp` process only from loopback Vite, in `plan` mode and an empty workspace with MCP, outside-workspace reads, and the extra verification loop disabled for that child process. This exception is for testing post-answer placement and tutor usefulness; production builds hide it, and it must not be connected to a Tunnel or public host.
 
-As of 2026-08-28, that local pilot supports one continuous tutor session across cards and page reloads. The browser keeps only the latest 40 exchanges for presentation in `localStorage`; the ACP session ID points back to Neko's normal durable local session, and Neko remains the full-context authority. The UI provides stop, retry, AI off/on, JSON export, and a two-step clear action. Clear makes Hồng HSK4 forget the transcript and session ID and calls ACP `session/close`; it does not claim to erase Neko's durable file because ACP v1 does not expose session deletion. The learner sees this storage boundary in Vietnamese.
+As of 2026-08-28, that local pilot supports one continuous tutor session across cards and page reloads. The browser keeps only a bounded recent-message presentation cache; the ACP session ID points back to Neko's normal durable local session, and Neko remains the memory and full-context authority. A floating launcher opens the post-answer panel without shifting the study layout. The UI provides stop, retry, AI off/on, JSON export, and a two-step “new conversation” action. Starting new makes Hồng HSK4 forget its presentation cache and session ID and calls ACP `session/close`; it does not claim to erase Neko's durable file because ACP v1 does not expose session deletion. Storage/transport details belong in privacy/settings documentation rather than repeated inside the primary tutoring flow.
 
 The learner can install and use Neko Core in its terminal immediately. Integration inside the HSK4 PWA still requires the HSK host profile and bridge because a browser cannot directly launch or speak ACP's local `stdio` transport.
 
@@ -127,7 +127,7 @@ The tutor should optimize learning, not answer throughput or chat engagement.
 6. **Keep cognitive load bounded.** One goal per turn, short examples, no essay when the learner is in a rapid review flow.
 7. **Deepen metacognition.** Help the learner name the error pattern and choose a cue, without inventing psychological traits.
 8. **Ground claims.** Verified HSK data and the active activity are authoritative. Model knowledge is supplementary and labeled.
-9. **Preserve agency.** The learner can stop, clear, export, disable memory, and study fully without AI.
+9. **Preserve agency.** The learner can stop, start a new conversation, export, turn AI off, and study fully without AI.
 10. **Measure delayed learning.** Satisfaction and chat length are secondary to later unaided recall and transfer.
 
 This contract follows the retrieval-practice evidence, LearnLM's learning-science dimensions, and the warning from a preregistered classroom study that an unguarded general assistant can improve assisted performance while harming later unaided performance.
@@ -143,7 +143,7 @@ Sources: [retrieval practice](https://pubmed.ncbi.nlm.nih.gov/16507066/), [Learn
 | CMU LearnLab | Keep fine-grained, longitudinal learning evidence and run in-vivo comparisons. Product telemetry should answer a learning question, not merely report engagement. |
 | ACL BIPED | Select a pedagogical dialogue act before generating prose. HSK actions should be typed, such as `probe`, `hint`, `contrast`, `correct`, `model`, and `retry`. |
 | PNAS guardrail study | Prevent answer outsourcing. Give the agent verified solutions, common mistakes, and hint rules; evaluate later unaided performance. |
-| Microsoft Human-AI Interaction | Make capability and limits clear, invoke AI in context, support efficient dismissal/correction, remember recent interactions, and expose global controls when behavior spans the product. This motivates the locked post-answer placement plus stop/off/clear/export controls. |
+| Microsoft Human-AI Interaction | Make capability and limits clear, invoke AI in context, support efficient dismissal/correction, remember recent interactions, and expose global controls when behavior spans the product. This motivates the locked post-answer placement plus stop/off/new-conversation/export controls. |
 | Anthropic long-running context guidance | Long conversations need explicit context management because irrelevant history can reduce model focus. The UI therefore bounds its presentation transcript while Neko remains responsible for the actual model context and compaction policy. |
 
 Sources: [LearnLM](https://arxiv.org/abs/2412.16429), [Tutor CoPilot](https://scale.stanford.edu/sites/default/files/ai24_1054_v2.pdf), [CMU LearnLab](https://learnlab.org/learnlab-research/), [BIPED at ACL 2024](https://aclanthology.org/2024.acl-long.186/), [PNAS guardrail study](https://doi.org/10.1073/pnas.2422633122), [Microsoft Guidelines for Human-AI Interaction](https://www.microsoft.com/en-us/research/publication/guidelines-for-human-ai-interaction/), and [Anthropic context editing](https://platform.claude.com/docs/en/build-with-claude/context-editing).
@@ -300,7 +300,7 @@ Excluded by default:
 - inferred health, emotion, personality, or other sensitive traits;
 - raw audio until the later voice contract exists.
 
-The UI must offer `AI off`, `clear session`, export, and an honest description of whatever deletion the host protocol actually supports before durable remote memory is enabled. Retention periods and data locations must be shown in Vietnamese. In the local pilot, `clear session` means forget in Hồng HSK4 and close in ACP; it is not represented as physical deletion from Neko's local store.
+The product must offer `AI off`, new conversation, export, and an honest Vietnamese description of whatever deletion the host protocol actually supports before durable remote memory is enabled. Retention periods and data locations belong in an accessible privacy/settings surface, not as repeated infrastructure copy inside each tutoring conversation. In the local pilot, “new conversation” means forget the Hồng HSK4 presentation cache and close in ACP; it is not represented as physical deletion from Neko's local store.
 
 ## Typed tutor protocol
 

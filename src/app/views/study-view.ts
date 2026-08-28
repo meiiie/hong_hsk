@@ -26,6 +26,7 @@ interface StudyViewModel {
   nekoTutorEnabled: boolean;
   nekoTutor: NekoTutorViewState | undefined;
   nekoSession: NekoTutorSessionState | undefined;
+  nekoPanelOpen: boolean;
   nekoClearConfirming: boolean;
   nekoNotice: string | undefined;
 }
@@ -43,6 +44,7 @@ export function renderStudyView(model: StudyViewModel): string {
     nekoTutorEnabled,
     nekoTutor,
     nekoSession,
+    nekoPanelOpen,
     nekoClearConfirming,
     nekoNotice,
   } = model;
@@ -169,17 +171,6 @@ export function renderStudyView(model: StudyViewModel): string {
 
       <aside class="study-side">
         ${renderStrokeLab(selectedChar, hanziChars, answerVisible, strokeCharIndex)}
-        ${renderNekoTutor({
-          item,
-          feedback,
-          available: nekoTutorAvailable,
-          enabled: nekoTutorEnabled,
-          viewState: nekoTutor,
-          session: nekoSession,
-          clearConfirming: nekoClearConfirming,
-          notice: nekoNotice,
-          direction: studyDirection,
-        })}
         ${review ? `<section class="review-panel">
             <div class="panel-heading">
               <p class="eyebrow">${isRecognition ? "Nhận nghĩa" : "Tự viết"}</p>
@@ -197,6 +188,18 @@ export function renderStudyView(model: StudyViewModel): string {
           </div>
         </section>
       </aside>
+      ${renderNekoTutor({
+        item,
+        feedback,
+        available: nekoTutorAvailable,
+        enabled: nekoTutorEnabled,
+        panelOpen: nekoPanelOpen,
+        viewState: nekoTutor,
+        session: nekoSession,
+        clearConfirming: nekoClearConfirming,
+        notice: nekoNotice,
+        direction: studyDirection,
+      })}
     </section>
   `;
 }
@@ -253,6 +256,7 @@ interface NekoTutorRenderModel {
   feedback: StudyFeedback | undefined;
   available: boolean;
   enabled: boolean;
+  panelOpen: boolean;
   viewState: NekoTutorViewState | undefined;
   session: NekoTutorSessionState | undefined;
   clearConfirming: boolean;
@@ -261,39 +265,26 @@ interface NekoTutorRenderModel {
 }
 
 function renderNekoTutor(model: NekoTutorRenderModel): string {
-  const { item, feedback, available, enabled, viewState, session, clearConfirming, notice, direction } = model;
+  const {
+    item,
+    feedback,
+    available,
+    enabled,
+    panelOpen,
+    viewState,
+    session,
+    clearConfirming,
+    notice,
+    direction,
+  } = model;
   if (!available) {
     return "";
   }
-  const header = renderNekoHeader(session, enabled);
-  const sessionControls = `${notice ? `<p class="neko-notice" role="status">${escapeHtml(notice)}</p>` : ""}${renderNekoClearConfirmation(clearConfirming)}`;
-  if (!enabled) {
-    return `
-      <section class="neko-tutor neko-tutor-disabled" data-neko-tutor>
-        ${header}
-        ${sessionControls}
-        <p>Neko đang tắt trên thiết bị này. Học tập, chấm điểm và lịch ôn vẫn hoạt động bình thường.</p>
-        <button type="button" class="ghost-button" data-neko-enable>${labelWithIcon("sparkles", "Bật Neko")}</button>
-        ${renderNekoRetention()}
-      </section>
-    `;
-  }
-  if (!feedback) {
-    return `
-      <section class="neko-tutor neko-tutor-locked" data-neko-tutor>
-        ${header}
-        ${sessionControls}
-        <p class="neko-lock-copy">Mở sau khi chấm hoặc hiện đáp án. Lịch sử phiên được ẩn trong lúc bạn đang tự nhớ.</p>
-        ${renderNekoRetention()}
-      </section>
-    `;
-  }
-
   const current = viewState?.itemId === item.id ? viewState : undefined;
   const recognition = direction === "zh-to-vi";
-  const defaultQuestion = feedback.revealed
+  const defaultQuestion = feedback?.revealed
     ? "Giải thích ngắn gọn từ này và cho tôi một mẹo ghi nhớ."
-    : feedback.correct
+    : feedback?.correct
       ? recognition
         ? "Giải thích sắc thái nghĩa và cho tôi một ví dụ HSK4 ngắn."
         : "Giải thích cách dùng từ này và cho tôi một ví dụ HSK4 ngắn."
@@ -301,34 +292,126 @@ function renderNekoTutor(model: NekoTutorRenderModel): string {
         ? "So sánh nghĩa tôi nhập với đáp án và chỉ ra chỗ chưa đúng."
         : "Chỉ ra lỗi trong câu trả lời của tôi và giải thích cách nhớ đáp án đúng.";
 
+  const panelContent = !enabled
+    ? renderNekoDisabled()
+    : !feedback
+      ? renderNekoLocked()
+      : renderNekoConversation(item, current, session, clearConfirming, notice, defaultQuestion);
+  const visibleSession = feedback ? session : undefined;
+
   return `
-    <section class="neko-tutor" data-neko-tutor>
-      ${header}
-      ${sessionControls}
+    <div class="neko-shell ${panelOpen ? "is-open" : ""}" data-neko-shell>
+      ${
+        panelOpen
+          ? `<button type="button" class="neko-panel-scrim" data-neko-close aria-label="Đóng Neko"></button>
+            <aside class="neko-panel" id="neko-panel" data-neko-panel data-neko-tutor tabindex="-1" aria-label="Trợ giảng Neko">
+              ${renderNekoPanelHeader(item, visibleSession, enabled)}
+              ${panelContent}
+            </aside>`
+          : ""
+      }
+      <button
+        type="button"
+        class="neko-launcher"
+        ${panelOpen ? "data-neko-close" : "data-neko-open"}
+        data-label="${panelOpen ? "Đóng Neko" : "Mở Neko"}"
+        aria-label="${panelOpen ? "Đóng trợ giảng Neko" : "Mở trợ giảng Neko"}"
+        aria-controls="neko-panel"
+        aria-expanded="${panelOpen}"
+      >
+        ${icon(panelOpen ? "x" : "sparkles")}
+        ${feedback && !panelOpen ? `<span class="neko-launcher-dot"><span class="sr-only">Neko đã sẵn sàng</span></span>` : ""}
+      </button>
+    </div>
+  `;
+}
+
+function renderNekoPanelHeader(
+  item: VocabItem,
+  session: NekoTutorSessionState | undefined,
+  enabled: boolean,
+): string {
+  return `
+    <header class="neko-panel-head">
+      <span class="neko-panel-brand">${icon("sparkles")}</span>
+      <span class="neko-panel-title">
+        <strong>Neko</strong>
+        <small>Đang học · <span lang="zh-Hans">${escapeHtml(item.hanzi)}</span></small>
+      </span>
+      <div class="neko-panel-actions" aria-label="Điều khiển Neko">
+        ${session ? `<button type="button" class="neko-icon-button" data-neko-clear-request title="Bắt đầu cuộc trò chuyện mới" aria-label="Bắt đầu cuộc trò chuyện mới">${icon("plus")}</button>` : ""}
+        ${session?.messages.length ? `<button type="button" class="neko-icon-button" data-neko-export title="Xuất cuộc trò chuyện" aria-label="Xuất cuộc trò chuyện">${icon("download")}</button>` : ""}
+        ${
+          enabled
+            ? `<details class="neko-panel-menu">
+                <summary class="neko-icon-button" title="Tùy chọn Neko" aria-label="Tùy chọn Neko">${icon("ellipsis")}</summary>
+                <div class="neko-panel-menu-popover">
+                  <button type="button" data-neko-disable>${labelWithIcon("x", "Tắt Neko")}</button>
+                </div>
+              </details>`
+            : ""
+        }
+        <button type="button" class="neko-icon-button" data-neko-close title="Đóng Neko" aria-label="Đóng Neko">${icon("x")}</button>
+      </div>
+    </header>
+  `;
+}
+
+function renderNekoDisabled(): string {
+  return `
+    <div class="neko-panel-body neko-panel-state">
+      <span class="neko-state-icon">${icon("sparkles")}</span>
+      <strong>Neko đang tắt</strong>
+      <p>Việc học và lịch ôn vẫn hoạt động bình thường. Bạn có thể bật lại khi cần giải thích.</p>
+      <button type="button" class="primary-button" data-neko-enable>${labelWithIcon("sparkles", "Bật Neko")}</button>
+    </div>
+  `;
+}
+
+function renderNekoLocked(): string {
+  return `
+    <div class="neko-panel-body neko-panel-state neko-panel-locked">
+      <span class="neko-state-icon">${icon("sparkles")}</span>
+      <strong>Thử nhớ trước, hỏi Neko sau</strong>
+      <p>Hãy chấm hoặc hiện đáp án trước. Neko sẽ không gợi ý trong lúc bạn đang tự nhớ.</p>
+    </div>
+  `;
+}
+
+function renderNekoConversation(
+  item: VocabItem,
+  current: NekoTutorViewState | undefined,
+  session: NekoTutorSessionState | undefined,
+  clearConfirming: boolean,
+  notice: string | undefined,
+  defaultQuestion: string,
+): string {
+  const loading = current?.status === "loading";
+  return `
+    <div class="neko-panel-body" data-neko-conversation>
+      ${notice ? `<p class="neko-notice" role="status">${escapeHtml(notice)}</p>` : ""}
+      ${renderNekoClearConfirmation(clearConfirming)}
       ${renderNekoThread(session)}
       ${
-        !current
-          ? `<button type="button" class="primary-button neko-primary" data-neko-question="${escapeAttribute(defaultQuestion)}">
-              ${labelWithIcon("sparkles", "Hỏi Neko về câu này")}
-            </button>`
+        !session?.messages.length && !loading
+          ? `<div class="neko-empty">
+              <span class="neko-empty-mark" lang="zh-Hans">${escapeHtml(item.hanzi)}</span>
+              <strong>Hỏi Neko về từ này</strong>
+              <p>Giải thích cách dùng, phân biệt từ dễ nhầm hoặc tạo một câu hỏi thử lại.</p>
+            </div>`
           : ""
       }
       ${
-        current?.status === "loading"
+        loading
           ? `<div class="neko-pending-question">
               <strong>Bạn · ${escapeHtml(item.hanzi)}</strong>
               <p>${escapeHtml(current.question)}</p>
             </div>
             <div class="neko-loading" role="status" aria-live="polite">
               <span class="neko-pulse" aria-hidden="true"></span>
-              <span>Neko đang xem câu trả lời của bạn…</span>
+              <span>Neko đang suy nghĩ…</span>
               <button type="button" class="ghost-button compact-button" data-neko-cancel>${labelWithIcon("squareDashed", "Dừng")}</button>
             </div>`
-          : ""
-      }
-      ${
-        current?.status === "ready"
-          ? renderNekoFollowups()
           : ""
       }
       ${
@@ -341,30 +424,12 @@ function renderNekoTutor(model: NekoTutorRenderModel): string {
       }
       ${
         current?.status === "cancelled"
-          ? `<div class="neko-cancelled" role="status">Lượt vừa rồi đã dừng. Bạn có thể hỏi lại bằng một câu ngắn hơn.</div>${renderNekoFollowups()}`
+          ? `<div class="neko-cancelled" role="status">Lượt vừa rồi đã dừng. Bạn có thể hỏi lại bằng một câu ngắn hơn.</div>`
           : ""
       }
-      ${renderNekoRetention()}
-    </section>
-  `;
-}
-
-function renderNekoHeader(session: NekoTutorSessionState | undefined, enabled: boolean): string {
-  const turns = session?.turnCount ?? 0;
-  const meta = turns > 0 ? `${turns} lượt · lưu cục bộ` : "ACP local · hậu kiểm sau trả lời";
-  return `
-    <div class="neko-tutor-head">
-      <span class="neko-tutor-icon">${icon("sparkles")}</span>
-      <span class="neko-tutor-title">
-        <strong>Neko AI</strong>
-        <small>${meta}</small>
-      </span>
-      <div class="neko-session-actions" aria-label="Điều khiển phiên Neko">
-        ${session?.messages.length ? `<button type="button" title="Xuất cuộc trò chuyện" data-neko-export>${labelWithIcon("download", "Xuất")}</button>` : ""}
-        ${session ? `<button type="button" title="Xóa cuộc trò chuyện" data-neko-clear-request>${labelWithIcon("trash", "Xóa phiên")}</button>` : ""}
-        ${enabled ? `<button type="button" title="Tắt Neko trên thiết bị này" data-neko-disable>${labelWithIcon("x", "Tắt AI")}</button>` : ""}
-      </div>
+      ${!loading ? renderNekoSuggestions(defaultQuestion) : ""}
     </div>
+    ${renderNekoComposer(item, loading)}
   `;
 }
 
@@ -374,12 +439,11 @@ function renderNekoClearConfirmation(confirming: boolean): string {
   }
   return `
     <div class="neko-clear-confirm" role="alertdialog" aria-labelledby="neko-clear-title">
-      <strong id="neko-clear-title">Xóa cuộc trò chuyện và tạo phiên mới?</strong>
-      <p>Hồng HSK4 sẽ quên transcript và không gửi session ID này ở câu hỏi sau. Tiến độ học không bị ảnh hưởng.</p>
-      <small>Neko ACP hiện chỉ đóng phiên; tệp phiên cục bộ cũ vẫn nằm trong kho Neko trên máy.</small>
+      <strong id="neko-clear-title">Bắt đầu cuộc trò chuyện mới?</strong>
+      <p>Neko sẽ đóng cuộc trò chuyện hiện tại. Tiến độ học và lịch ôn không thay đổi.</p>
       <div>
-        <button type="button" class="danger-button" data-neko-clear-confirm>Xóa và tạo phiên mới</button>
-        <button type="button" class="ghost-button" data-neko-clear-cancel>Giữ phiên</button>
+        <button type="button" class="primary-button" data-neko-clear-confirm>Bắt đầu mới</button>
+        <button type="button" class="ghost-button" data-neko-clear-cancel>Quay lại</button>
       </div>
     </div>
   `;
@@ -389,10 +453,8 @@ function renderNekoThread(session: NekoTutorSessionState | undefined): string {
   if (!session?.messages.length) {
     return "";
   }
-  const hiddenTurns = Math.max(0, session.turnCount - session.messages.length / 2);
   return `
     <div class="neko-thread-wrap">
-      ${hiddenTurns ? `<p class="neko-thread-limit">Đang hiển thị 40 lượt gần nhất · ${hiddenTurns} lượt cũ vẫn thuộc ngữ cảnh Neko.</p>` : ""}
       <ol class="neko-thread" aria-label="Cuộc trò chuyện với Neko">
         ${session.messages.map((message) => `
           <li class="neko-message neko-message-${message.role} ${message.role === "tutor" ? "neko-answer" : ""}">
@@ -405,32 +467,35 @@ function renderNekoThread(session: NekoTutorSessionState | undefined): string {
   `;
 }
 
-function renderNekoRetention(): string {
-  return `
-    <details class="neko-retention">
-      <summary>Phiên được lưu ở đâu?</summary>
-      <p>Hồng HSK4 giữ tối đa 40 lượt gần nhất trong localStorage để hiển thị. Neko giữ ngữ cảnh đầy đủ trong kho phiên cục bộ trên máy chạy Neko; không lưu phiên này vào IndexedDB hay Cloudflare.</p>
-    </details>
-  `;
-}
-
-function renderNekoFollowups(): string {
+function renderNekoSuggestions(defaultQuestion: string): string {
   const questions = [
+    defaultQuestion,
     "Phân biệt từ này với một từ HSK4 dễ nhầm.",
-    "Cho tôi hai ví dụ ngắn có dịch tiếng Việt.",
     "Tạo một câu hỏi thử lại, chưa đưa đáp án.",
   ];
   return `
     <div class="neko-suggestions" aria-label="Câu hỏi gợi ý">
-      ${questions.map((question) => `<button type="button" data-neko-question="${escapeAttribute(question)}">${escapeHtml(question)}</button>`).join("")}
+      ${questions.map((question, index) => `<button type="button" data-neko-question="${escapeAttribute(question)}">${index === 0 ? "Hỏi Neko về câu này" : escapeHtml(question)}</button>`).join("")}
     </div>
-    <form class="neko-question-form" data-neko-question-form>
-      <label for="neko-question-input">Hỏi tiếp về từ này</label>
-      <div>
-        <input id="neko-question-input" name="question" maxlength="600" autocomplete="off" placeholder="Ví dụ: Khi nào dùng từ này?" />
-        <button type="submit" class="primary-button">Hỏi</button>
-      </div>
-    </form>
+  `;
+}
+
+function renderNekoComposer(item: VocabItem, loading: boolean): string {
+  return `
+    <footer class="neko-composer">
+      <form class="neko-question-form" data-neko-question-form>
+        <label class="sr-only" for="neko-question-input">Hỏi Neko về ${escapeHtml(item.hanzi)}</label>
+        <input
+          id="neko-question-input"
+          name="question"
+          maxlength="600"
+          autocomplete="off"
+          placeholder="Hỏi về ${escapeAttribute(item.hanzi)}…"
+          ${loading ? "disabled" : ""}
+        />
+        <button type="submit" class="neko-send-button" aria-label="Gửi câu hỏi" ${loading ? "disabled" : ""}>${icon("arrowRight")}</button>
+      </form>
+    </footer>
   `;
 }
 

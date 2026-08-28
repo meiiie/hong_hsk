@@ -76,8 +76,8 @@ Desktop:
 - Reveal and hide answer controls work.
 - Wrong answer creates a wrong-list item.
 - Retired tutor session storage is removed and no legacy tutor control appears after checking an answer.
-- The developer-local Neko card is locked during recall and exposes its question action only after check/reveal.
-- Mocked Neko turns retain one session and transcript across cards, support export and confirmed clear, and preserve normal study when AI is disabled.
+- The developer-local Neko launcher opens a floating panel without shifting the study layout; the panel hides history and questions during recall and unlocks only after check/reveal.
+- Mocked Neko turns retain one session and presentation transcript across cards, support stop/export/confirmed new conversation/off-on, close on study transitions, and preserve normal study when AI is disabled.
 - Correct answer is recognized.
 - Data screen renders.
 
@@ -87,7 +87,7 @@ Mobile/mock:
 - Data count reaches the expected current course count.
 - Mock exam set selection works.
 - Mock runner starts with clock and 100-question flow.
-- Mobile study direction selector, recognition prompt, two-turn Neko session, session controls, and mock screens render in a narrow viewport.
+- Mobile study direction selector, recognition prompt, two-turn floating Neko panel, panel controls, bottom-navigation clearance, and mock screens render in a narrow viewport.
 
 ## What The Harness Does Not Prove
 

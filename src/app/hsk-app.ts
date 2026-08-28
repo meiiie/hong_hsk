@@ -62,6 +62,7 @@ class HskApp {
   private nekoSession: NekoTutorSessionState | undefined;
   private nekoSessionGeneration = 0;
   private nekoEnabled = true;
+  private nekoPanelOpen = false;
   private nekoClearConfirming = false;
   private nekoNotice: string | undefined;
   private lessonAudio: LessonListeningViewState = {
@@ -214,6 +215,7 @@ class HskApp {
       feedback: this.study.feedback,
       nekoTutorAvailable: Boolean(this.dependencies.nekoTutor),
       nekoTutorEnabled: this.nekoEnabled,
+      nekoPanelOpen: this.nekoPanelOpen,
       nekoTutor: this.nekoTutor,
       nekoSession: this.nekoSession,
       nekoClearConfirming: this.nekoClearConfirming,
@@ -248,6 +250,7 @@ class HskApp {
       hideAnswer: () => this.hideAnswer(),
       selectStrokeChar: (index) => this.selectStrokeChar(index),
       runStrokeAction: (action) => this.dependencies.strokePractice.run(action),
+      toggleNekoPanel: (open) => this.toggleNekoPanel(open),
       askNeko: (question) => this.askNeko(question),
       cancelNeko: () => this.cancelNeko(),
       setNekoEnabled: (enabled) => this.setNekoEnabled(enabled),
@@ -292,6 +295,7 @@ class HskApp {
     this.accountMenuOpen = false;
     if (view !== "study") {
       this.cancelPendingNekoSilently();
+      this.nekoPanelOpen = false;
       this.study.clear();
       this.nekoTutor = undefined;
     }
@@ -370,6 +374,7 @@ class HskApp {
       void this.persist();
     }
     this.cancelPendingNekoSilently();
+    this.nekoPanelOpen = false;
     this.study.start(mode);
     this.nekoTutor = undefined;
     this.activeView = "study";
@@ -384,6 +389,7 @@ class HskApp {
       return;
     }
     this.cancelPendingNekoSilently();
+    this.nekoPanelOpen = false;
     this.state.settings.studyDirection = direction;
     if (this.state.settings.alternateStudyDirections) {
       this.state.settings.lastStudySessionDirection = direction;
@@ -511,6 +517,7 @@ class HskApp {
 
   private nextCard(): void {
     this.cancelPendingNekoSilently();
+    this.nekoPanelOpen = false;
     this.study.nextCard();
     this.nekoTutor = undefined;
     this.render();
@@ -527,6 +534,7 @@ class HskApp {
   private hideAnswer(): void {
     if (this.study.hideRevealedAnswer()) {
       this.cancelPendingNekoSilently();
+      this.nekoPanelOpen = false;
       this.nekoTutor = undefined;
       this.render();
       this.focusHanziInput();
@@ -536,6 +544,24 @@ class HskApp {
   private selectStrokeChar(index: number): void {
     this.study.selectStrokeChar(index);
     this.render();
+  }
+
+  private toggleNekoPanel(open: boolean): void {
+    if (!this.dependencies.nekoTutor || this.activeView !== "study") {
+      return;
+    }
+    this.nekoPanelOpen = open;
+    if (!open) {
+      this.nekoClearConfirming = false;
+    }
+    this.render();
+    requestAnimationFrame(() => {
+      const selector = open ? "[data-neko-panel] [data-neko-close]" : "[data-neko-open]";
+      this.root.querySelector<HTMLElement>(selector)?.focus();
+      if (open) {
+        this.scrollNekoPanelToLatest();
+      }
+    });
   }
 
   private async updateSetting(input: HTMLInputElement | HTMLSelectElement): Promise<void> {
@@ -702,6 +728,7 @@ class HskApp {
     const requestId = crypto.randomUUID();
     const conversationId = this.nekoSession?.conversationId;
     const sessionGeneration = this.nekoSessionGeneration;
+    this.nekoPanelOpen = true;
     this.nekoNotice = undefined;
     this.nekoClearConfirming = false;
     this.nekoTutor = {
@@ -712,6 +739,7 @@ class HskApp {
       conversationId,
     };
     this.render();
+    this.scrollNekoPanelToLatest();
 
     try {
       const result = await tutor.ask({
@@ -778,6 +806,7 @@ class HskApp {
       };
     }
     this.render();
+    this.scrollNekoPanelToLatest();
   }
 
   private async cancelNeko(): Promise<void> {
@@ -792,8 +821,9 @@ class HskApp {
       status: "cancelled",
       error: undefined,
     };
-    this.nekoNotice = "Đã dừng câu trả lời. Phiên vẫn được giữ để bạn có thể hỏi tiếp.";
+    this.nekoNotice = "Đã dừng câu trả lời. Cuộc trò chuyện vẫn được giữ để bạn có thể hỏi tiếp.";
     this.render();
+    this.scrollNekoPanelToLatest();
     try {
       const result = await tutor.cancel(current.requestId);
       if (result.conversationId && this.nekoSessionGeneration === sessionGeneration) {
@@ -807,6 +837,7 @@ class HskApp {
     }
     if (this.nekoSessionGeneration === sessionGeneration) {
       this.render();
+      this.scrollNekoPanelToLatest();
     }
   }
 
@@ -837,7 +868,7 @@ class HskApp {
     this.nekoClearConfirming = false;
     this.nekoNotice = enabled
       ? "Neko đã bật. AI chỉ mở sau khi bạn chấm hoặc hiện đáp án."
-      : "Neko đã tắt trên thiết bị này. Phiên cũ vẫn được giữ cho đến khi bạn xóa.";
+      : "Neko đã tắt. Cuộc trò chuyện vẫn được giữ để bạn có thể tiếp tục khi bật lại.";
     saveNekoTutorEnabled(window.localStorage, enabled);
     this.render();
   }
@@ -864,7 +895,7 @@ class HskApp {
     this.nekoSession = undefined;
     this.nekoTutor = undefined;
     this.nekoClearConfirming = false;
-    this.nekoNotice = "Đã xóa cuộc trò chuyện khỏi Hồng HSK4. Câu hỏi tiếp theo sẽ mở một phiên mới.";
+    this.nekoNotice = "Đã bắt đầu cuộc trò chuyện mới. Tiến độ học không thay đổi.";
     clearNekoTutorSession(window.localStorage);
     this.render();
 
@@ -878,7 +909,7 @@ class HskApp {
         await tutor?.closeSession(sessionToClose);
       }
     } catch {
-      this.nekoNotice = "Hồng HSK4 đã quên phiên này, nhưng chưa xác nhận được thao tác đóng với Neko local.";
+      this.nekoNotice = "Đã bắt đầu cuộc trò chuyện mới trong Hồng HSK4, nhưng Neko chưa xác nhận đóng cuộc trò chuyện trước.";
       this.render();
     }
   }
@@ -935,6 +966,15 @@ class HskApp {
 
   private focusHanziInput(): void {
     queueMicrotask(() => this.root.querySelector<HTMLInputElement>("#hanzi-input")?.focus());
+  }
+
+  private scrollNekoPanelToLatest(): void {
+    requestAnimationFrame(() => {
+      const body = this.root.querySelector<HTMLElement>("[data-neko-conversation]");
+      if (body) {
+        body.scrollTop = body.scrollHeight;
+      }
+    });
   }
 
   private async persist(): Promise<void> {

@@ -28,7 +28,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/app/hsk-app.ts` | Stateful app controller for render orchestration, command handlers, persistence calls, and adapter coordination. |
 | `src/app/app-dependencies.ts` | App dependency contract for injected ports/adapters. |
 | `src/app/app-types.ts` | App-only view/data-health/feedback types. |
-| `src/app/neko-session-state.ts` | Defensive localStorage presentation state for the bounded Neko transcript, durable ACP session ID, and device-level AI toggle. |
+| `src/app/neko-session-state.ts` | Defensive browser presentation cache for the bounded recent Neko transcript, durable ACP session ID, and device-level AI toggle; Neko remains the memory authority. |
 | `src/app/events/app-event-binder.ts` | DOM event binding layer that maps data attributes to typed app handlers. |
 | `src/app/service-worker.ts` | Service worker registration. |
 | `src/app/workflows/study-workflow.ts` | Transient study session state: queue, Việt/Trung recall direction, current card, answer feedback, stroke selection. |
@@ -38,7 +38,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/app/webmcp/hsk-webmcp.ts` | Progressive WebMCP tool registration for model-context-aware browsers/agents. |
 | `src/app/views/app-shell-view.ts` | Sidebar, topbar, language switcher, and route title shell rendering. |
 | `src/app/views/dashboard-view.ts` | Daily overview, data readiness, and queue preview rendering. |
-| `src/app/views/study-view.ts` | Bidirectional study selector/card, answer feedback, stroke lab, Neko hậu kiểm, and direction-specific review detail. |
+| `src/app/views/study-view.ts` | Bidirectional study selector/card, answer feedback, stroke lab, floating post-answer Neko panel, and direction-specific review detail. |
 | `src/app/views/lesson-views.ts` | Lesson browser and wrong-word rendering. |
 | `src/app/views/mock-exam-view.ts` | Mock exam intro, runner, question, and result rendering. |
 | `src/app/views/plan-view.ts` | 30-day plan rendering. |

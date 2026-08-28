@@ -16,13 +16,15 @@ def main() -> None:
             page.goto("http://127.0.0.1:5173/", wait_until="networkidle")
             page.get_by_role("button", name="Bắt đầu ôn").first.click()
 
-            neko = page.locator("[data-neko-tutor]")
-            expect(neko.get_by_text("Neko AI", exact=True)).to_be_visible()
-            expect(neko.get_by_text("Mở sau khi chấm hoặc hiện đáp án.")).to_be_visible()
+            expect(page.locator("[data-neko-tutor]")).to_have_count(0)
+            page.get_by_role("button", name="Mở trợ giảng Neko").click()
+            expect(page.locator("[data-neko-tutor]").get_by_text("Neko", exact=True)).to_be_visible()
+            expect(page.get_by_text("Hãy chấm hoặc hiện đáp án trước.", exact=False)).to_be_visible()
 
             page.locator('[data-study-direction="zh-to-vi"]').click()
             expect(page.get_by_label("Nhập nghĩa tiếng Việt")).to_be_visible()
             page.locator("[data-reveal-answer]").click()
+            page.get_by_role("button", name="Mở trợ giảng Neko").click()
             page.get_by_role("button", name="Hỏi Neko về câu này").click()
             expect(page.locator(".neko-answer")).to_be_visible(timeout=120_000)
 
@@ -39,7 +41,7 @@ def main() -> None:
                 raise AssertionError("Neko did not persist the first durable session turn")
 
             page.locator("#neko-question-input").fill("Cho tôi một câu hỏi ngắn để tự dùng từ này, chưa đưa đáp án.")
-            page.locator("[data-neko-question-form]").get_by_role("button", name="Hỏi").click()
+            page.locator("[data-neko-question-form]").get_by_role("button", name="Gửi câu hỏi").click()
             expect(page.locator("[data-neko-cancel]")).to_be_visible()
             expect(page.locator(".neko-message-tutor")).to_have_count(2, timeout=120_000)
 
