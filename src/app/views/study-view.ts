@@ -1,30 +1,61 @@
-import type { AiTutorAction, AiTutorMessage, AiTutorPanelState } from "../../application/ports/ai-tutor-client";
-import type { AppState, StudyMode, VocabItem } from "../../domain/types";
+import type {
+  AppState,
+  StudyDirection,
+  StudyMode,
+  VocabItem,
+} from "../../domain/types";
+import {
+  expectedAnswer,
+  reviewsForDirection,
+} from "../../domain/review/review-service";
 import { bookLabel, reviewStatusLabel, studyModeLabel } from "../../presentation/i18n";
 import { icon, labelWithIcon } from "../../presentation/icons";
 import { formatDateVi } from "../../shared/date-utils";
-import type { StudyFeedback } from "../app-types";
+import type { NekoTutorSessionState, NekoTutorViewState, StudyFeedback } from "../app-types";
 import { displayMeaning, escapeAttribute, escapeHtml, extractHanziChars, percent } from "./view-helpers";
 
 interface StudyViewModel {
   state: AppState;
   studyMode: StudyMode;
+  studyDirection: StudyDirection;
   studyQueue: VocabItem[];
   studyIndex: number;
   strokeCharIndex: number;
   feedback: StudyFeedback | undefined;
-  aiTutor: AiTutorPanelState;
+  nekoTutorAvailable: boolean;
+  nekoTutorEnabled: boolean;
+  nekoTutor: NekoTutorViewState | undefined;
+  nekoSession: NekoTutorSessionState | undefined;
+  nekoPanelOpen: boolean;
+  nekoClearConfirming: boolean;
+  nekoNotice: string | undefined;
 }
 
 export function renderStudyView(model: StudyViewModel): string {
-  const { state, studyMode, studyQueue, studyIndex, strokeCharIndex, feedback: studyFeedback } = model;
+  const {
+    state,
+    studyMode,
+    studyDirection,
+    studyQueue,
+    studyIndex,
+    strokeCharIndex,
+    feedback: studyFeedback,
+    nekoTutorAvailable,
+    nekoTutorEnabled,
+    nekoTutor,
+    nekoSession,
+    nekoPanelOpen,
+    nekoClearConfirming,
+    nekoNotice,
+  } = model;
 
   const item = studyQueue[studyIndex];
   if (!item) {
     return `
       <section class="empty-state">
         <h2>Phiên học đã xong</h2>
-        <p>Không còn thẻ trong hàng đợi hiện tại. Bạn có thể đổi bài, import thêm dữ liệu, hoặc ôn lại từ sai.</p>
+        <p>Không còn thẻ trong hàng đợi hiện tại. Bạn có thể đổi chiều luyện, đổi bài hoặc ôn lại từ sai.</p>
+        ${renderDirectionBar(studyDirection, state.settings.alternateStudyDirections)}
         <div class="action-row">
           <button class="primary-button" data-study-mode="today">${labelWithIcon("calendarCheck", "Tạo lại hàng đợi hôm nay")}</button>
           <button class="ghost-button" data-view="dashboard">${labelWithIcon("layout", "Về tổng quan")}</button>
@@ -33,25 +64,34 @@ export function renderStudyView(model: StudyViewModel): string {
     `;
   }
 
-  const review = state.reviews[item.id];
+  const reviews = reviewsForDirection(state, studyDirection);
+  const review = reviews[item.id];
   const feedback = studyFeedback?.itemId === item.id ? studyFeedback : undefined;
   const inputClass = feedback ? (feedback.correct ? "is-correct" : "is-wrong") : "";
   const position = `${studyIndex + 1}/${studyQueue.length}`;
   const hanziChars = extractHanziChars(item.hanzi);
   const selectedChar = hanziChars[Math.min(strokeCharIndex, hanziChars.length - 1)] ?? item.hanzi;
-  const canUseStroke = Boolean(feedback);
   const answerVisible = Boolean(feedback);
   const sessionProgress = percent(studyIndex + 1, studyQueue.length);
   const modeLabel = studyModeLabel(studyMode, state.settings.locale);
   const bookName = bookLabel(item.book, state.settings.locale);
-  const feedbackLabel = feedback?.revealed ? "Đáp án" : feedback?.correct ? "Đúng" : "Sai";
-  const feedbackText = feedback?.revealed ? item.hanzi : `Đáp án: ${item.hanzi}`;
+  const feedbackLabel = !feedback ? "" : feedback.revealed ? "Đáp án" : feedback.correct ? "Đúng" : "Sai";
+  const expected = expectedAnswer(item, studyDirection);
+  const feedbackText = feedback?.revealed ? expected : `Đáp án: ${expected}`;
   const exampleHan = usefulStudyExample(item.exampleHan, item.hanzi);
   const exampleVi = usefulStudyExample(item.exampleVi, item.hanzi);
+  const isRecognition = studyDirection === "zh-to-vi";
+  const promptText = isRecognition
+    ? item.hanzi
+    : displayMeaning(item, state.settings.useEnglishFallback);
+  const promptLabel = isRecognition ? "Nhìn chữ, nhớ nghĩa" : "Gợi nghĩa, viết chữ";
+  const inputLabel = isRecognition ? "Nhập nghĩa tiếng Việt" : "Nhập chữ Hán";
+  const inputPlaceholder = isRecognition ? "Ví dụ: pháp luật…" : "Gõ chữ Hán…";
 
   return `
     <section class="study-layout">
       <article class="study-card" data-motion="study-card" data-study-card-id="${escapeAttribute(item.id)}">
+        ${renderDirectionBar(studyDirection, state.settings.alternateStudyDirections)}
         <div class="session-strip">
           <div>
             <span>${escapeHtml(modeLabel)}</span>
@@ -65,18 +105,12 @@ export function renderStudyView(model: StudyViewModel): string {
           <span>${position}</span>
           <span>${reviewStatusLabel(review?.status ?? "new", state.settings.locale)}</span>
         </div>
-        <div class="prompt">
+        <div class="prompt ${isRecognition ? "prompt-hanzi" : "prompt-meaning"}">
           <div class="prompt-head">
-            <p class="eyebrow">Gõ lại chữ Hán</p>
-            <details class="answer-help">
-              <summary>${labelWithIcon("help", "Cách chấm")}</summary>
-              <div class="answer-help-popover">
-                <p>Gõ chữ Hán bạn nhớ được. Hệ thống bỏ qua khoảng trắng và dấu câu khi so đáp án.</p>
-                <p>Nếu sai do thiếu hoặc thừa chữ, app sẽ nhắc ở phần phản hồi.</p>
-              </div>
-            </details>
+            <p class="eyebrow">${promptLabel}</p>
+            ${renderAnswerHelp(studyDirection)}
           </div>
-          <h2>${escapeHtml(displayMeaning(item, state.settings.useEnglishFallback))}</h2>
+          <h2 ${isRecognition ? 'lang="zh-Hans"' : ""}>${escapeHtml(promptText)}</h2>
           ${
             answerVisible && state.settings.revealPinyin
               ? `<p class="pinyin">${escapeHtml(item.pinyin || "Chưa có pinyin")}</p>`
@@ -85,27 +119,32 @@ export function renderStudyView(model: StudyViewModel): string {
           ${
             answerVisible && (exampleHan || exampleVi)
               ? `<div class="example">
+                  ${exampleHan ? `<strong lang="zh-Hans">${escapeHtml(exampleHan)}</strong>` : ""}
                   ${exampleVi ? `<span>${escapeHtml(exampleVi)}</span>` : ""}
-                  ${exampleHan ? `<strong>${escapeHtml(exampleHan)}</strong>` : ""}
                 </div>`
               : ""
           }
         </div>
 
-        <form class="answer-form" data-answer-form>
-          <label for="hanzi-input">Nhập chữ Hán</label>
+        <form class="answer-form answer-form-${studyDirection}" data-answer-form>
+          <label for="hanzi-input">${inputLabel}</label>
           <input
             id="hanzi-input"
             class="${inputClass}"
             name="answer"
             autocomplete="off"
+            autocapitalize="none"
             data-motion="study-input"
             data-feedback-state="${feedback ? feedbackLabel.toLowerCase() : "none"}"
             inputmode="text"
             value="${escapeAttribute(feedback?.input ?? "")}"
-            placeholder="Gõ chữ Hán..."
+            placeholder="${inputPlaceholder}"
+            aria-describedby="answer-direction-hint"
             ${feedback ? "readonly" : ""}
           />
+          <p class="answer-hint" id="answer-direction-hint">
+            ${isRecognition ? "Có thể nhập có dấu hoặc không dấu; các nghĩa tương đương đã tách bằng dấu phẩy đều được chấp nhận." : "Khoảng trắng và dấu câu không ảnh hưởng kết quả chấm."}
+          </p>
           <div class="answer-actions">
             ${
               feedback?.revealed
@@ -131,11 +170,13 @@ export function renderStudyView(model: StudyViewModel): string {
       </article>
 
       <aside class="study-side">
-        ${renderAiTutorPanel(item, model.aiTutor, canUseStroke, feedback)}
-        ${renderStrokeLab(selectedChar, hanziChars, canUseStroke, strokeCharIndex)}
+        ${renderStrokeLab(selectedChar, hanziChars, answerVisible, strokeCharIndex)}
         ${review ? `<section class="review-panel">
-            <h3>Trạng thái từ này</h3>
-            ${renderReviewDetail(state, item)}
+            <div class="panel-heading">
+              <p class="eyebrow">${isRecognition ? "Nhận nghĩa" : "Tự viết"}</p>
+              <h3>Tiến độ từ này</h3>
+            </div>
+            ${renderReviewDetail(state, item, studyDirection)}
           </section>` : ""}
         <section class="mode-panel">
           <h3>Đổi hàng đợi</h3>
@@ -147,165 +188,334 @@ export function renderStudyView(model: StudyViewModel): string {
           </div>
         </section>
       </aside>
+      ${renderNekoTutor({
+        item,
+        feedback,
+        available: nekoTutorAvailable,
+        enabled: nekoTutorEnabled,
+        panelOpen: nekoPanelOpen,
+        viewState: nekoTutor,
+        session: nekoSession,
+        clearConfirming: nekoClearConfirming,
+        notice: nekoNotice,
+        direction: studyDirection,
+      })}
     </section>
   `;
 }
 
-function renderAiTutorPanel(
-  item: VocabItem,
-  aiTutor: AiTutorPanelState,
-  canUseAi: boolean,
-  feedback: StudyFeedback | undefined,
-): string {
-  if (!canUseAi) {
-    return "";
-  }
-
-  const isLoading = aiTutor.status === "loading";
-  const isStreaming = aiTutor.status === "streaming";
-  const busy = isLoading || isStreaming;
-  const wrongDisabled = feedback?.correct === false && !busy ? "" : "disabled";
-  const messages = aiTutor.messages ?? [];
-  const activeAction = aiTutor.action;
-  const memoryLine = buildVisibleMemoryLine(item, feedback);
-  const statusLine = aiTutor.statusNote ?? (messages.length ? "Đang giữ ngữ cảnh phiên học" : "Sẵn sàng giải thích sau khi chấm");
-
+function renderDirectionBar(direction: StudyDirection, alternateEnabled: boolean): string {
+  const recognition = direction === "zh-to-vi";
   return `
-    <section class="ai-tutor-panel ai-chat-panel" data-motion="study-ai" aria-live="polite">
-      <div class="ai-tutor-head">
-        <div>
-          <p class="eyebrow">Gia sư HSK</p>
-          <h3>Hỏi về ${escapeHtml(item.hanzi)}</h3>
-          <small data-ai-status-note>${escapeHtml(statusLine)}</small>
+    <div class="study-direction-bar">
+      <span class="study-direction-copy">
+        <strong>Chiều luyện</strong>
+        <small>${recognition ? "Nhìn chữ Hán, nhớ nghĩa Việt" : "Từ nghĩa Việt, tự viết chữ Hán"}</small>
+      </span>
+      <div class="study-direction-controls">
+        <div class="study-direction-switch" role="group" aria-label="Chọn chiều luyện từ vựng cho phiên hiện tại">
+          <button type="button" data-study-direction="vi-to-zh" class="${recognition ? "" : "active"}" aria-pressed="${recognition ? "false" : "true"}">
+            Việt <span aria-hidden="true">→</span> Trung
+          </button>
+          <button type="button" data-study-direction="zh-to-vi" class="${recognition ? "active" : ""}" aria-pressed="${recognition ? "true" : "false"}">
+            Trung <span aria-hidden="true">→</span> Việt
+          </button>
         </div>
-        <div class="ai-tutor-head-actions">
-          <span>AI Tutor</span>
-          ${
-            messages.length
-              ? `<button class="ai-icon-button" type="button" data-ai-clear title="Xóa phiên gia sư" aria-label="Xóa phiên gia sư">${icon("trash")}</button>`
-              : ""
-          }
-        </div>
-      </div>
-      <div class="ai-memory-strip" title="Bộ nhớ phiên học hiện tại">
-        <span>${icon("book")}</span>
-        <p>${escapeHtml(memoryLine)}</p>
-      </div>
-      <div class="ai-chat-messages" data-ai-messages>
-        ${
-          messages.length
-            ? messages.map(renderAiMessage).join("")
-            : renderAiTutorWelcome(item, feedback)
-        }
-      </div>
-      <div class="ai-tutor-actions">
-        ${aiActionButton("explain", "Giải thích", activeAction, busy)}
-        ${aiActionButton("examples", "Ví dụ", activeAction, busy)}
-        ${aiActionButton("memory_tip", "Mẹo nhớ", activeAction, busy)}
-        <button type="button" data-ai-action="why_wrong" class="${activeAction === "why_wrong" ? "active" : ""}" ${wrongDisabled}>Sửa lỗi</button>
-      </div>
-      ${
-        busy
-          ? `<div class="ai-tutor-streambar" data-motion="study-ai-response">
-              <span></span>
-              <p>${escapeHtml(aiTutor.statusNote ?? "Gia sư đang trả lời...")}</p>
-              <button type="button" data-ai-cancel>Dừng</button>
-            </div>`
-          : ""
-      }
-      ${
-        aiTutor.status === "error"
-          ? `<div class="ai-tutor-recovery" data-motion="study-ai-response">
-              <strong>Kết nối đang chậm</strong>
-              <p>${escapeHtml(aiTutor.error ?? "Thử lại bằng một câu hỏi ngắn hơn.")}</p>
-              <div>
-                <button type="button" data-ai-action="examples">Thử ví dụ ngắn</button>
-                <button type="button" data-ai-action="explain">Giải thích nhanh</button>
-              </div>
-            </div>`
-          : ""
-      }
-      ${
-        aiTutor.response?.model
-          ? `<p class="ai-tutor-model-note">Model: ${escapeHtml(displayAiModel(aiTutor.response.model))} · AI chỉ hỗ trợ học.</p>`
-          : ""
-      }
-      <form class="ai-tutor-form" data-ai-form>
-        <label for="ai-question">Hỏi thêm</label>
-        <div class="ai-composer">
-          <textarea id="ai-question" data-ai-question rows="2" maxlength="400" placeholder="Ví dụ: từ này dùng trong câu nào?" ${busy ? "disabled" : ""}>${escapeHtml(aiTutor.question ?? "")}</textarea>
-          <button type="submit" class="primary-button" ${busy ? "disabled" : ""}>${icon("arrowRight")}<span>Gửi</span></button>
-        </div>
-      </form>
-    </section>
-  `;
-}
-
-function aiActionButton(action: AiTutorAction, label: string, activeAction: AiTutorAction | undefined, disabled: boolean): string {
-  return `<button type="button" data-ai-action="${action}" class="${activeAction === action ? "active" : ""}" ${disabled ? "disabled" : ""}>${escapeHtml(label)}</button>`;
-}
-
-function renderAiTutorWelcome(item: VocabItem, feedback: StudyFeedback | undefined): string {
-  const wrongHint = feedback?.correct === false
-    ? `<button type="button" data-ai-action="why_wrong">Vì sao em sai?</button>`
-    : "";
-  return `
-    <div class="ai-tutor-welcome">
-      <strong>Gia sư đang theo thẻ ${escapeHtml(item.hanzi)}.</strong>
-      <p>Hồng có thể hỏi ngắn, app sẽ gửi kèm bài, đáp án vừa chấm và bộ nhớ lỗi gần đây.</p>
-      <div class="ai-chat-suggestions">
-        <button type="button" data-ai-action="explain">Cách dùng nhanh</button>
-        <button type="button" data-ai-action="examples">Cho ví dụ HSK4</button>
-        ${wrongHint}
+        <label class="study-alternate-toggle">
+          <input type="checkbox" data-setting="alternateStudyDirections" ${alternateEnabled ? "checked" : ""} />
+          <span>
+            <strong>Đổi chiều mỗi phiên</strong>
+            <small>${alternateEnabled ? "Mỗi lần mở lại Học tập, dùng chiều còn lại." : "Giữ chiều bạn chọn cho các phiên sau."}</small>
+          </span>
+        </label>
       </div>
     </div>
   `;
 }
 
-function formatAiResponse(content: string): string {
-  return content
-    .trim()
-    .split(/\n{2,}/)
-    .filter(Boolean)
-    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
-    .join("");
-}
-
-function renderAiMessage(message: AiTutorMessage): string {
-  const model = message.model ? `<small>${escapeHtml(displayAiModel(message.model))}</small>` : "";
-  const status = message.status === "streaming" ? `<em>đang viết</em>` : message.status === "error" ? `<em>Lỗi</em>` : "";
+function renderAnswerHelp(direction: StudyDirection): string {
+  const recognition = direction === "zh-to-vi";
   return `
-    <article class="ai-message ${message.role} ${message.status ?? ""}" data-ai-message-id="${escapeAttribute(message.id)}">
-      <div class="ai-message-meta">
-        <span>${message.role === "user" ? "Hồng" : "Gia sư"}</span>
-        ${status || model}
+    <details class="answer-help">
+      <summary>${labelWithIcon("help", "Cách chấm")}</summary>
+      <div class="answer-help-popover">
+        ${
+          recognition
+            ? `<p>App bỏ qua dấu tiếng Việt, viết hoa và dấu câu. Ví dụ “pháp luật” và “phap luat” được xem là cùng một đáp án.</p>
+               <p>Nếu dữ liệu có nhiều nghĩa tách bằng dấu phẩy, bạn chỉ cần nhập một nghĩa đầy đủ.</p>`
+            : `<p>Gõ chữ Hán bạn nhớ được. Hệ thống bỏ qua khoảng trắng và dấu câu khi so đáp án.</p>
+               <p>Nếu sai do thiếu hoặc thừa chữ, app sẽ nhắc ở phần phản hồi.</p>`
+        }
       </div>
-      <div class="ai-message-content" data-ai-message-content="${escapeAttribute(message.id)}">
-        ${message.content ? formatAiResponse(message.content) : `<p class="ai-typing-placeholder">Đang chuẩn bị câu trả lời...</p>`}
-      </div>
-    </article>
+    </details>
   `;
 }
 
-function buildVisibleMemoryLine(item: VocabItem, feedback: StudyFeedback | undefined): string {
-  if (feedback?.correct === false) {
-    return `Nhớ lỗi vừa gõ "${feedback.input || "trống"}" và sửa quanh từ ${item.hanzi}.`;
-  }
-  if (feedback?.revealed) {
-    return `Đang ở đáp án ${item.hanzi}; ưu tiên giải thích ngắn, ví dụ sát HSK4.`;
-  }
-  return `Đang học ${item.book} bài ${item.lesson}; gia sư chỉ mở sau khi đã chấm hoặc hiện đáp án.`;
+interface NekoTutorRenderModel {
+  item: VocabItem;
+  feedback: StudyFeedback | undefined;
+  available: boolean;
+  enabled: boolean;
+  panelOpen: boolean;
+  viewState: NekoTutorViewState | undefined;
+  session: NekoTutorSessionState | undefined;
+  clearConfirming: boolean;
+  notice: string | undefined;
+  direction: StudyDirection;
 }
 
-function displayAiModel(model: string): string {
-  const known: Record<string, string> = {
-    "mistralai/mistral-nemotron": "Mistral-Nemotron",
-    "nvidia/nemotron-3-super-120b-a12b": "Nemotron 3 Super 120B",
-    "nvidia/nemotron-3-ultra-550b-a55b": "Nemotron 3 Ultra",
-    "meta/llama-3.3-70b-instruct": "Llama 3.3 70B",
-    "local-hsk-fallback": "Gợi ý nội bộ",
-  };
-  return known[model] ?? model.replace(/^[^/]+\//, "");
+function renderNekoTutor(model: NekoTutorRenderModel): string {
+  const {
+    item,
+    feedback,
+    available,
+    enabled,
+    panelOpen,
+    viewState,
+    session,
+    clearConfirming,
+    notice,
+    direction,
+  } = model;
+  if (!available) {
+    return "";
+  }
+  const current = viewState?.itemId === item.id ? viewState : undefined;
+  const recognition = direction === "zh-to-vi";
+  const defaultQuestion = feedback?.revealed
+    ? "Giải thích ngắn gọn từ này và cho tôi một mẹo ghi nhớ."
+    : feedback?.correct
+      ? recognition
+        ? "Giải thích sắc thái nghĩa và cho tôi một ví dụ HSK4 ngắn."
+        : "Giải thích cách dùng từ này và cho tôi một ví dụ HSK4 ngắn."
+      : recognition
+        ? "So sánh nghĩa tôi nhập với đáp án và chỉ ra chỗ chưa đúng."
+        : "Chỉ ra lỗi trong câu trả lời của tôi và giải thích cách nhớ đáp án đúng.";
+
+  const panelContent = !enabled
+    ? renderNekoDisabled()
+    : !feedback
+      ? renderNekoLocked()
+      : renderNekoConversation(item, current, session, clearConfirming, notice, defaultQuestion);
+  const visibleSession = feedback ? session : undefined;
+
+  return `
+    <div class="neko-shell ${panelOpen ? "is-open" : ""}" data-neko-shell>
+      ${
+        panelOpen
+          ? `<button type="button" class="neko-panel-scrim" data-neko-close aria-label="Đóng Neko"></button>
+            <aside class="neko-panel" id="neko-panel" data-neko-panel data-neko-tutor tabindex="-1" aria-label="Trợ giảng Neko">
+              ${renderNekoPanelHeader(item, visibleSession, enabled)}
+              ${panelContent}
+            </aside>`
+          : ""
+      }
+      <button
+        type="button"
+        class="neko-launcher"
+        ${panelOpen ? "data-neko-close" : "data-neko-open"}
+        data-label="${panelOpen ? "Đóng Neko" : "Mở Neko"}"
+        aria-label="${panelOpen ? "Đóng trợ giảng Neko" : "Mở trợ giảng Neko"}"
+        aria-controls="neko-panel"
+        aria-expanded="${panelOpen}"
+      >
+        ${icon(panelOpen ? "x" : "sparkles")}
+        ${feedback && !panelOpen ? `<span class="neko-launcher-dot"><span class="sr-only">Neko đã sẵn sàng</span></span>` : ""}
+      </button>
+    </div>
+  `;
+}
+
+function renderNekoPanelHeader(
+  item: VocabItem,
+  session: NekoTutorSessionState | undefined,
+  enabled: boolean,
+): string {
+  return `
+    <header class="neko-panel-head">
+      <span class="neko-panel-brand">${icon("sparkles")}</span>
+      <span class="neko-panel-title">
+        <strong>Neko</strong>
+        <small>Đang học · <span lang="zh-Hans">${escapeHtml(item.hanzi)}</span></small>
+      </span>
+      <div class="neko-panel-actions" aria-label="Điều khiển Neko">
+        ${session ? `<button type="button" class="neko-icon-button" data-neko-clear-request title="Bắt đầu cuộc trò chuyện mới" aria-label="Bắt đầu cuộc trò chuyện mới">${icon("plus")}</button>` : ""}
+        ${session?.messages.length ? `<button type="button" class="neko-icon-button" data-neko-export title="Xuất cuộc trò chuyện" aria-label="Xuất cuộc trò chuyện">${icon("download")}</button>` : ""}
+        ${
+          enabled
+            ? `<details class="neko-panel-menu">
+                <summary class="neko-icon-button" title="Tùy chọn Neko" aria-label="Tùy chọn Neko">${icon("ellipsis")}</summary>
+                <div class="neko-panel-menu-popover">
+                  <button type="button" data-neko-disable>${labelWithIcon("x", "Tắt Neko")}</button>
+                </div>
+              </details>`
+            : ""
+        }
+        <button type="button" class="neko-icon-button" data-neko-close title="Đóng Neko" aria-label="Đóng Neko">${icon("x")}</button>
+      </div>
+    </header>
+  `;
+}
+
+function renderNekoDisabled(): string {
+  return `
+    <div class="neko-panel-body neko-panel-state">
+      <span class="neko-state-icon">${icon("sparkles")}</span>
+      <strong>Neko đang tắt</strong>
+      <p>Việc học và lịch ôn vẫn hoạt động bình thường. Bạn có thể bật lại khi cần giải thích.</p>
+      <button type="button" class="primary-button" data-neko-enable>${labelWithIcon("sparkles", "Bật Neko")}</button>
+    </div>
+  `;
+}
+
+function renderNekoLocked(): string {
+  return `
+    <div class="neko-panel-body neko-panel-state neko-panel-locked">
+      <span class="neko-state-icon">${icon("sparkles")}</span>
+      <strong>Thử nhớ trước, hỏi Neko sau</strong>
+      <p>Hãy chấm hoặc hiện đáp án trước. Neko sẽ không gợi ý trong lúc bạn đang tự nhớ.</p>
+    </div>
+  `;
+}
+
+function renderNekoConversation(
+  item: VocabItem,
+  current: NekoTutorViewState | undefined,
+  session: NekoTutorSessionState | undefined,
+  clearConfirming: boolean,
+  notice: string | undefined,
+  defaultQuestion: string,
+): string {
+  const loading = current?.status === "loading";
+  return `
+    <div class="neko-panel-body" data-neko-conversation>
+      ${notice ? `<p class="neko-notice" role="status">${escapeHtml(notice)}</p>` : ""}
+      ${renderNekoClearConfirmation(clearConfirming)}
+      ${renderNekoThread(session)}
+      ${
+        !session?.messages.length && !loading
+          ? `<div class="neko-empty">
+              <span class="neko-empty-mark" lang="zh-Hans">${escapeHtml(item.hanzi)}</span>
+              <strong>Hỏi Neko về từ này</strong>
+              <p>Giải thích cách dùng, phân biệt từ dễ nhầm hoặc tạo một câu hỏi thử lại.</p>
+            </div>`
+          : ""
+      }
+      ${
+        loading
+          ? `<div class="neko-pending-question">
+              <strong>Bạn · ${escapeHtml(item.hanzi)}</strong>
+              <p>${escapeHtml(current.question)}</p>
+            </div>
+            <div
+              class="neko-message neko-message-tutor neko-streaming-answer ${current.answer ? "" : "is-empty"}"
+              data-neko-stream-message
+              role="status"
+              aria-live="polite"
+              aria-atomic="false"
+              aria-relevant="additions text"
+            >
+              <div><strong>Neko</strong><span>${escapeHtml(item.hanzi)}</span></div>
+              <p data-neko-stream-answer>${escapeHtml(current.answer ?? "")}</p>
+            </div>
+            <div class="neko-loading" role="status">
+              <span class="neko-pulse" aria-hidden="true"></span>
+              <span data-neko-stream-status>${current.answer ? "Neko đang trả lời…" : "Neko đang suy nghĩ…"}</span>
+              <button type="button" class="ghost-button compact-button" data-neko-cancel>${labelWithIcon("squareDashed", "Dừng")}</button>
+            </div>`
+          : ""
+      }
+      ${
+        !loading && current?.answer && (current.status === "error" || current.status === "cancelled")
+          ? `<div class="neko-message neko-message-tutor neko-streaming-answer">
+              <div><strong>Neko</strong><span>${escapeHtml(item.hanzi)}</span></div>
+              <p>${escapeHtml(current.answer)}</p>
+            </div>`
+          : ""
+      }
+      ${
+        current?.status === "error"
+          ? `<div class="neko-error" role="alert">
+              <p>${escapeHtml(current.error ?? "Neko chưa trả lời được.")}</p>
+              <button type="button" class="ghost-button" data-neko-question="${escapeAttribute(current.question)}">Thử lại</button>
+            </div>`
+          : ""
+      }
+      ${
+        current?.status === "cancelled"
+          ? `<div class="neko-cancelled" role="status">Lượt vừa rồi đã dừng. Bạn có thể hỏi lại bằng một câu ngắn hơn.</div>`
+          : ""
+      }
+      ${!loading ? renderNekoSuggestions(defaultQuestion) : ""}
+    </div>
+    ${renderNekoComposer(item, loading)}
+  `;
+}
+
+function renderNekoClearConfirmation(confirming: boolean): string {
+  if (!confirming) {
+    return "";
+  }
+  return `
+    <div class="neko-clear-confirm" role="alertdialog" aria-labelledby="neko-clear-title">
+      <strong id="neko-clear-title">Bắt đầu cuộc trò chuyện mới?</strong>
+      <p>Neko sẽ đóng cuộc trò chuyện hiện tại. Tiến độ học và lịch ôn không thay đổi.</p>
+      <div>
+        <button type="button" class="primary-button" data-neko-clear-confirm>Bắt đầu mới</button>
+        <button type="button" class="ghost-button" data-neko-clear-cancel>Quay lại</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderNekoThread(session: NekoTutorSessionState | undefined): string {
+  if (!session?.messages.length) {
+    return "";
+  }
+  return `
+    <div class="neko-thread-wrap">
+      <ol class="neko-thread" aria-label="Cuộc trò chuyện với Neko">
+        ${session.messages.map((message) => `
+          <li class="neko-message neko-message-${message.role} ${message.role === "tutor" ? "neko-answer" : ""}">
+            <div><strong>${message.role === "tutor" ? "Neko" : "Bạn"}</strong><span>${escapeHtml(message.hanzi)}</span></div>
+            <p>${escapeHtml(message.text).replaceAll("\n", "<br />")}</p>
+          </li>
+        `).join("")}
+      </ol>
+    </div>
+  `;
+}
+
+function renderNekoSuggestions(defaultQuestion: string): string {
+  const questions = [
+    defaultQuestion,
+    "Phân biệt từ này với một từ HSK4 dễ nhầm.",
+    "Tạo một câu hỏi thử lại, chưa đưa đáp án.",
+  ];
+  return `
+    <div class="neko-suggestions" aria-label="Câu hỏi gợi ý">
+      ${questions.map((question, index) => `<button type="button" data-neko-question="${escapeAttribute(question)}">${index === 0 ? "Hỏi Neko về câu này" : escapeHtml(question)}</button>`).join("")}
+    </div>
+  `;
+}
+
+function renderNekoComposer(item: VocabItem, loading: boolean): string {
+  return `
+    <footer class="neko-composer">
+      <form class="neko-question-form" data-neko-question-form>
+        <label class="sr-only" for="neko-question-input">Hỏi Neko về ${escapeHtml(item.hanzi)}</label>
+        <input
+          id="neko-question-input"
+          name="question"
+          maxlength="600"
+          autocomplete="off"
+          placeholder="Hỏi về ${escapeAttribute(item.hanzi)}…"
+          ${loading ? "disabled" : ""}
+        />
+        <button type="submit" class="neko-send-button" aria-label="Gửi câu hỏi" ${loading ? "disabled" : ""}>${icon("arrowRight")}</button>
+      </form>
+    </footer>
+  `;
 }
 
 function usefulStudyExample(example: string, hanzi: string): string {
@@ -376,8 +586,8 @@ function renderStrokeLab(selectedChar: string, hanziChars: string[], canUseStrok
   `;
 }
 
-function renderReviewDetail(state: AppState, item: VocabItem): string {
-  const review = state.reviews[item.id];
+function renderReviewDetail(state: AppState, item: VocabItem, direction: StudyDirection): string {
+  const review = reviewsForDirection(state, direction)[item.id];
   if (!review) {
     return "";
   }

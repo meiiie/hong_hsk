@@ -68,7 +68,7 @@ export function renderAppShell({
               ${navButton(activeView, "dashboard", "Tổng quan", "layout", "primary")}
               ${navButton(activeView, "study", "Học tập", "keyboard", "primary")}
               ${navButton(activeView, "lessons", "Theo bài", "book", "primary")}
-              ${navButton(activeView, "mock", "Thi thử", "clipboardList", "primary")}
+              ${navButton(activeView, "mock", "Luyện thi", "clipboardList", "primary")}
             </div>
             <div class="nav-section nav-section-tools" aria-label="Công cụ">
               <span class="nav-section-label">Công cụ</span>

@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { defineConfig, type Plugin } from "vite";
+import { nekoAcpTutorPlugin } from "./scripts/neko-acp-vite-plugin.mjs";
 
 interface BuildManifest {
   version: string;
@@ -14,13 +15,27 @@ interface BuildManifest {
 const buildManifest = createBuildManifest();
 
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "hsk4-vocab",
+              test: /hsk4-excel-vocab\.ts$/,
+            },
+          ],
+        },
+      },
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(buildManifest.version),
     __APP_BUILD_SHA__: JSON.stringify(buildManifest.buildSha),
     __APP_BRANCH__: JSON.stringify(buildManifest.branch),
     __APP_BUILD_TIME__: JSON.stringify(buildManifest.buildTime),
   },
-  plugins: [versionManifestPlugin(buildManifest)],
+  plugins: [versionManifestPlugin(buildManifest), nekoAcpTutorPlugin()],
 });
 
 function versionManifestPlugin(manifest: BuildManifest): Plugin {

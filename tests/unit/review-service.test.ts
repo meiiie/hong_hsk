@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   applyAttempt,
+  alternatingStudyDirection,
   dueItems,
   isCorrectAnswer,
+  isCorrectVietnameseAnswer,
   newItemsForLesson,
+  normalizeVietnameseAnswer,
   queueForMode,
   wrongItems,
 } from "../../src/domain/review/review-service";
@@ -13,6 +16,13 @@ describe("review service", () => {
   it("normalizes typed Hanzi answers before comparing", () => {
     expect(isCorrectAnswer(" 爱 情! ", "爱情")).toBe(true);
     expect(isCorrectAnswer("爱人", "爱情")).toBe(false);
+  });
+
+  it("checks Vietnamese meanings without requiring accents or exact punctuation", () => {
+    expect(normalizeVietnameseAnswer("  Pháp-luật! ")).toBe("phap luat");
+    expect(isCorrectVietnameseAnswer("phap luat", "pháp luật")).toBe(true);
+    expect(isCorrectVietnameseAnswer("chùi", "lau, chùi")).toBe(true);
+    expect(isCorrectVietnameseAnswer("lau bàn", "lau, chùi")).toBe(false);
   });
 
   it("schedules a wrong answer for quick recovery", () => {
@@ -71,5 +81,23 @@ describe("review service", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("keeps writing and recognition queues independent", () => {
+    const item = makeVocabItem({ id: "word-1", meaningVi: "pháp luật" });
+    const state = makeAppState({
+      items: [item],
+      reviews: { "word-1": makeReviewState({ itemId: "word-1" }) },
+      recognitionReviews: {},
+    });
+
+    expect(newItemsForLesson(state, 1, 10, "vi-to-zh")).toEqual([]);
+    expect(newItemsForLesson(state, 1, 10, "zh-to-vi").map((card) => card.id)).toEqual(["word-1"]);
+  });
+
+  it("alternates direction at each new study-session boundary", () => {
+    expect(alternatingStudyDirection(undefined, "vi-to-zh")).toBe("vi-to-zh");
+    expect(alternatingStudyDirection("vi-to-zh")).toBe("zh-to-vi");
+    expect(alternatingStudyDirection("zh-to-vi")).toBe("vi-to-zh");
   });
 });

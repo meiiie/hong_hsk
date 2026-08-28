@@ -29,7 +29,7 @@ flowchart LR
   PWA --> DATA["Dữ liệu Excel 20 bài đóng gói"]
 ```
 
-Không thêm backend/SQLite ở giai đoạn này. Với một người dùng, backend chỉ làm tăng chi phí, tăng bề mặt bảo mật và tăng việc vận hành. Nếu sau này cần đồng bộ nhiều thiết bị, khi đó mới thêm API + SQLite/D1 theo domain hiện có.
+Không thêm backend/SQLite cho dữ liệu học thông thường ở giai đoạn này. Với một người dùng, backend chỉ làm tăng chi phí, tăng bề mặt bảo mật và tăng việc vận hành. Ngoại lệ AI tương lai dùng bản Neko Core chính thức trên một máy tin cậy và một bridge ACP tối thiểu; không cần Worker, Durable Object, Container hoặc database cho pilot một người học. Xem [Neko Core Host Runbook for One Learner](neko-single-learner-host.md).
 
 ## Cloudflare Pages
 
@@ -77,14 +77,6 @@ CLOUDFLARE_API_TOKEN
 ```text
 Account -> Cloudflare Pages -> Edit
 ```
-
-Gia sư AI cần thêm Pages runtime secret ở project `hong-hsk4-studio`:
-
-```text
-NVIDIA_API_KEY
-```
-
-Secret này đặt trong Cloudflare Pages production environment. Không commit key vào repo, không đưa vào frontend, và không thêm vào GitHub Actions trừ khi workflow có nhu cầu test gateway thật.
 
 Sau khi thêm token, mỗi lần push lên `main` sẽ tự deploy nếu CI xanh.
 
@@ -179,6 +171,12 @@ Chỉ nên chuyển sang GCP nếu có một trong các nhu cầu sau:
 - Cần tích hợp sâu với hạ tầng GCP sẵn có của team.
 
 Nếu chỉ có Hồng học HSK4, Cloudflare Pages + Access là lựa chọn rẻ và gọn hơn.
+
+## Neko Core cho một người học
+
+AI mới không chạy trong Cloudflare Pages và không dùng `CLOUDFLARE_API_TOKEN` làm khóa model. Người vận hành có thể cài Neko Core trực tiếp trên một máy Windows, Linux hoặc macOS tin cậy ngay bây giờ; tích hợp trong PWA sẽ được bật sau khi Neko phát hành profile `hsk4-studio` và HSK4 có bridge ACP đã kiểm thử.
+
+Kiến trúc, ranh giới credential và checklist cài máy cho người bạn vận hành nằm trong [Neko Core Host Runbook for One Learner](neko-single-learner-host.md).
 
 ## Checklist release
 

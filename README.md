@@ -5,7 +5,7 @@
 <h1 align="center">Hồng HSK4 Studio</h1>
 
 <p align="center">
-  Mobile-first PWA cho người Việt ôn HSK4 4A/4B theo bài, gõ chữ Hán, luyện nét, thi thử và hỏi gia sư AI sau khi chấm đáp án.
+  Mobile-first PWA cho người Việt ôn HSK4 4A/4B theo bài, gõ chữ Hán, luyện nét, ôn giãn cách và thi thử.
 </p>
 
 <p align="center">
@@ -27,7 +27,8 @@ Mục tiêu không phải làm một app học tiếng Trung chung chung. Dự �
 
 - Học theo bài 1-20 của giáo trình chuẩn HSK4 4A/4B.
 - Ưu tiên nghĩa tiếng Việt, pinyin, ví dụ và trạng thái chất lượng dữ liệu.
-- Gõ chữ Hán rồi app tự so đáp án, giữ nguyên chữ đã gõ và phản hồi xanh/đỏ.
+- Luyện hai chiều: từ nghĩa Việt tự viết chữ Hán, hoặc nhìn chữ Hán rồi nhập nghĩa Việt.
+- Hai chiều có log, lịch ôn và tiến độ riêng để nhận ra nghĩa không bị tính nhầm thành đã nhớ cách viết.
 - Ôn từ sai và từ đến hạn theo lịch giãn cách.
 - Thi thử HSK4 cũ: 100 câu, 105 phút, ba phần Nghe, Đọc, Viết.
 
@@ -41,13 +42,13 @@ Mục tiêu không phải làm một app học tiếng Trung chung chung. Dự �
 
 | Nhóm | Hiện có |
 | --- | --- |
-| Học từ | Hàng đợi hôm nay, theo bài, từ sai, tự chấm chữ Hán |
+| Học từ | Hàng đợi hôm nay, theo bài, từ sai, Việt → Trung và Trung → Việt với tiến độ tách riêng |
 | Luyện nét | Hanzi Writer, nét mẫu, quiz nét, chế độ ẩn/hiện đáp án phù hợp khi học |
-| Ôn giãn cách | Sai ôn lại sớm, đúng liên tiếp tăng khoảng cách, lưu trạng thái trong IndexedDB |
-| Gia sư AI | Cloudflare Pages Function gọi NVIDIA, mặc định dùng Mistral-Nemotron tốc độ nhanh và fallback Nemotron Super khi provider timeout/5xx, để giải thích nghĩa, tạo ví dụ, mẹo nhớ và sửa lỗi sau khi người học đã chấm |
+| Ôn giãn cách | Sai ôn lại sớm, đúng liên tiếp tăng khoảng cách, hai lịch SRS riêng trong IndexedDB |
 | Dữ liệu | Nhập Excel/CSV, xuất backup, nạp bộ 4A/4B tham khảo, glossary Việt hóa |
 | Thi thử | 4 bộ đề mô phỏng, đồng hồ 105 phút, điểm theo Nghe/Đọc/Viết |
 | Mobile UX | Bottom nav, vùng bấm lớn, bố cục ưu tiên một hành động chính |
+| Neko local pilot | Nút hậu kiểm gọi trực tiếp Neko ACP đã cài; chỉ có khi chạy Vite local, không bật trong production build |
 | Deploy | Cloudflare Pages, custom domain, security headers, Docker/nginx fallback |
 
 ## Trạng Thái Dữ Liệu
@@ -68,11 +69,9 @@ flowchart LR
   A["Excel/CSV 4A/4B"] --> B["Import & Enrichment"]
   B --> C["IndexedDB"]
   C --> D["Review Queue"]
-  D --> E["Gõ chữ Hán"]
+  D --> E["Việt → Trung"]
+  D --> J["Trung → Việt"]
   D --> F["Luyện nét Hanzi Writer"]
-  E --> J["AI Tutor Gateway"]
-  J --> K["Mistral-Nemotron"]
-  J -.fallback.-> L["Nemotron 3 Super"]
   C --> G["Mock Exam"]
   H["Cloudflare Pages"] --> I["PWA trên điện thoại"]
   I --> C
@@ -90,14 +89,17 @@ Các module chính:
 - `src/infrastructure/import-export/workbook-io.ts`: nhập/xuất Excel, CSV, JSON.
 - `src/infrastructure/storage/indexeddb-state-store.ts`: IndexedDB/local state.
 - `src/presentation/i18n.ts`: nhãn tiếng Việt/Anh.
+- `docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`: nghiên cứu nhu cầu người học và hợp đồng cho AI mới dùng trực tiếp Neko Core; nhánh thử nghiệm local đã có ACP UX hậu kiểm nhưng production vẫn chờ host profile/bridge.
+- `docs/deployment/neko-single-learner-host.md`: cách cài Neko trên một máy tin cậy cho pilot một người học, ranh giới bridge ACP và credential.
 
 ## Chạy Local
 
 Yêu cầu:
 
-- Node.js 22+
+- Node.js 22.23.2 theo `.nvmrc` (Vite 8 yêu cầu tối thiểu Node 22.12.0)
 - npm
 - Python 3.12+ nếu chạy Playwright harness
+- Neko Core đã đăng nhập provider nếu muốn thử nút Neko local
 
 ```bash
 npm ci
@@ -105,6 +107,16 @@ npm run dev
 ```
 
 Mở `http://127.0.0.1:5173/`.
+
+Trong luồng Học tập, thẻ Neko bị khóa khi đang nhớ đáp án và chỉ mở sau khi chấm/hiện đáp án. Kiểm tra một lượt ACP thật bằng:
+
+```bash
+neko --version
+neko doctor
+npm run test:neko-local
+```
+
+Lệnh này dùng provider đã đăng nhập trong Neko. Nó không chạy trong CI và không đưa credential vào trình duyệt.
 
 Build production:
 
@@ -150,11 +162,10 @@ npm run deploy:cf
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
-- `NVIDIA_API_KEY` nếu bật gia sư AI trên production.
 
 `CLOUDFLARE_API_TOKEN` nên là token hẹp quyền, tối thiểu `Account > Cloudflare Pages > Edit`. Không commit token vào repo.
 
-AI Tutor mặc định dùng `mistralai/mistral-nemotron` qua Cloudflare Pages Function `/api/ai/tutor`, với fallback `nvidia/nemotron-3-super-120b-a12b` khi provider timeout hoặc trả lỗi tạm thời. Nếu cả provider chính và dự phòng đều chậm, gateway trả một gợi ý nội bộ ngắn từ dữ liệu thẻ hiện tại để người học không bị kẹt ở trạng thái lỗi. `nvidia/nemotron-3-ultra-550b-a55b` vẫn có thể dùng bằng Pages secret `NVIDIA_MODEL` cho các lượt cần suy luận sâu, nhưng không nên làm mặc định cho phiên học nhanh. Có thể override bằng Pages secrets `NVIDIA_MODEL`, `NVIDIA_FALLBACK_MODEL` và `NVIDIA_BASE_URL`, nhưng không đưa API key vào frontend hoặc file cấu hình commit.
+Token này chỉ deploy PWA tĩnh, không phải khóa AI. AI Neko tương lai giữ provider credential trên máy chạy Neko; không đưa khóa model vào GitHub Actions hay Cloudflare Pages.
 
 Custom domain production hiện tại là `hsk4.holilihu.online`.
 

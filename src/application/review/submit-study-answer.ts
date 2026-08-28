@@ -1,5 +1,9 @@
-import type { AppState, StudyMode, VocabItem } from "../../domain/types";
-import { applyAttempt, createAttempt, isCorrectAnswer } from "../../domain/review/review-service";
+import type { AppState, StudyDirection, StudyMode, VocabItem } from "../../domain/types";
+import {
+  applyAttempt,
+  createAttempt,
+  isCorrectStudyAnswer,
+} from "../../domain/review/review-service";
 
 export interface StudyAnswerResult {
   state: AppState;
@@ -14,19 +18,23 @@ export function submitStudyAnswer(
   rawInput: string,
   mode: StudyMode,
   latencyMs: number,
+  direction: StudyDirection = "vi-to-zh",
 ): StudyAnswerResult | undefined {
   const input = rawInput.trim();
   if (!input) {
     return undefined;
   }
 
-  const correct = isCorrectAnswer(input, item.hanzi);
-  const attempt = createAttempt(item, input, correct, mode, latencyMs);
+  const correct = isCorrectStudyAnswer(input, item, direction);
+  const attempt = createAttempt(item, input, correct, mode, latencyMs, direction);
+  const reviews = direction === "zh-to-vi" ? state.recognitionReviews : state.reviews;
+  const nextReviews = applyAttempt(reviews, attempt);
   return {
     state: {
       ...state,
       attempts: [attempt, ...state.attempts].slice(0, 5000),
-      reviews: applyAttempt(state.reviews, attempt),
+      reviews: direction === "vi-to-zh" ? nextReviews : state.reviews,
+      recognitionReviews: direction === "zh-to-vi" ? nextReviews : state.recognitionReviews,
     },
     itemId: item.id,
     input,

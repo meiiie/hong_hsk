@@ -1,6 +1,5 @@
 import type { View } from "../app-types";
-import type { AiTutorAction } from "../../application/ports/ai-tutor-client";
-import type { StudyMode } from "../../domain/types";
+import type { StudyDirection, StudyMode } from "../../domain/types";
 
 export interface AppEventHandlers {
   navigate(view: View): void;
@@ -10,16 +9,22 @@ export interface AppEventHandlers {
   toggleMobileMore(): void;
   closeMobileMore(): void;
   startStudy(mode: StudyMode): void;
+  setStudyDirection(direction: StudyDirection): void | Promise<void>;
   selectLesson(lesson: number): void | Promise<void>;
   submitAnswer(): void | Promise<void>;
   nextCard(): void;
   revealAnswer(): void;
   hideAnswer(): void;
-  askAiTutor(action: AiTutorAction, question?: string): void | Promise<void>;
-  cancelAiTutor(): void;
-  clearAiTutorSession(): void;
   selectStrokeChar(index: number): void;
   runStrokeAction(action: string): void | Promise<void>;
+  toggleNekoPanel(open: boolean): void;
+  askNeko(question: string): void | Promise<void>;
+  cancelNeko(): void | Promise<void>;
+  setNekoEnabled(enabled: boolean): void;
+  requestClearNekoSession(): void;
+  cancelClearNekoSession(): void;
+  clearNekoSession(): void | Promise<void>;
+  exportNekoSession(): void;
   updateSetting(input: HTMLInputElement | HTMLSelectElement): void | Promise<void>;
   fileSelected(fileName: string): void;
   importFile(): void | Promise<void>;
@@ -161,6 +166,12 @@ function bindMobileMoreDrag(sheet: HTMLElement, handlers: AppEventHandlers): voi
 }
 
 function bindStudy(root: HTMLElement, handlers: AppEventHandlers): void {
+  root.querySelectorAll<HTMLButtonElement>("[data-study-direction]").forEach((button) => {
+    button.addEventListener("click", () => {
+      void handlers.setStudyDirection(button.dataset.studyDirection as StudyDirection);
+    });
+  });
+
   root.querySelectorAll<HTMLButtonElement>("[data-lesson]").forEach((button) => {
     button.addEventListener("click", () => {
       void handlers.selectLesson(Number(button.dataset.lesson));
@@ -196,30 +207,57 @@ function bindStudy(root: HTMLElement, handlers: AppEventHandlers): void {
     });
   });
 
-  root.querySelectorAll<HTMLButtonElement>("[data-ai-action]").forEach((button) => {
+  root.querySelector<HTMLButtonElement>("[data-neko-open]")?.addEventListener("click", () => {
+    handlers.toggleNekoPanel(true);
+  });
+  root.querySelectorAll<HTMLElement>("[data-neko-close]").forEach((element) => {
+    element.addEventListener("click", () => {
+      handlers.toggleNekoPanel(false);
+    });
+  });
+  root.querySelector<HTMLElement>("[data-neko-panel]")?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      handlers.toggleNekoPanel(false);
+    }
+  });
+
+  root.querySelectorAll<HTMLButtonElement>("[data-neko-question]").forEach((button) => {
     button.addEventListener("click", () => {
-      void handlers.askAiTutor(button.dataset.aiAction as AiTutorAction);
+      void handlers.askNeko(button.dataset.nekoQuestion ?? "");
     });
   });
 
-  root.querySelector<HTMLButtonElement>("[data-ai-cancel]")?.addEventListener("click", () => {
-    handlers.cancelAiTutor();
-  });
-
-  root.querySelector<HTMLButtonElement>("[data-ai-clear]")?.addEventListener("click", () => {
-    handlers.clearAiTutorSession();
-  });
-
-  root.querySelector<HTMLFormElement>("[data-ai-form]")?.addEventListener("submit", (event) => {
+  const nekoQuestionForm = root.querySelector<HTMLFormElement>("[data-neko-question-form]");
+  nekoQuestionForm?.addEventListener("submit", (event) => {
     event.preventDefault();
-    const input = root.querySelector<HTMLTextAreaElement>("[data-ai-question]");
-    const question = input?.value.trim() ?? "";
-    if (!question) {
-      input?.focus();
-      return;
+    const input = nekoQuestionForm.querySelector<HTMLInputElement>("input[name='question']");
+    if (input?.value.trim()) {
+      void handlers.askNeko(input.value);
     }
-    void handlers.askAiTutor("ask", question);
   });
+
+  root.querySelector<HTMLButtonElement>("[data-neko-cancel]")?.addEventListener("click", () => {
+    void handlers.cancelNeko();
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-enable]")?.addEventListener("click", () => {
+    handlers.setNekoEnabled(true);
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-disable]")?.addEventListener("click", () => {
+    handlers.setNekoEnabled(false);
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-clear-request]")?.addEventListener("click", () => {
+    handlers.requestClearNekoSession();
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-clear-cancel]")?.addEventListener("click", () => {
+    handlers.cancelClearNekoSession();
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-clear-confirm]")?.addEventListener("click", () => {
+    void handlers.clearNekoSession();
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-export]")?.addEventListener("click", () => {
+    handlers.exportNekoSession();
+  });
+
 }
 
 function bindSettings(root: HTMLElement, handlers: AppEventHandlers): void {

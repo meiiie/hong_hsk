@@ -17,3 +17,31 @@ export interface StudyFeedback {
   correct: boolean;
   revealed?: boolean;
 }
+
+export interface NekoTutorViewState {
+  itemId: string;
+  status: "loading" | "ready" | "error" | "cancelled";
+  question: string;
+  requestId?: string;
+  conversationId?: string;
+  answer?: string;
+  error?: string;
+}
+
+export interface NekoTutorMessage {
+  id: string;
+  role: "learner" | "tutor";
+  text: string;
+  itemId: string;
+  hanzi: string;
+  at: string;
+}
+
+export interface NekoTutorSessionState {
+  schemaVersion: 1;
+  conversationId?: string;
+  startedAt: string;
+  updatedAt: string;
+  turnCount: number;
+  messages: NekoTutorMessage[];
+}

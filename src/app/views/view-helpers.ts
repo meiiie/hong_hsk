@@ -1,4 +1,5 @@
 import type { AppState, ReviewStatus, VocabItem } from "../../domain/types";
+import { reviewsForDirection } from "../../domain/review/review-service";
 import { reviewStatusLabel } from "../../presentation/i18n";
 
 export function metric(label: string, value: string, hint: string): string {
@@ -35,6 +36,7 @@ export function vocabTable(items: VocabItem[], state: AppState): string {
     return emptyBlock("Chưa có từ nào trong nhóm này.");
   }
 
+  const reviews = reviewsForDirection(state, state.settings.studyDirection);
   return `
     <div class="table-wrap">
       <table>
@@ -51,7 +53,7 @@ export function vocabTable(items: VocabItem[], state: AppState): string {
         <tbody>
           ${items
             .map((item) => {
-              const review = state.reviews[item.id];
+              const review = reviews[item.id];
               return `
                 <tr>
                   <td data-label="Bài">B${item.lesson}</td>

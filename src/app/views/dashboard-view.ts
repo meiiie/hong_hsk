@@ -14,23 +14,31 @@ export function renderDashboardView(state: AppState, dataHealth: DataHealth): st
   const due = dueItems(state);
   const wrong = wrongItems(state);
   const learnedProgress = percent(stats.learned, stats.totalItems);
+  const recognitionProgress = percent(stats.recognitionLearned, stats.totalItems);
   const planProgress = percent(Math.min(stats.planDay, 30), 30);
-  const readinessProgress = percent(dataHealth.total, HSK4_TARGETS.oldExamCumulativeWords);
   const priorityCount = due.length + wrong.length;
+  const directionLabel = state.settings.studyDirection === "zh-to-vi" ? "Trung → Việt" : "Việt → Trung";
+  const directionContext = state.settings.alternateStudyDirections ? "Phiên kế tiếp" : "Chiều đã chọn";
 
   return `
     <section class="today-dashboard" aria-label="Kế hoạch học hôm nay">
-      ${renderTodayHero(todayLesson, lessonTitle, due.length + wrong.length + newCards.length)}
+      ${renderTodayHero(todayLesson, lessonTitle, due.length + wrong.length + newCards.length, directionLabel, directionContext)}
       ${renderReadinessStrip(dataHealth)}
       <section class="today-grid">
-        ${renderProgressPanel(stats, dataHealth, learnedProgress, planProgress, readinessProgress, priorityCount)}
-        ${renderQueuePanel(due, wrong, newCards)}
+        ${renderProgressPanel(stats, learnedProgress, recognitionProgress, planProgress, priorityCount)}
+        ${renderQueuePanel(due, wrong, newCards, directionLabel)}
       </section>
     </section>
   `;
 }
 
-function renderTodayHero(todayLesson: number, lessonTitle: string, queueCount: number): string {
+function renderTodayHero(
+  todayLesson: number,
+  lessonTitle: string,
+  queueCount: number,
+  directionLabel: string,
+  directionContext: string,
+): string {
   return `
     <article class="today-hero">
       <div class="today-hero-head">
@@ -52,7 +60,7 @@ function renderTodayHero(todayLesson: number, lessonTitle: string, queueCount: n
           </span>
         </div>
         <div class="today-start-card">
-          <span>Ước tính 20-25 phút</span>
+          <span>${directionContext} · ${directionLabel}</span>
           <strong>${queueCount} thẻ trong hàng đợi</strong>
           <button class="primary-button today-start-button" data-study-mode="today">
             ${labelWithIcon("playCircle", "Bắt đầu ôn")}
@@ -94,10 +102,9 @@ function renderReadinessStrip(health: DataHealth): string {
 
 function renderProgressPanel(
   stats: DashboardStats,
-  health: DataHealth,
   learnedProgress: number,
+  recognitionProgress: number,
   planProgress: number,
-  readinessProgress: number,
   priorityCount: number,
 ): string {
   return `
@@ -107,14 +114,14 @@ function renderProgressPanel(
         <h2>Nhịp học của Hồng</h2>
       </div>
       <div class="today-progress-stack">
-        ${renderProgressRow("Từ đã học", `${stats.learned}/${stats.totalItems}`, learnedProgress, "accent")}
+        ${renderProgressRow("Tự viết chữ Hán", `${stats.learned}/${stats.totalItems}`, learnedProgress, "accent")}
+        ${renderProgressRow("Nhận nghĩa tiếng Việt", `${stats.recognitionLearned}/${stats.totalItems}`, recognitionProgress, "brand")}
         ${renderProgressRow("Lộ trình 30 ngày", `Ngày ${stats.planDay}`, planProgress, "brand")}
-        ${renderProgressRow("Chuẩn thi HSK4 cũ", `${health.total}/${HSK4_TARGETS.oldExamCumulativeWords}`, readinessProgress, "warning")}
       </div>
       <div class="today-mini-stats">
         ${renderMiniStat("Cần ôn", priorityCount.toString(), "trước khi học mới")}
         ${renderMiniStat("Chuỗi", stats.streak.toString(), "ngày duy trì")}
-        ${renderMiniStat("Độ đúng", `${stats.accuracy}%`, "theo log đã chấm")}
+        ${renderMiniStat("Độ đúng", `${stats.accuracy}%`, "ở chiều tự viết")}
       </div>
     </article>
   `;
@@ -144,11 +151,16 @@ function renderMiniStat(label: string, value: string, hint: string): string {
   `;
 }
 
-function renderQueuePanel(due: VocabItem[], wrong: VocabItem[], newCards: VocabItem[]): string {
+function renderQueuePanel(
+  due: VocabItem[],
+  wrong: VocabItem[],
+  newCards: VocabItem[],
+  directionLabel: string,
+): string {
   return `
     <article class="today-queue-panel">
       <div class="section-title">
-        <p class="eyebrow">Hàng đợi</p>
+        <p class="eyebrow">Hàng đợi · ${directionLabel}</p>
         <h2>Việc nên làm tiếp</h2>
       </div>
       <div class="today-queue-list">

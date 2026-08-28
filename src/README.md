@@ -36,7 +36,6 @@ Ports live in `src/application/ports/`:
 - `VocabularyImporter`: import uploaded vocab and load the bundled 4A/4B reference.
 - `StudyDataExporter`: export backup/template files.
 - `ChineseSpeechPlayer`: play Mandarin audio through a browser adapter.
-- `AiTutorClient`: ask or stream from the server-side HSK tutor gateway for explanations, examples, mistake repair, memory tips, and learner questions.
 
 `src/main.ts` wires those ports to browser adapters in `src/infrastructure/`. This keeps the app controller testable and prevents accidental direct coupling to IndexedDB, Excel libraries, or speech synthesis.
 
@@ -47,18 +46,18 @@ Ports live in `src/application/ports/`:
 App workflow code is split by responsibility:
 
 - `events/app-event-binder.ts`: DOM event binding only; it translates data attributes into typed handlers.
-- `workflows/study-workflow.ts`: transient study queue, current card, answer feedback, and stroke-character selection.
+- `neko-session-state.ts`: bounded browser presentation state for the local tutor transcript, ACP session ID, and AI enabled preference; it is not a second durable AI memory store.
+- `workflows/study-workflow.ts`: transient study queue, selected recall direction, current card, answer feedback, and stroke-character selection.
 - `workflows/mock-exam-workflow.ts`: selected mock set, active exam session, question index, answer storage, submit/reset, and clock state.
 - `workflows/settings-workflow.ts`: settings form normalization and bounds.
 - `workflows/stroke-practice-workflow.ts`: Hanzi Writer mounting and stroke actions after render.
-- `workflows/ai-tutor-workflow.ts`: tutor chat session state, compact markdown memory, stream message assembly, and request context.
 - `webmcp/hsk-webmcp.ts`: progressive WebMCP tool registration for browsers/agents that expose a model context API.
 
 Workflow rendering lives under `src/app/views/`:
 
 - `app-shell-view.ts`: sidebar, topbar, language switcher, route title, and shared app chrome.
 - `dashboard-view.ts`: daily overview, data readiness, queue preview.
-- `study-view.ts`: recall card, answer feedback, stroke lab shell, per-card review detail.
+- `study-view.ts`: bidirectional recall selector/card, answer feedback, stroke lab shell, Neko hậu kiểm, and per-card review detail.
 - `lesson-views.ts`: lesson browser and wrong-word table.
 - `mock-exam-view.ts`: exam intro, runner, question rendering, result rendering.
 - `plan-view.ts`: 30-day plan and schedule settings.
@@ -70,15 +69,13 @@ This split keeps render functions mostly pure while the controller keeps side ef
 
 ## AI Boundary
 
-The browser never calls NVIDIA directly. `src/infrastructure/ai/hsk-ai-client.ts` calls the same-origin `/api/ai/tutor` endpoint, and `functions/api/ai/tutor.js` reads `NVIDIA_API_KEY` from Cloudflare Pages secrets before calling `mistralai/mistral-nemotron` with fallback to `nvidia/nemotron-3-super-120b-a12b`. When provider calls still fail, the gateway can stream `local-hsk-fallback`, a deterministic recovery answer built from the current vocabulary card.
+The developer-local pilot has a typed Neko tutor port, a post-answer multi-turn UI, a bounded local transcript, and a loopback-only Vite/ACP adapter. It reuses Neko's direct durable session ID, supports stop/off/export/confirmed clear, and never treats model text as review data. Production builds still contain no tutor dependency or model credential. Any networked implementation remains gated on the product, pedagogy, security, evaluation, persistence, and licensing contracts in [`docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`](../docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md).
 
-The preferred browser path is SSE token streaming. The app stores a lightweight tutor chat session in localStorage, sends recent messages plus compact markdown memory, and persists completed turns rather than writing storage on every token.
-
-AI is a tutor overlay, not a data source of record. It can explain, generate practice examples, and repair mistakes after the learner has checked an answer; it must not silently mutate vocabulary, review logs, or verified translations.
+If that design is implemented, the static PWA remains separate from the Neko Core process. The browser communicates with a bounded authenticated gateway; a server-side ACP host owns the pinned Neko runtime and exposes only reviewed, read-only HSK tools. Model output never becomes verified vocabulary or review state automatically.
 
 ## Test Boundaries
 
-- Unit tests under `tests/unit/` cover pure domain behavior: spaced-review policy, answer matching, queue ordering, and mock-exam generation/scoring.
+- Unit tests under `tests/unit/` cover pure domain behavior: two-direction answer matching and SRS isolation, review policy, queue ordering, and mock-exam generation/scoring.
 - Application use-case tests cover answer submission and vocabulary replacement.
 - Browser harness tests under `tests/` cover full user workflows: study, reveal/hide answer, stroke practice, data loading, mobile layout, and mock exam.
 - When adding business rules, prefer a unit test in `tests/unit/` before relying on the browser harness.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -31,6 +32,7 @@ def main() -> None:
         desktop.locator("[data-sidebar-toggle]").click()
         expect(desktop.locator(".app-shell")).to_have_class(re.compile("sidebar-collapsed"))
         expect(desktop.locator('[data-view="mock"]').first).to_be_visible()
+        expect(desktop.locator('.nav [data-view="mock"] span').first).to_have_text("Luyện thi")
         desktop.locator("[data-sidebar-toggle]").click()
         expect(desktop.locator(".app-shell")).not_to_have_class(re.compile("sidebar-collapsed"))
         desktop.locator('[data-view="mock"]').first.click()
@@ -50,6 +52,25 @@ def main() -> None:
         desktop.screenshot(path=str(artifacts / "hsk4-mock-exam-desktop.png"), full_page=True)
 
         mobile = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True)
+
+        def route_neko(route) -> None:
+            if route.request.url.endswith("/api/neko/tutor"):
+                payload = json.loads(route.request.post_data or "{}")
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(
+                        {
+                            "answer": f"Phản hồi ngắn theo ngữ cảnh thẻ {payload['card']['hanzi']}.",
+                            "conversationId": "20260828-010203-004-mobile-session",
+                        },
+                        ensure_ascii=False,
+                    ),
+                )
+                return
+            route.fulfill(status=200, content_type="application/json", body="{}")
+
+        mobile.route("**/api/neko/**", route_neko)
         mobile.goto("http://127.0.0.1:5173/", wait_until="networkidle")
         expect(mobile.locator(".mobile-brand-bar")).to_be_visible()
         expect(mobile.locator(".mobile-brand-bar").get_by_text("Hồng HSK4 Studio")).to_be_visible()
@@ -84,7 +105,25 @@ def main() -> None:
         expect(mobile.get_by_text("Lịch ôn 30 ngày")).to_be_visible()
         mobile.locator('[data-view="study"]').first.click()
         expect(mobile.locator("#hanzi-input")).to_be_visible()
+        assert mobile.evaluate(
+            "getComputedStyle(document.querySelector('.nav button.active')).backgroundColor !== 'rgba(0, 0, 0, 0)'"
+        )
+        expect(mobile.locator(".study-direction-switch")).to_be_visible()
+        mobile.locator('[data-study-direction="zh-to-vi"]').click()
+        expect(mobile.get_by_label("Nhập nghĩa tiếng Việt")).to_be_visible()
+        expect(mobile.locator(".prompt-hanzi")).to_be_visible()
         mobile.screenshot(path=str(artifacts / "hsk4-mobile-study.png"), full_page=True)
+        mobile.locator("[data-reveal-answer]").click()
+        expect(mobile.locator("[data-neko-tutor]")).to_have_count(0)
+        mobile.get_by_role("button", name="Mở trợ giảng Neko").click()
+        mobile.get_by_role("button", name="Hỏi Neko về câu này").click()
+        expect(mobile.locator(".neko-message-tutor")).to_have_count(1)
+        mobile.locator("#neko-question-input").fill("Cho tôi một câu hỏi thử lại.")
+        mobile.locator("[data-neko-question-form]").get_by_role("button", name="Gửi câu hỏi").click()
+        expect(mobile.locator(".neko-message-tutor")).to_have_count(2)
+        expect(mobile.get_by_role("button", name="Bắt đầu cuộc trò chuyện mới")).to_be_visible()
+        mobile.screenshot(path=str(artifacts / "hsk4-mobile-neko-session.png"), full_page=False)
+        mobile.locator(".neko-panel-head [data-neko-close]").click()
         mobile.locator('[data-view="mock"]').first.click()
         expect(mobile.get_by_text("Đề A - Tổng hợp chuẩn")).to_be_visible()
         mobile.screenshot(path=str(artifacts / "hsk4-mobile-mock-intro-viewport.png"), full_page=False)

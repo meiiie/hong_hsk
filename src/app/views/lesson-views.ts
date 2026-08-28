@@ -3,7 +3,7 @@ import {
   getLessonListeningTracks,
   type LessonListeningTrack,
 } from "../../domain/hsk4/lesson-listening";
-import { progressForLesson, wrongItems } from "../../domain/review/review-service";
+import { progressForLesson, reviewsForDirection, wrongItems } from "../../domain/review/review-service";
 import type { AppState, VocabItem } from "../../domain/types";
 import { icon, labelWithIcon } from "../../presentation/icons";
 import { toDateKey } from "../../shared/date-utils";
@@ -24,9 +24,10 @@ export function renderLessonsView(state: AppState, listening?: LessonListeningVi
   const items = state.items
     .filter((item) => item.lesson === selected)
     .sort((left, right) => left.order - right.order);
-  const progress = progressForLesson(state, selected);
+  const progress = progressForLesson(state, selected, state.settings.studyDirection);
   const learnedPercent = percent(progress.learned, progress.total);
   const bookLabel = selected <= 10 ? "Quyển Thượng" : "Quyển Hạ";
+  const directionLabel = state.settings.studyDirection === "zh-to-vi" ? "nhận nghĩa" : "tự viết";
 
   return `
     <section class="page-stack lessons-page">
@@ -64,7 +65,7 @@ export function renderLessonsView(state: AppState, listening?: LessonListeningVi
 
           <div class="lesson-progress-card">
             <div>
-              <span>Tiến độ bài ${selected}</span>
+              <span>Tiến độ ${directionLabel} · bài ${selected}</span>
               <strong>${learnedPercent}%</strong>
             </div>
             <div class="progress-track lesson-progress-track">
@@ -88,16 +89,18 @@ export function renderLessonsView(state: AppState, listening?: LessonListeningVi
 
 export function renderWrongView(state: AppState): string {
   const items = wrongItems(state);
+  const reviews = reviewsForDirection(state, state.settings.studyDirection);
+  const directionLabel = state.settings.studyDirection === "zh-to-vi" ? "Trung → Việt" : "Việt → Trung";
   const today = toDateKey();
-  const dueNow = items.filter((item) => state.reviews[item.id]?.nextReviewDate <= today).length;
-  const maxWrong = items.reduce((max, item) => Math.max(max, state.reviews[item.id]?.wrongCount ?? 0), 0);
+  const dueNow = items.filter((item) => reviews[item.id]?.nextReviewDate <= today).length;
+  const maxWrong = items.reduce((max, item) => Math.max(max, reviews[item.id]?.wrongCount ?? 0), 0);
   const preview = items.slice(0, 3);
 
   return `
     <section class="page-stack wrong-page">
       <section class="page-hero recovery-hero">
         <div class="page-hero-copy">
-          <p class="eyebrow">Sửa lỗi trước khi học mới</p>
+          <p class="eyebrow">Sửa lỗi · ${directionLabel}</p>
           <h2>Từ sai lần gần nhất</h2>
           <p>${items.length ? "Ưu tiên các từ vừa gõ sai để khóa lại ký ức đúng, tránh để lỗi kéo dài sang bài mới." : "Khi Hồng gõ sai, app sẽ tự đưa từ vào đây để ôn lại đúng nhịp."}</p>
         </div>
@@ -121,7 +124,7 @@ export function renderWrongView(state: AppState): string {
       ${
         preview.length
           ? `<section class="recovery-preview" aria-label="Từ sai nổi bật">
-              ${preview.map((item) => recoveryPreviewItem(item, state)).join("")}
+              ${preview.map((item) => recoveryPreviewItem(item, reviews)).join("")}
             </section>`
           : ""
       }
@@ -292,8 +295,11 @@ function formatTranscript(value: string): string {
   return escapeHtml(value).replace(/\r?\n/g, "<br>");
 }
 
-function recoveryPreviewItem(item: VocabItem, state: AppState): string {
-  const review = state.reviews[item.id];
+function recoveryPreviewItem(
+  item: VocabItem,
+  reviews: AppState["reviews"],
+): string {
+  const review = reviews[item.id];
 
   return `
     <article>

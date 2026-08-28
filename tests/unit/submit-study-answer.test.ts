@@ -21,4 +21,19 @@ describe("submit study answer use case", () => {
     });
     expect(result?.state.reviews["word-1"].lastCorrect).toBe(true);
   });
+
+  it("records Chinese-to-Vietnamese recognition separately from writing recall", () => {
+    const item = makeVocabItem({ id: "word-1", hanzi: "法律", meaningVi: "pháp luật" });
+    const state = makeAppState({ items: [item] });
+    const result = submitStudyAnswer(state, item, "phap luat", "today", 1_200, "zh-to-vi");
+
+    expect(result?.correct).toBe(true);
+    expect(result?.state.attempts[0]).toMatchObject({
+      itemId: "word-1",
+      expected: "pháp luật",
+      direction: "zh-to-vi",
+    });
+    expect(result?.state.recognitionReviews["word-1"].lastCorrect).toBe(true);
+    expect(result?.state.reviews).toBe(state.reviews);
+  });
 });
