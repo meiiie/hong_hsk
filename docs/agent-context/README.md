@@ -1,6 +1,6 @@
 # Agent Context Index
 
-Last updated: 2026-08-27.
+Last updated: 2026-08-28.
 
 This folder is the shared memory layer for Hồng HSK4 Studio. It exists so an AI agent or teammate can join the project without rediscovering the same facts, rules, and deployment caveats every session.
 

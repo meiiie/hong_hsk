@@ -1,6 +1,15 @@
 import type { HskAppDependencies } from "./app-dependencies";
-import type { NekoTutorViewState, View } from "./app-types";
+import type { NekoTutorSessionState, NekoTutorViewState, View } from "./app-types";
 import { bindAppEvents } from "./events/app-event-binder";
+import {
+  appendNekoExchange,
+  clearNekoTutorSession,
+  loadNekoTutorEnabled,
+  loadNekoTutorSession,
+  rememberNekoConversation,
+  saveNekoTutorEnabled,
+  saveNekoTutorSession,
+} from "./neko-session-state";
 import { registerServiceWorker } from "./service-worker";
 import { MockExamWorkflow } from "./workflows/mock-exam-workflow";
 import { applySettingInput } from "./workflows/settings-workflow";
@@ -17,10 +26,10 @@ import { renderStudyView } from "./views/study-view";
 import { submitStudyAnswer as applyStudyAnswer } from "../application/review/submit-study-answer";
 import { replaceStarterVocabulary } from "../application/vocab/replace-vocabulary";
 import type { AppVersionCheck } from "../application/ports/app-version-checker";
-import type { AppState, StudyMode } from "../domain/types";
+import type { AppState, StudyDirection, StudyMode } from "../domain/types";
 import { formatExamTime } from "../domain/exam/mock-exam";
 import { findLessonListeningTrack } from "../domain/hsk4/lesson-listening";
-import { computeStats } from "../domain/review/review-service";
+import { alternatingStudyDirection, computeStats } from "../domain/review/review-service";
 import { icon } from "../presentation/icons";
 import {
   animateSidebarToggleMotion,
@@ -50,6 +59,12 @@ class HskApp {
   private studyMotionState: StudyMotionState | undefined;
   private versionCheck: AppVersionCheck | undefined;
   private nekoTutor: NekoTutorViewState | undefined;
+  private nekoSession: NekoTutorSessionState | undefined;
+  private nekoSessionGeneration = 0;
+  private nekoEnabled = true;
+  private nekoPanelOpen = false;
+  private nekoClearConfirming = false;
+  private nekoNotice: string | undefined;
   private lessonAudio: LessonListeningViewState = {
     playbackRate: 1,
     transcripts: {},
@@ -62,7 +77,13 @@ class HskApp {
 
   async init(): Promise<void> {
     removeRetiredLocalStorage();
+    this.nekoSession = loadNekoTutorSession(window.localStorage);
+    this.nekoEnabled = loadNekoTutorEnabled(window.localStorage);
     this.state = await this.dependencies.stateStore.load();
+    this.study.setDirection(this.state.settings.studyDirection);
+    if (this.prepareNextAlternatingDirection()) {
+      await this.persist();
+    }
     this.sidebarCollapsed = loadSidebarCollapsed();
     this.lessonAudio.transcripts = loadLessonTranscripts();
     this.versionCheck = {
@@ -187,12 +208,18 @@ class HskApp {
     return renderStudyView({
       state: this.state,
       studyMode: this.study.mode,
+      studyDirection: this.study.direction,
       studyQueue: this.study.queue,
       studyIndex: this.study.index,
       strokeCharIndex: this.study.strokeCharIndex,
       feedback: this.study.feedback,
       nekoTutorAvailable: Boolean(this.dependencies.nekoTutor),
+      nekoTutorEnabled: this.nekoEnabled,
+      nekoPanelOpen: this.nekoPanelOpen,
       nekoTutor: this.nekoTutor,
+      nekoSession: this.nekoSession,
+      nekoClearConfirming: this.nekoClearConfirming,
+      nekoNotice: this.nekoNotice,
     });
   }
 
@@ -215,6 +242,7 @@ class HskApp {
       toggleMobileMore: () => this.toggleMobileMore(),
       closeMobileMore: () => this.closeMobileMore(),
       startStudy: (mode) => this.startStudy(mode),
+      setStudyDirection: (direction) => this.setStudyDirection(direction),
       selectLesson: (lesson) => this.selectLesson(lesson),
       submitAnswer: () => this.submitAnswer(),
       nextCard: () => this.nextCard(),
@@ -222,7 +250,14 @@ class HskApp {
       hideAnswer: () => this.hideAnswer(),
       selectStrokeChar: (index) => this.selectStrokeChar(index),
       runStrokeAction: (action) => this.dependencies.strokePractice.run(action),
+      toggleNekoPanel: (open) => this.toggleNekoPanel(open),
       askNeko: (question) => this.askNeko(question),
+      cancelNeko: () => this.cancelNeko(),
+      setNekoEnabled: (enabled) => this.setNekoEnabled(enabled),
+      requestClearNekoSession: () => this.requestClearNekoSession(),
+      cancelClearNekoSession: () => this.cancelClearNekoSession(),
+      clearNekoSession: () => this.clearNekoSession(),
+      exportNekoSession: () => this.exportNekoSession(),
       updateSetting: (input) => this.updateSetting(input),
       fileSelected: (fileName) => this.updateFileLabel(fileName),
       importFile: () => this.handleImport(),
@@ -253,12 +288,21 @@ class HskApp {
   }
 
   private navigate(view: View): void {
+    const leavingStudy = this.activeView === "study" && view !== "study";
+    const enteringStudy = this.activeView !== "study" && view === "study";
     this.activeView = view;
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
     if (view !== "study") {
+      this.cancelPendingNekoSilently();
+      this.nekoPanelOpen = false;
       this.study.clear();
       this.nekoTutor = undefined;
+    }
+    if (leavingStudy && this.prepareNextAlternatingDirection()) {
+      void this.persist();
+    } else if (enteringStudy && this.prepareAlternatingStudyDirection()) {
+      void this.persist();
     }
     this.render();
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -325,11 +369,34 @@ class HskApp {
   }
 
   private startStudy(mode: StudyMode): void {
+    const startingNewSession = this.activeView !== "study";
+    if (startingNewSession && this.prepareAlternatingStudyDirection()) {
+      void this.persist();
+    }
+    this.cancelPendingNekoSilently();
+    this.nekoPanelOpen = false;
     this.study.start(mode);
     this.nekoTutor = undefined;
     this.activeView = "study";
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
+    this.render();
+    this.focusHanziInput();
+  }
+
+  private async setStudyDirection(direction: StudyDirection): Promise<void> {
+    if (direction !== "vi-to-zh" && direction !== "zh-to-vi") {
+      return;
+    }
+    this.cancelPendingNekoSilently();
+    this.nekoPanelOpen = false;
+    this.state.settings.studyDirection = direction;
+    if (this.state.settings.alternateStudyDirections) {
+      this.state.settings.lastStudySessionDirection = direction;
+    }
+    this.study.setDirection(direction);
+    this.nekoTutor = undefined;
+    await this.persist();
     this.render();
     this.focusHanziInput();
   }
@@ -449,6 +516,8 @@ class HskApp {
   }
 
   private nextCard(): void {
+    this.cancelPendingNekoSilently();
+    this.nekoPanelOpen = false;
     this.study.nextCard();
     this.nekoTutor = undefined;
     this.render();
@@ -464,6 +533,8 @@ class HskApp {
 
   private hideAnswer(): void {
     if (this.study.hideRevealedAnswer()) {
+      this.cancelPendingNekoSilently();
+      this.nekoPanelOpen = false;
       this.nekoTutor = undefined;
       this.render();
       this.focusHanziInput();
@@ -475,10 +546,65 @@ class HskApp {
     this.render();
   }
 
+  private toggleNekoPanel(open: boolean): void {
+    if (!this.dependencies.nekoTutor || this.activeView !== "study") {
+      return;
+    }
+    this.nekoPanelOpen = open;
+    if (!open) {
+      this.nekoClearConfirming = false;
+    }
+    this.render();
+    requestAnimationFrame(() => {
+      const selector = open ? "[data-neko-panel] [data-neko-close]" : "[data-neko-open]";
+      this.root.querySelector<HTMLElement>(selector)?.focus();
+      if (open) {
+        this.scrollNekoPanelToLatest();
+      }
+    });
+  }
+
   private async updateSetting(input: HTMLInputElement | HTMLSelectElement): Promise<void> {
     applySettingInput(this.state.settings, input);
+    if (input.dataset.setting === "alternateStudyDirections" && this.state.settings.alternateStudyDirections) {
+      this.state.settings.lastStudySessionDirection = this.state.settings.studyDirection;
+      if (this.activeView !== "study") {
+        this.prepareNextAlternatingDirection();
+      }
+    }
     await this.persist();
     this.render();
+  }
+
+  private prepareAlternatingStudyDirection(): boolean {
+    if (!this.state.settings.alternateStudyDirections) {
+      this.study.setDirection(this.state.settings.studyDirection);
+      return false;
+    }
+
+    const direction = alternatingStudyDirection(
+      this.state.settings.lastStudySessionDirection,
+      this.state.settings.studyDirection,
+    );
+    const changed =
+      direction !== this.state.settings.studyDirection ||
+      direction !== this.state.settings.lastStudySessionDirection;
+    this.state.settings.studyDirection = direction;
+    this.state.settings.lastStudySessionDirection = direction;
+    this.study.setDirection(direction);
+    return changed;
+  }
+
+  private prepareNextAlternatingDirection(): boolean {
+    if (!this.state.settings.alternateStudyDirections || !this.state.settings.lastStudySessionDirection) {
+      return false;
+    }
+
+    const direction = alternatingStudyDirection(this.state.settings.lastStudySessionDirection);
+    const changed = direction !== this.state.settings.studyDirection;
+    this.state.settings.studyDirection = direction;
+    this.study.setDirection(direction);
+    return changed;
   }
 
   private updateFileLabel(fileName: string): void {
@@ -571,7 +697,14 @@ class HskApp {
       return;
     }
 
-    const result = applyStudyAnswer(this.state, item, input.value, this.study.mode, this.study.cardLatencyMs());
+    const result = applyStudyAnswer(
+      this.state,
+      item,
+      input.value,
+      this.study.mode,
+      this.study.cardLatencyMs(),
+      this.study.direction,
+    );
     if (!result) {
       return;
     }
@@ -587,44 +720,70 @@ class HskApp {
     const item = this.study.currentItem();
     const feedback = item && this.study.feedback?.itemId === item.id ? this.study.feedback : undefined;
     const trimmedQuestion = question.trim();
-    if (!tutor || !item || !feedback || !trimmedQuestion || this.nekoTutor?.status === "loading") {
+    if (!tutor || !this.nekoEnabled || !item || !feedback || !trimmedQuestion || this.nekoTutor?.status === "loading") {
       return;
     }
 
     const itemId = item.id;
-    const conversationId = this.nekoTutor?.itemId === itemId ? this.nekoTutor.conversationId : undefined;
+    const requestId = crypto.randomUUID();
+    const conversationId = this.nekoSession?.conversationId;
+    const sessionGeneration = this.nekoSessionGeneration;
+    this.nekoPanelOpen = true;
+    this.nekoNotice = undefined;
+    this.nekoClearConfirming = false;
     this.nekoTutor = {
       itemId,
       status: "loading",
       question: trimmedQuestion,
+      requestId,
       conversationId,
     };
     this.render();
+    this.scrollNekoPanelToLatest();
 
     try {
-      const result = await tutor.ask({
-        card: {
-          id: item.id,
-          book: item.book,
-          lesson: item.lesson,
-          hanzi: item.hanzi,
-          pinyin: item.pinyin,
-          meaningVi: item.meaningVi,
-          meaningEn: item.meaningEn,
-          partOfSpeech: item.partOfSpeech,
-          exampleHan: item.exampleHan,
-          examplePinyin: item.examplePinyin,
-          exampleVi: item.exampleVi,
+      const result = await tutor.ask(
+        {
+          requestId,
+          card: {
+            id: item.id,
+            book: item.book,
+            lesson: item.lesson,
+            hanzi: item.hanzi,
+            pinyin: item.pinyin,
+            meaningVi: item.meaningVi,
+            meaningEn: item.meaningEn,
+            partOfSpeech: item.partOfSpeech,
+            exampleHan: item.exampleHan,
+            examplePinyin: item.examplePinyin,
+            exampleVi: item.exampleVi,
+          },
+          learnerAnswer: feedback.input,
+          direction: this.study.direction,
+          correct: feedback.correct,
+          revealed: Boolean(feedback.revealed),
+          question: trimmedQuestion,
+          conversationId,
         },
-        learnerAnswer: feedback.input,
-        correct: feedback.correct,
-        revealed: Boolean(feedback.revealed),
-        question: trimmedQuestion,
-        conversationId,
-      });
-      if (this.study.currentItem()?.id !== itemId) {
+        (block) => this.appendNekoStreamBlock(block, itemId, requestId, sessionGeneration),
+      );
+      if (
+        this.nekoSessionGeneration !== sessionGeneration
+        || this.study.currentItem()?.id !== itemId
+        || this.nekoTutor?.requestId !== requestId
+        || this.nekoTutor.status !== "loading"
+      ) {
         return;
       }
+      this.nekoSession = appendNekoExchange(this.nekoSession, {
+        requestId,
+        conversationId: result.conversationId,
+        itemId,
+        hanzi: item.hanzi,
+        question: trimmedQuestion,
+        answer: result.answer,
+      });
+      saveNekoTutorSession(window.localStorage, this.nekoSession);
       this.nekoTutor = {
         itemId,
         status: "ready",
@@ -633,7 +792,12 @@ class HskApp {
         conversationId: result.conversationId,
       };
     } catch (error) {
-      if (this.study.currentItem()?.id !== itemId) {
+      if (
+        this.nekoSessionGeneration !== sessionGeneration
+        || this.study.currentItem()?.id !== itemId
+        || this.nekoTutor?.requestId !== requestId
+        || this.nekoTutor.status !== "loading"
+      ) {
         return;
       }
       this.nekoTutor = {
@@ -641,10 +805,173 @@ class HskApp {
         status: "error",
         question: trimmedQuestion,
         conversationId,
+        answer: this.nekoTutor.answer,
         error: error instanceof Error ? error.message : "Neko chưa trả lời được. Hãy thử lại.",
       };
     }
     this.render();
+    this.scrollNekoPanelToLatest();
+  }
+
+  private appendNekoStreamBlock(
+    block: string,
+    itemId: string,
+    requestId: string,
+    sessionGeneration: number,
+  ): void {
+    if (
+      !block
+      || this.nekoSessionGeneration !== sessionGeneration
+      || this.study.currentItem()?.id !== itemId
+      || this.nekoTutor?.requestId !== requestId
+      || this.nekoTutor.status !== "loading"
+    ) {
+      return;
+    }
+    const body = this.root.querySelector<HTMLElement>("[data-neko-conversation]");
+    const followLatest = Boolean(
+      body && body.scrollHeight - body.scrollTop - body.clientHeight < 96,
+    );
+    const previousAnswer = this.nekoTutor.answer ?? "";
+    const answer = `${previousAnswer}${block}`.slice(0, 8_000);
+    const appendedText = answer.slice(previousAnswer.length);
+    if (!appendedText) {
+      return;
+    }
+    this.nekoTutor = { ...this.nekoTutor, answer };
+
+    const message = this.root.querySelector<HTMLElement>("[data-neko-stream-message]");
+    const text = this.root.querySelector<HTMLElement>("[data-neko-stream-answer]");
+    const status = this.root.querySelector<HTMLElement>("[data-neko-stream-status]");
+    if (!message || !text || !status) {
+      this.render();
+      this.scrollNekoPanelToLatest();
+      return;
+    }
+    message.classList.remove("is-empty");
+    text.append(document.createTextNode(appendedText));
+    status.textContent = "Neko đang trả lời…";
+    if (followLatest) {
+      this.scrollNekoPanelToLatest();
+    }
+  }
+
+  private async cancelNeko(): Promise<void> {
+    const tutor = this.dependencies.nekoTutor;
+    const current = this.nekoTutor;
+    if (!tutor || current?.status !== "loading" || !current.requestId) {
+      return;
+    }
+    const sessionGeneration = this.nekoSessionGeneration;
+    this.nekoTutor = {
+      ...current,
+      status: "cancelled",
+      error: undefined,
+    };
+    this.nekoNotice = "Đã dừng câu trả lời. Cuộc trò chuyện vẫn được giữ để bạn có thể hỏi tiếp.";
+    this.render();
+    this.scrollNekoPanelToLatest();
+    try {
+      const result = await tutor.cancel(current.requestId);
+      if (result.conversationId && this.nekoSessionGeneration === sessionGeneration) {
+        this.nekoSession = rememberNekoConversation(this.nekoSession, result.conversationId);
+        saveNekoTutorSession(window.localStorage, this.nekoSession);
+      }
+    } catch {
+      if (this.nekoSessionGeneration === sessionGeneration) {
+        this.nekoNotice = "Đã ngừng chờ ở giao diện; Neko có thể cần thêm vài giây để kết thúc lượt đang chạy.";
+      }
+    }
+    if (this.nekoSessionGeneration === sessionGeneration) {
+      this.render();
+      this.scrollNekoPanelToLatest();
+    }
+  }
+
+  private cancelPendingNekoSilently(): void {
+    const tutor = this.dependencies.nekoTutor;
+    const current = this.nekoTutor;
+    if (!tutor || current?.status !== "loading" || !current.requestId) {
+      return;
+    }
+    const sessionGeneration = this.nekoSessionGeneration;
+    this.nekoTutor = undefined;
+    void tutor.cancel(current.requestId).then((result) => {
+      if (result.conversationId && this.nekoSessionGeneration === sessionGeneration) {
+        this.nekoSession = rememberNekoConversation(this.nekoSession, result.conversationId);
+        saveNekoTutorSession(window.localStorage, this.nekoSession);
+      }
+    }).catch(() => {
+      // Navigation should not be blocked when the local ACP process is already gone.
+    });
+  }
+
+  private setNekoEnabled(enabled: boolean): void {
+    if (!enabled && this.nekoTutor?.status === "loading") {
+      void this.cancelNeko();
+    }
+    this.nekoEnabled = enabled;
+    this.nekoTutor = undefined;
+    this.nekoClearConfirming = false;
+    this.nekoNotice = enabled
+      ? "Neko đã bật. AI chỉ mở sau khi bạn chấm hoặc hiện đáp án."
+      : "Neko đã tắt. Cuộc trò chuyện vẫn được giữ để bạn có thể tiếp tục khi bật lại.";
+    saveNekoTutorEnabled(window.localStorage, enabled);
+    this.render();
+  }
+
+  private requestClearNekoSession(): void {
+    if (!this.nekoSession && !this.nekoTutor) {
+      return;
+    }
+    this.nekoClearConfirming = true;
+    this.nekoNotice = undefined;
+    this.render();
+  }
+
+  private cancelClearNekoSession(): void {
+    this.nekoClearConfirming = false;
+    this.render();
+  }
+
+  private async clearNekoSession(): Promise<void> {
+    const tutor = this.dependencies.nekoTutor;
+    const conversationId = this.nekoSession?.conversationId;
+    const requestId = this.nekoTutor?.requestId;
+    this.nekoSessionGeneration += 1;
+    this.nekoSession = undefined;
+    this.nekoTutor = undefined;
+    this.nekoClearConfirming = false;
+    this.nekoNotice = "Đã bắt đầu cuộc trò chuyện mới. Tiến độ học không thay đổi.";
+    clearNekoTutorSession(window.localStorage);
+    this.render();
+
+    try {
+      let sessionToClose = conversationId;
+      if (requestId) {
+        const cancelled = await tutor?.cancel(requestId);
+        sessionToClose = sessionToClose ?? cancelled?.conversationId;
+      }
+      if (sessionToClose) {
+        await tutor?.closeSession(sessionToClose);
+      }
+    } catch {
+      this.nekoNotice = "Đã bắt đầu cuộc trò chuyện mới trong Hồng HSK4, nhưng Neko chưa xác nhận đóng cuộc trò chuyện trước.";
+      this.render();
+    }
+  }
+
+  private exportNekoSession(): void {
+    if (!this.nekoSession) {
+      return;
+    }
+    const blob = new Blob([JSON.stringify(this.nekoSession, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `hong-hsk4-neko-${this.nekoSession.startedAt.slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   private async handleImport(): Promise<void> {
@@ -686,6 +1013,15 @@ class HskApp {
 
   private focusHanziInput(): void {
     queueMicrotask(() => this.root.querySelector<HTMLInputElement>("#hanzi-input")?.focus());
+  }
+
+  private scrollNekoPanelToLatest(): void {
+    requestAnimationFrame(() => {
+      const body = this.root.querySelector<HTMLElement>("[data-neko-conversation]");
+      if (body) {
+        body.scrollTop = body.scrollHeight;
+      }
+    });
   }
 
   private async persist(): Promise<void> {

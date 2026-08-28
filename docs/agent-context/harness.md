@@ -52,12 +52,16 @@ python -m playwright install chromium
 ## What The Unit Tests Cover
 
 - Spaced-review policy boundaries, including wrong-answer recovery and ease caps.
-- Hanzi answer normalization before comparing typed recall with the expected answer.
+- Hanzi normalization and accent-insensitive Vietnamese meaning matching.
+- Separate Việt → Trung and Trung → Việt queues, attempts, and review-state updates.
+- Persisted session alternation: first entry keeps the selected direction, subsequent re-entries flip, and queue changes do not.
 - Review-state updates after correct and incorrect attempts.
 - Due, wrong, lesson, and today queue ordering.
 - Mock exam shape, deterministic generation, scoring, and timer formatting.
 - App workflow state for study sessions, mock exams, settings normalization, and starter-data replacement.
 - Application use cases for typed-answer submission and imported-vocabulary replacement.
+- Bounded Neko transcript parsing, same-session continuity across cards, and defensive rejection of malformed browser state.
+- Neko ACP text buffering flushes on readable boundaries, target size, maximum wait, and final completion without duplicate blocks.
 
 ## What The Browser Harness Covers
 
@@ -66,11 +70,15 @@ Desktop:
 - App loads with Hồng HSK4 Studio visible.
 - Removed stale headers stay absent.
 - Study input exists.
+- Switching to Trung → Việt changes the prompt/input contract and accepts an accentless correct meaning.
+- Automatic alternation happens on every re-entry into Học tập, even without an answer, and remains stable when the queue changes within that session.
+- Desktop navigation renders the unambiguous Vietnamese label `Luyện thi`, using the bundled Vietnamese UI font.
 - Stroke practice starts hidden during recall.
 - Reveal and hide answer controls work.
 - Wrong answer creates a wrong-list item.
 - Retired tutor session storage is removed and no legacy tutor control appears after checking an answer.
-- The developer-local Neko card is locked during recall and exposes its question action only after check/reveal.
+- The developer-local Neko launcher opens a floating panel without shifting the study layout; the panel hides history and questions during recall and unlocks only after check/reveal.
+- Mocked Neko turns expose an answer block before `done`, retain one session and presentation transcript across cards, support stop/export/confirmed new conversation/off-on, close on study transitions, and preserve normal study when AI is disabled.
 - Correct answer is recognized.
 - Data screen renders.
 
@@ -80,7 +88,7 @@ Mobile/mock:
 - Data count reaches the expected current course count.
 - Mock exam set selection works.
 - Mock runner starts with clock and 100-question flow.
-- Mobile study and mock screens render in a narrow viewport.
+- Mobile study direction selector, recognition prompt, two-turn floating Neko panel, panel controls, bottom-navigation clearance, and mock screens render in a narrow viewport.
 
 ## What The Harness Does Not Prove
 
@@ -88,7 +96,7 @@ Mobile/mock:
 - It does not validate official HSK licensing.
 - It does not guarantee Cloudflare deploy unless `CLOUDFLARE_API_TOKEN` is configured.
 - The normal harness validates only the local Neko control's pedagogical gate; it does not call a provider.
-- The opt-in `npm run test:neko-local` smoke verifies one real browser-to-ACP response, but does not prove factual accuracy, learning outcomes, or production isolation.
+- The opt-in `npm run test:neko-local` smoke verifies two real browser-to-ACP turns retain one ACP session ID and waits for streamed completion before inspecting the transcript, but does not prove factual accuracy, learning outcomes, provider availability, or production isolation.
 - It validates lesson-audio URL wiring and controls but stubs the external MP3 response so CI does not depend on third-party DNS or media availability.
 - It does not replace human mobile UX review on a real phone.
 - It does not prove the current architecture is final; it only prevents obvious inward/outward dependency violations.

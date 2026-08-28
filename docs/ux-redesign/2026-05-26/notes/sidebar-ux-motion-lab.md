@@ -20,7 +20,7 @@ Do not switch the whole product back to green. The issue was that the first code
 - Brand header: 84px cap, full sidebar width, 48px seal in expanded mode, 44px seal in collapsed mode, soft burgundy gradient, no nested-card border.
 - Navigation item: 48px height, 14px label, 18px icon, 12px icon-label gap.
 - Navigation weight: 500 by default, 600 when active.
-- Active state: stronger flat blush background, red text/icon, 2px left active rail, no full red border, no 3D shadow.
+- Active state: soft blush background with red text/icon, no left active rail, no full red border, and no 3D shadow.
 - Footer: compact learner row, one progress bar, three short meta labels, and a short `Ôn ngay` CTA. Avoid stacked stat blocks that make the bottom feel heavy.
 - Mobile bottom bar: fixed five-item grid, no horizontal scrolling, `Học / Ôn / Bài / Thi / Thêm`, active state uses blush fill plus a small red indicator.
 - Mobile overflow: `Thêm` opens a bottom sheet for `Từ sai`, `Lịch 30 ngày`, and `Dữ liệu`.

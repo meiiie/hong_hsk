@@ -1,3 +1,11 @@
+import "@fontsource/be-vietnam-pro/vietnamese-400.css";
+import "@fontsource/be-vietnam-pro/latin-400.css";
+import "@fontsource/be-vietnam-pro/vietnamese-600.css";
+import "@fontsource/be-vietnam-pro/latin-600.css";
+import "@fontsource/be-vietnam-pro/vietnamese-700.css";
+import "@fontsource/be-vietnam-pro/latin-700.css";
+import "@fontsource/be-vietnam-pro/vietnamese-800.css";
+import "@fontsource/be-vietnam-pro/latin-800.css";
 import "./presentation/styles.css";
 import { mountHskApp } from "./app/hsk-app";
 import { StrokePracticeWorkflow } from "./app/workflows/stroke-practice-workflow";

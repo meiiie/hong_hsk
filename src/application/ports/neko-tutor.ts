@@ -1,3 +1,5 @@
+import type { StudyDirection } from "../../domain/types";
+
 export interface NekoTutorCard {
   id: string;
   book: string;
@@ -13,8 +15,10 @@ export interface NekoTutorCard {
 }
 
 export interface NekoTutorRequest {
+  requestId: string;
   card: NekoTutorCard;
   learnerAnswer: string;
+  direction: StudyDirection;
   correct: boolean;
   revealed: boolean;
   question: string;
@@ -26,6 +30,12 @@ export interface NekoTutorResponse {
   conversationId: string;
 }
 
+export interface NekoTutorCancelResponse {
+  conversationId?: string;
+}
+
 export interface NekoTutor {
-  ask(request: NekoTutorRequest): Promise<NekoTutorResponse>;
+  ask(request: NekoTutorRequest, onBlock?: (block: string) => void): Promise<NekoTutorResponse>;
+  cancel(requestId: string): Promise<NekoTutorCancelResponse>;
+  closeSession(conversationId: string): Promise<void>;
 }

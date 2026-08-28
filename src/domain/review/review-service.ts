@@ -3,20 +3,68 @@ import type {
   Attempt,
   DashboardStats,
   ReviewState,
+  StudyDirection,
   StudyMode,
   VocabItem,
 } from "../types";
 import { addDays, planDay, toDateKey } from "../../shared/date-utils";
 import { gradeQuality, nextEase, nextInterval } from "./review-policy";
 
-const HANZI_PUNCTUATION = /[\s,.;:!?，。！？、；：“”"'‘’（）()\[\]{}《》〈〉\-—_]/g;
+const HANZI_PUNCTUATION = /[\s,.;:!?，。！？，、；：“”"'‘’（）()\[\]{}《》〈〉\-—_]/g;
+const VIETNAMESE_PUNCTUATION = /[.,;:!?…“”"'‘’()\[\]{}<>/\\|_—–-]+/g;
+const VIETNAMESE_VARIANT_SEPARATOR = /[,;/|]+|\s+(?:hoặc|hay)\s+/giu;
 
 export function normalizeAnswer(value: string): string {
   return value.normalize("NFKC").replace(HANZI_PUNCTUATION, "").trim();
 }
 
+export function normalizeVietnameseAnswer(value: string): string {
+  return value
+    .normalize("NFKD")
+    .toLocaleLowerCase("vi")
+    .replace(/đ/g, "d")
+    .replace(/\p{Mark}+/gu, "")
+    .replace(VIETNAMESE_PUNCTUATION, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function vietnameseAnswerVariants(expected: string): string[] {
+  const withoutNotes = expected.replace(/\([^)]*\)/g, " ");
+  const parentheticalAsVariant = expected.replace(/[()]/g, ",");
+  return [...new Set(
+    [
+      expected,
+      ...withoutNotes.split(VIETNAMESE_VARIANT_SEPARATOR),
+      ...parentheticalAsVariant.split(VIETNAMESE_VARIANT_SEPARATOR),
+    ]
+      .map(normalizeVietnameseAnswer)
+      .filter(Boolean),
+  )];
+}
+
 export function isCorrectAnswer(input: string, expected: string): boolean {
   return normalizeAnswer(input) === normalizeAnswer(expected);
+}
+
+export function isCorrectVietnameseAnswer(input: string, expected: string): boolean {
+  const normalizedInput = normalizeVietnameseAnswer(input);
+  return Boolean(normalizedInput) && vietnameseAnswerVariants(expected).includes(normalizedInput);
+}
+
+export function expectedAnswer(item: VocabItem, direction: StudyDirection): string {
+  return direction === "zh-to-vi" ? item.meaningVi : item.hanzi;
+}
+
+export function isCorrectStudyAnswer(
+  input: string,
+  item: VocabItem,
+  direction: StudyDirection,
+): boolean {
+  const expected = expectedAnswer(item, direction);
+  return direction === "zh-to-vi"
+    ? isCorrectVietnameseAnswer(input, expected)
+    : isCorrectAnswer(input, expected);
 }
 
 export function createAttempt(
@@ -25,14 +73,16 @@ export function createAttempt(
   correct: boolean,
   mode: StudyMode,
   latencyMs: number,
+  direction: StudyDirection = "vi-to-zh",
 ): Attempt {
   return {
     id: `${Date.now()}-${item.id}-${Math.random().toString(16).slice(2)}`,
     itemId: item.id,
     lesson: item.lesson,
     mode,
+    direction,
     at: new Date().toISOString(),
-    expected: item.hanzi,
+    expected: expectedAnswer(item, direction),
     input,
     correct,
     quality: correct ? "good" : "again",
@@ -55,43 +105,76 @@ export function applyAttempt(
   };
 }
 
-export function dueItems(state: AppState, today = toDateKey()): VocabItem[] {
-  return state.items
-    .filter((item) => {
-      const review = state.reviews[item.id];
-      return review ? review.nextReviewDate <= today : false;
-    })
-    .sort((left, right) => priorityScore(state, right) - priorityScore(state, left));
+export function reviewsForDirection(
+  state: AppState,
+  direction: StudyDirection,
+): Record<string, ReviewState> {
+  return direction === "zh-to-vi" ? state.recognitionReviews : state.reviews;
 }
 
-export function wrongItems(state: AppState): VocabItem[] {
+export function alternatingStudyDirection(
+  lastDirection: StudyDirection | undefined,
+  fallback: StudyDirection = "vi-to-zh",
+): StudyDirection {
+  if (!lastDirection) {
+    return fallback;
+  }
+  return lastDirection === "vi-to-zh" ? "zh-to-vi" : "vi-to-zh";
+}
+
+export function dueItems(
+  state: AppState,
+  today = toDateKey(),
+  direction: StudyDirection = state.settings.studyDirection ?? "vi-to-zh",
+): VocabItem[] {
+  const reviews = reviewsForDirection(state, direction);
   return state.items
-    .filter((item) => state.reviews[item.id]?.lastCorrect === false)
-    .sort((left, right) => priorityScore(state, right) - priorityScore(state, left));
+    .filter((item) => isStudyable(item, direction))
+    .filter((item) => {
+      const review = reviews[item.id];
+      return review ? review.nextReviewDate <= today : false;
+    })
+    .sort((left, right) => priorityScore(reviews, right, today) - priorityScore(reviews, left, today));
+}
+
+export function wrongItems(
+  state: AppState,
+  direction: StudyDirection = state.settings.studyDirection ?? "vi-to-zh",
+): VocabItem[] {
+  const reviews = reviewsForDirection(state, direction);
+  return state.items
+    .filter((item) => isStudyable(item, direction) && reviews[item.id]?.lastCorrect === false)
+    .sort((left, right) => priorityScore(reviews, right) - priorityScore(reviews, left));
 }
 
 export function newItemsForLesson(
   state: AppState,
   lesson: number,
   limit = state.settings.dailyNewTarget,
+  direction: StudyDirection = state.settings.studyDirection ?? "vi-to-zh",
 ): VocabItem[] {
+  const reviews = reviewsForDirection(state, direction);
   return state.items
-    .filter((item) => item.lesson === lesson && !state.reviews[item.id])
+    .filter((item) => item.lesson === lesson && isStudyable(item, direction) && !reviews[item.id])
     .sort((left, right) => left.order - right.order)
     .slice(0, limit);
 }
 
-export function queueForMode(state: AppState, mode: StudyMode): VocabItem[] {
+export function queueForMode(
+  state: AppState,
+  mode: StudyMode,
+  direction: StudyDirection = state.settings.studyDirection ?? "vi-to-zh",
+): VocabItem[] {
   if (mode === "wrong") {
-    return wrongItems(state);
+    return wrongItems(state, direction);
   }
   if (mode === "lesson") {
     return state.items
-      .filter((item) => item.lesson === state.settings.selectedLesson)
+      .filter((item) => item.lesson === state.settings.selectedLesson && isStudyable(item, direction))
       .sort((left, right) => left.order - right.order);
   }
   if (mode === "all") {
-    return state.items.slice().sort((left, right) => {
+    return state.items.filter((item) => isStudyable(item, direction)).sort((left, right) => {
       if (left.lesson !== right.lesson) {
         return left.lesson - right.lesson;
       }
@@ -99,44 +182,57 @@ export function queueForMode(state: AppState, mode: StudyMode): VocabItem[] {
     });
   }
 
-  const due = dueItems(state).slice(0, state.settings.dailyReviewTarget);
+  const due = dueItems(state, toDateKey(), direction).slice(0, state.settings.dailyReviewTarget);
   const todayLesson = Math.min(20, planDay(state.settings.startDate));
-  const newCards = newItemsForLesson(state, todayLesson);
+  const newCards = newItemsForLesson(state, todayLesson, state.settings.dailyNewTarget, direction);
   const seen = new Set(due.map((item) => item.id));
   return [...due, ...newCards.filter((item) => !seen.has(item.id))];
 }
 
 export function computeStats(state: AppState): DashboardStats {
   const reviewList = Object.values(state.reviews);
-  const attempts = state.attempts;
-  const correct = attempts.filter((attempt) => attempt.correct).length;
-  const studiedDays = new Set(attempts.map((attempt) => toDateKey(new Date(attempt.at))));
+  const recognitionList = Object.values(state.recognitionReviews);
+  const activeDirection = state.settings.studyDirection ?? "vi-to-zh";
+  const activeReviews = reviewsForDirection(state, activeDirection);
+  const writingAttempts = state.attempts.filter(
+    (attempt) => !attempt.direction || attempt.direction === "vi-to-zh",
+  );
+  const correct = writingAttempts.filter((attempt) => attempt.correct).length;
+  const studiedDays = new Set(state.attempts.map((attempt) => toDateKey(new Date(attempt.at))));
 
   return {
     totalItems: state.items.length,
     learned: reviewList.length,
     mastered: reviewList.filter((review) => review.status === "mastered").length,
-    dueToday: dueItems(state).length,
-    wrongOpen: reviewList.filter((review) => review.lastCorrect === false).length,
-    accuracy: attempts.length ? Math.round((correct / attempts.length) * 100) : 0,
+    recognitionLearned: recognitionList.length,
+    recognitionMastered: recognitionList.filter((review) => review.status === "mastered").length,
+    recognitionDueToday: dueItems(state, toDateKey(), "zh-to-vi").length,
+    dueToday: dueItems(state, toDateKey(), activeDirection).length,
+    wrongOpen: Object.values(activeReviews).filter((review) => review.lastCorrect === false).length,
+    accuracy: writingAttempts.length ? Math.round((correct / writingAttempts.length) * 100) : 0,
     streak: currentStreak(studiedDays),
     planDay: planDay(state.settings.startDate),
   };
 }
 
-export function progressForLesson(state: AppState, lesson: number): {
+export function progressForLesson(
+  state: AppState,
+  lesson: number,
+  direction: StudyDirection = "vi-to-zh",
+): {
   total: number;
   learned: number;
   mastered: number;
   wrong: number;
 } {
+  const reviews = reviewsForDirection(state, direction);
   const items = state.items.filter((item) => item.lesson === lesson);
-  const learned = items.filter((item) => state.reviews[item.id]);
+  const learned = items.filter((item) => reviews[item.id]);
   return {
     total: items.length,
     learned: learned.length,
-    mastered: learned.filter((item) => state.reviews[item.id]?.status === "mastered").length,
-    wrong: learned.filter((item) => state.reviews[item.id]?.lastCorrect === false).length,
+    mastered: learned.filter((item) => reviews[item.id]?.status === "mastered").length,
+    wrong: learned.filter((item) => reviews[item.id]?.lastCorrect === false).length,
   };
 }
 
@@ -187,14 +283,22 @@ function nextStatus(
   return totalAttempts <= 1 ? "learning" : "review";
 }
 
-function priorityScore(state: AppState, item: VocabItem): number {
-  const review = state.reviews[item.id];
+function priorityScore(
+  reviews: Record<string, ReviewState>,
+  item: VocabItem,
+  today = toDateKey(),
+): number {
+  const review = reviews[item.id];
   if (!review) {
     return 0;
   }
   const wrongPenalty = review.lastCorrect ? 0 : 100;
-  const dueBonus = review.nextReviewDate <= toDateKey() ? 50 : 0;
+  const dueBonus = review.nextReviewDate <= today ? 50 : 0;
   return wrongPenalty + dueBonus + review.wrongCount * 8 - review.correctStreak * 3;
+}
+
+function isStudyable(item: VocabItem, direction: StudyDirection): boolean {
+  return direction === "vi-to-zh" || Boolean(item.meaningVi.trim());
 }
 
 function currentStreak(studiedDays: Set<string>): number {
