@@ -15,6 +15,7 @@ export interface NekoTutorCard {
 }
 
 export interface NekoTutorRequest {
+  requestId: string;
   card: NekoTutorCard;
   learnerAnswer: string;
   direction: StudyDirection;
@@ -29,6 +30,12 @@ export interface NekoTutorResponse {
   conversationId: string;
 }
 
+export interface NekoTutorCancelResponse {
+  conversationId?: string;
+}
+
 export interface NekoTutor {
   ask(request: NekoTutorRequest): Promise<NekoTutorResponse>;
+  cancel(requestId: string): Promise<NekoTutorCancelResponse>;
+  closeSession(conversationId: string): Promise<void>;
 }

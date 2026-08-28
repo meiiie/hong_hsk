@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from playwright.sync_api import expect, sync_playwright
 
 
 def main() -> None:
+    Path("artifacts").mkdir(exist_ok=True)
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
@@ -35,6 +37,27 @@ def main() -> None:
             "https://ntvcdn.b-cdn.net/**/*.mp3",
             lambda route: route.fulfill(status=200, content_type="audio/mpeg", body=b""),
         )
+        neko_turn = {"count": 0}
+
+        def route_neko(route) -> None:
+            if route.request.url.endswith("/api/neko/tutor"):
+                neko_turn["count"] += 1
+                payload = json.loads(route.request.post_data or "{}")
+                route.fulfill(
+                    status=200,
+                    content_type="application/json",
+                    body=json.dumps(
+                        {
+                            "answer": f"Phản hồi thử nghiệm {neko_turn['count']} cho {payload['card']['hanzi']}.",
+                            "conversationId": "20260828-010203-004-a1b2c3d4e5f60708",
+                        },
+                        ensure_ascii=False,
+                    ),
+                )
+                return
+            route.fulfill(status=200, content_type="application/json", body="{}")
+
+        page.route("**/api/neko/**", route_neko)
         page.goto("http://127.0.0.1:5173/", wait_until="networkidle")
         assert page.evaluate("window.localStorage.getItem('hong-hsk4-ai-tutor-session-v1')") is None
         expect(page.locator(".brand-copy").get_by_text("Hồng HSK4")).to_be_visible()
@@ -107,14 +130,80 @@ def main() -> None:
         expect(page.locator("[data-ai-action]")).to_have_count(0)
         expect(page.get_by_role("button", name="Hỏi Neko về câu này")).to_be_visible()
         expect(page.locator(".pinyin")).to_contain_text("fǎ lǜ")
+        page.evaluate(
+            """
+            window.__hskOriginalFetch = window.fetch.bind(window);
+            window.fetch = (input, init) => {
+              const url = input && typeof input === "object" && "url" in input
+                ? input.url
+                : String(input ?? "");
+              if (url.endsWith("/api/neko/tutor")) {
+                return new Promise((_resolve, reject) => { window.__hskRejectPendingNeko = reject; });
+              }
+              if (url.endsWith("/api/neko/cancel")) {
+                window.__hskRejectPendingNeko?.(new Error("cancelled by learner"));
+                return Promise.resolve(new Response(
+                  JSON.stringify({ conversationId: "20260828-010203-004-a1b2c3d4e5f60708" }),
+                  { status: 200, headers: { "Content-Type": "application/json" } },
+                ));
+              }
+              return window.__hskOriginalFetch(input, init);
+            };
+            """
+        )
+        page.get_by_role("button", name="Hỏi Neko về câu này").click()
+        expect(page.get_by_role("button", name="Dừng")).to_be_visible()
+        page.get_by_role("button", name="Dừng").click()
+        expect(page.get_by_text("Lượt vừa rồi đã dừng.", exact=False)).to_be_visible()
+        expect(page.locator(".neko-error")).to_have_count(0)
+        page.evaluate("window.fetch = window.__hskOriginalFetch")
+        page.locator("#neko-question-input").fill("Chỉ ra lỗi và cho tôi một mẹo nhớ.")
+        page.locator("[data-neko-question-form]").get_by_role("button", name="Hỏi").click()
+        expect(page.locator(".neko-message-learner")).to_have_count(1)
+        expect(page.locator(".neko-message-tutor")).to_have_count(1)
+        page.locator("#neko-question-input").fill("Cho tôi một câu hỏi thử lại.")
+        page.locator("[data-neko-question-form]").get_by_role("button", name="Hỏi").click()
+        expect(page.locator(".neko-message-learner")).to_have_count(2)
+        expect(page.locator(".neko-message-tutor")).to_have_count(2)
+        assert page.evaluate(
+            "JSON.parse(window.localStorage.getItem('hong-hsk4-neko-tutor-session-v1')).turnCount"
+        ) == 2
         page.locator("#stroke-target svg").wait_for(state="visible", timeout=20000)
         page.get_by_role("button", name="Nét mẫu").click()
         expect(page.locator("#stroke-status")).to_contain_text("Đang chạy", timeout=5000)
 
         page.get_by_role("button", name="Thẻ tiếp theo").click()
+        expect(page.locator(".neko-thread")).to_have_count(0)
         page.locator("#hanzi-input").fill("俩")
         page.get_by_role("button", name="Chấm đáp án").click()
         expect(page.get_by_text("Đúng", exact=True)).to_be_visible()
+        expect(page.locator(".neko-message-tutor")).to_have_count(2)
+        durable_session_id = page.evaluate(
+            "JSON.parse(window.localStorage.getItem('hong-hsk4-neko-tutor-session-v1')).conversationId"
+        )
+        page.reload(wait_until="networkidle")
+        page.get_by_role("button", name="Bắt đầu ôn").first.click()
+        page.locator("[data-reveal-answer]").click()
+        expect(page.locator(".neko-message-tutor")).to_have_count(2)
+        assert page.evaluate(
+            "JSON.parse(window.localStorage.getItem('hong-hsk4-neko-tutor-session-v1')).conversationId"
+        ) == durable_session_id
+        page.screenshot(path="artifacts/hsk4-neko-session-desktop.png", full_page=True)
+        with page.expect_download() as download_info:
+            page.get_by_role("button", name="Xuất").click()
+        assert download_info.value.suggested_filename.startswith("hong-hsk4-neko-")
+        page.get_by_role("button", name="Xóa phiên").click()
+        expect(page.get_by_text("Xóa cuộc trò chuyện và tạo phiên mới?")).to_be_visible()
+        page.get_by_role("button", name="Giữ phiên").click()
+        expect(page.locator(".neko-message-tutor")).to_have_count(2)
+        page.get_by_role("button", name="Xóa phiên").click()
+        page.get_by_role("button", name="Xóa và tạo phiên mới").click()
+        assert page.evaluate("window.localStorage.getItem('hong-hsk4-neko-tutor-session-v1')") is None
+        expect(page.locator(".neko-thread")).to_have_count(0)
+        page.get_by_role("button", name="Tắt AI").click()
+        expect(page.get_by_text("Neko đang tắt trên thiết bị này.", exact=False)).to_be_visible()
+        page.get_by_role("button", name="Bật Neko").click()
+        expect(page.get_by_role("button", name="Hỏi Neko về câu này")).to_be_visible()
 
         page.get_by_label("Điều hướng").get_by_role("button", name="Từ sai").click()
         expect(page.get_by_role("heading", name="Từ sai lần gần nhất")).to_be_visible()

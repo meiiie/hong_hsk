@@ -1,6 +1,15 @@
 import type { HskAppDependencies } from "./app-dependencies";
-import type { NekoTutorViewState, View } from "./app-types";
+import type { NekoTutorSessionState, NekoTutorViewState, View } from "./app-types";
 import { bindAppEvents } from "./events/app-event-binder";
+import {
+  appendNekoExchange,
+  clearNekoTutorSession,
+  loadNekoTutorEnabled,
+  loadNekoTutorSession,
+  rememberNekoConversation,
+  saveNekoTutorEnabled,
+  saveNekoTutorSession,
+} from "./neko-session-state";
 import { registerServiceWorker } from "./service-worker";
 import { MockExamWorkflow } from "./workflows/mock-exam-workflow";
 import { applySettingInput } from "./workflows/settings-workflow";
@@ -50,6 +59,11 @@ class HskApp {
   private studyMotionState: StudyMotionState | undefined;
   private versionCheck: AppVersionCheck | undefined;
   private nekoTutor: NekoTutorViewState | undefined;
+  private nekoSession: NekoTutorSessionState | undefined;
+  private nekoSessionGeneration = 0;
+  private nekoEnabled = true;
+  private nekoClearConfirming = false;
+  private nekoNotice: string | undefined;
   private lessonAudio: LessonListeningViewState = {
     playbackRate: 1,
     transcripts: {},
@@ -62,6 +76,8 @@ class HskApp {
 
   async init(): Promise<void> {
     removeRetiredLocalStorage();
+    this.nekoSession = loadNekoTutorSession(window.localStorage);
+    this.nekoEnabled = loadNekoTutorEnabled(window.localStorage);
     this.state = await this.dependencies.stateStore.load();
     this.study.setDirection(this.state.settings.studyDirection);
     if (this.prepareNextAlternatingDirection()) {
@@ -197,7 +213,11 @@ class HskApp {
       strokeCharIndex: this.study.strokeCharIndex,
       feedback: this.study.feedback,
       nekoTutorAvailable: Boolean(this.dependencies.nekoTutor),
+      nekoTutorEnabled: this.nekoEnabled,
       nekoTutor: this.nekoTutor,
+      nekoSession: this.nekoSession,
+      nekoClearConfirming: this.nekoClearConfirming,
+      nekoNotice: this.nekoNotice,
     });
   }
 
@@ -229,6 +249,12 @@ class HskApp {
       selectStrokeChar: (index) => this.selectStrokeChar(index),
       runStrokeAction: (action) => this.dependencies.strokePractice.run(action),
       askNeko: (question) => this.askNeko(question),
+      cancelNeko: () => this.cancelNeko(),
+      setNekoEnabled: (enabled) => this.setNekoEnabled(enabled),
+      requestClearNekoSession: () => this.requestClearNekoSession(),
+      cancelClearNekoSession: () => this.cancelClearNekoSession(),
+      clearNekoSession: () => this.clearNekoSession(),
+      exportNekoSession: () => this.exportNekoSession(),
       updateSetting: (input) => this.updateSetting(input),
       fileSelected: (fileName) => this.updateFileLabel(fileName),
       importFile: () => this.handleImport(),
@@ -265,6 +291,7 @@ class HskApp {
     this.mobileMoreOpen = false;
     this.accountMenuOpen = false;
     if (view !== "study") {
+      this.cancelPendingNekoSilently();
       this.study.clear();
       this.nekoTutor = undefined;
     }
@@ -342,6 +369,7 @@ class HskApp {
     if (startingNewSession && this.prepareAlternatingStudyDirection()) {
       void this.persist();
     }
+    this.cancelPendingNekoSilently();
     this.study.start(mode);
     this.nekoTutor = undefined;
     this.activeView = "study";
@@ -355,6 +383,7 @@ class HskApp {
     if (direction !== "vi-to-zh" && direction !== "zh-to-vi") {
       return;
     }
+    this.cancelPendingNekoSilently();
     this.state.settings.studyDirection = direction;
     if (this.state.settings.alternateStudyDirections) {
       this.state.settings.lastStudySessionDirection = direction;
@@ -481,6 +510,7 @@ class HskApp {
   }
 
   private nextCard(): void {
+    this.cancelPendingNekoSilently();
     this.study.nextCard();
     this.nekoTutor = undefined;
     this.render();
@@ -496,6 +526,7 @@ class HskApp {
 
   private hideAnswer(): void {
     if (this.study.hideRevealedAnswer()) {
+      this.cancelPendingNekoSilently();
       this.nekoTutor = undefined;
       this.render();
       this.focusHanziInput();
@@ -663,22 +694,28 @@ class HskApp {
     const item = this.study.currentItem();
     const feedback = item && this.study.feedback?.itemId === item.id ? this.study.feedback : undefined;
     const trimmedQuestion = question.trim();
-    if (!tutor || !item || !feedback || !trimmedQuestion || this.nekoTutor?.status === "loading") {
+    if (!tutor || !this.nekoEnabled || !item || !feedback || !trimmedQuestion || this.nekoTutor?.status === "loading") {
       return;
     }
 
     const itemId = item.id;
-    const conversationId = this.nekoTutor?.itemId === itemId ? this.nekoTutor.conversationId : undefined;
+    const requestId = crypto.randomUUID();
+    const conversationId = this.nekoSession?.conversationId;
+    const sessionGeneration = this.nekoSessionGeneration;
+    this.nekoNotice = undefined;
+    this.nekoClearConfirming = false;
     this.nekoTutor = {
       itemId,
       status: "loading",
       question: trimmedQuestion,
+      requestId,
       conversationId,
     };
     this.render();
 
     try {
       const result = await tutor.ask({
+        requestId,
         card: {
           id: item.id,
           book: item.book,
@@ -699,9 +736,23 @@ class HskApp {
         question: trimmedQuestion,
         conversationId,
       });
-      if (this.study.currentItem()?.id !== itemId) {
+      if (
+        this.nekoSessionGeneration !== sessionGeneration
+        || this.study.currentItem()?.id !== itemId
+        || this.nekoTutor?.requestId !== requestId
+        || this.nekoTutor.status !== "loading"
+      ) {
         return;
       }
+      this.nekoSession = appendNekoExchange(this.nekoSession, {
+        requestId,
+        conversationId: result.conversationId,
+        itemId,
+        hanzi: item.hanzi,
+        question: trimmedQuestion,
+        answer: result.answer,
+      });
+      saveNekoTutorSession(window.localStorage, this.nekoSession);
       this.nekoTutor = {
         itemId,
         status: "ready",
@@ -710,7 +761,12 @@ class HskApp {
         conversationId: result.conversationId,
       };
     } catch (error) {
-      if (this.study.currentItem()?.id !== itemId) {
+      if (
+        this.nekoSessionGeneration !== sessionGeneration
+        || this.study.currentItem()?.id !== itemId
+        || this.nekoTutor?.requestId !== requestId
+        || this.nekoTutor.status !== "loading"
+      ) {
         return;
       }
       this.nekoTutor = {
@@ -722,6 +778,122 @@ class HskApp {
       };
     }
     this.render();
+  }
+
+  private async cancelNeko(): Promise<void> {
+    const tutor = this.dependencies.nekoTutor;
+    const current = this.nekoTutor;
+    if (!tutor || current?.status !== "loading" || !current.requestId) {
+      return;
+    }
+    const sessionGeneration = this.nekoSessionGeneration;
+    this.nekoTutor = {
+      ...current,
+      status: "cancelled",
+      error: undefined,
+    };
+    this.nekoNotice = "Đã dừng câu trả lời. Phiên vẫn được giữ để bạn có thể hỏi tiếp.";
+    this.render();
+    try {
+      const result = await tutor.cancel(current.requestId);
+      if (result.conversationId && this.nekoSessionGeneration === sessionGeneration) {
+        this.nekoSession = rememberNekoConversation(this.nekoSession, result.conversationId);
+        saveNekoTutorSession(window.localStorage, this.nekoSession);
+      }
+    } catch {
+      if (this.nekoSessionGeneration === sessionGeneration) {
+        this.nekoNotice = "Đã ngừng chờ ở giao diện; Neko có thể cần thêm vài giây để kết thúc lượt đang chạy.";
+      }
+    }
+    if (this.nekoSessionGeneration === sessionGeneration) {
+      this.render();
+    }
+  }
+
+  private cancelPendingNekoSilently(): void {
+    const tutor = this.dependencies.nekoTutor;
+    const current = this.nekoTutor;
+    if (!tutor || current?.status !== "loading" || !current.requestId) {
+      return;
+    }
+    const sessionGeneration = this.nekoSessionGeneration;
+    this.nekoTutor = undefined;
+    void tutor.cancel(current.requestId).then((result) => {
+      if (result.conversationId && this.nekoSessionGeneration === sessionGeneration) {
+        this.nekoSession = rememberNekoConversation(this.nekoSession, result.conversationId);
+        saveNekoTutorSession(window.localStorage, this.nekoSession);
+      }
+    }).catch(() => {
+      // Navigation should not be blocked when the local ACP process is already gone.
+    });
+  }
+
+  private setNekoEnabled(enabled: boolean): void {
+    if (!enabled && this.nekoTutor?.status === "loading") {
+      void this.cancelNeko();
+    }
+    this.nekoEnabled = enabled;
+    this.nekoTutor = undefined;
+    this.nekoClearConfirming = false;
+    this.nekoNotice = enabled
+      ? "Neko đã bật. AI chỉ mở sau khi bạn chấm hoặc hiện đáp án."
+      : "Neko đã tắt trên thiết bị này. Phiên cũ vẫn được giữ cho đến khi bạn xóa.";
+    saveNekoTutorEnabled(window.localStorage, enabled);
+    this.render();
+  }
+
+  private requestClearNekoSession(): void {
+    if (!this.nekoSession && !this.nekoTutor) {
+      return;
+    }
+    this.nekoClearConfirming = true;
+    this.nekoNotice = undefined;
+    this.render();
+  }
+
+  private cancelClearNekoSession(): void {
+    this.nekoClearConfirming = false;
+    this.render();
+  }
+
+  private async clearNekoSession(): Promise<void> {
+    const tutor = this.dependencies.nekoTutor;
+    const conversationId = this.nekoSession?.conversationId;
+    const requestId = this.nekoTutor?.requestId;
+    this.nekoSessionGeneration += 1;
+    this.nekoSession = undefined;
+    this.nekoTutor = undefined;
+    this.nekoClearConfirming = false;
+    this.nekoNotice = "Đã xóa cuộc trò chuyện khỏi Hồng HSK4. Câu hỏi tiếp theo sẽ mở một phiên mới.";
+    clearNekoTutorSession(window.localStorage);
+    this.render();
+
+    try {
+      let sessionToClose = conversationId;
+      if (requestId) {
+        const cancelled = await tutor?.cancel(requestId);
+        sessionToClose = sessionToClose ?? cancelled?.conversationId;
+      }
+      if (sessionToClose) {
+        await tutor?.closeSession(sessionToClose);
+      }
+    } catch {
+      this.nekoNotice = "Hồng HSK4 đã quên phiên này, nhưng chưa xác nhận được thao tác đóng với Neko local.";
+      this.render();
+    }
+  }
+
+  private exportNekoSession(): void {
+    if (!this.nekoSession) {
+      return;
+    }
+    const blob = new Blob([JSON.stringify(this.nekoSession, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `hong-hsk4-neko-${this.nekoSession.startedAt.slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   private async handleImport(): Promise<void> {

@@ -18,6 +18,12 @@ export interface AppEventHandlers {
   selectStrokeChar(index: number): void;
   runStrokeAction(action: string): void | Promise<void>;
   askNeko(question: string): void | Promise<void>;
+  cancelNeko(): void | Promise<void>;
+  setNekoEnabled(enabled: boolean): void;
+  requestClearNekoSession(): void;
+  cancelClearNekoSession(): void;
+  clearNekoSession(): void | Promise<void>;
+  exportNekoSession(): void;
   updateSetting(input: HTMLInputElement | HTMLSelectElement): void | Promise<void>;
   fileSelected(fileName: string): void;
   importFile(): void | Promise<void>;
@@ -213,6 +219,28 @@ function bindStudy(root: HTMLElement, handlers: AppEventHandlers): void {
     if (input?.value.trim()) {
       void handlers.askNeko(input.value);
     }
+  });
+
+  root.querySelector<HTMLButtonElement>("[data-neko-cancel]")?.addEventListener("click", () => {
+    void handlers.cancelNeko();
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-enable]")?.addEventListener("click", () => {
+    handlers.setNekoEnabled(true);
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-disable]")?.addEventListener("click", () => {
+    handlers.setNekoEnabled(false);
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-clear-request]")?.addEventListener("click", () => {
+    handlers.requestClearNekoSession();
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-clear-cancel]")?.addEventListener("click", () => {
+    handlers.cancelClearNekoSession();
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-clear-confirm]")?.addEventListener("click", () => {
+    void handlers.clearNekoSession();
+  });
+  root.querySelector<HTMLButtonElement>("[data-neko-export]")?.addEventListener("click", () => {
+    handlers.exportNekoSession();
   });
 
 }

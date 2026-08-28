@@ -28,6 +28,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/app/hsk-app.ts` | Stateful app controller for render orchestration, command handlers, persistence calls, and adapter coordination. |
 | `src/app/app-dependencies.ts` | App dependency contract for injected ports/adapters. |
 | `src/app/app-types.ts` | App-only view/data-health/feedback types. |
+| `src/app/neko-session-state.ts` | Defensive localStorage presentation state for the bounded Neko transcript, durable ACP session ID, and device-level AI toggle. |
 | `src/app/events/app-event-binder.ts` | DOM event binding layer that maps data attributes to typed app handlers. |
 | `src/app/service-worker.ts` | Service worker registration. |
 | `src/app/workflows/study-workflow.ts` | Transient study session state: queue, Việt/Trung recall direction, current card, answer feedback, stroke selection. |
@@ -77,7 +78,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | --- | --- |
 | `scripts/run_harness.mjs` | Starts/reuses Vite dev server and runs browser checks. |
 | `scripts/neko-acp-vite-plugin.mjs` | Loopback-only Vite middleware that supervises installed ordinary `neko acp` for the local UX pilot. |
-| `scripts/smoke_neko_local.py` | Opt-in Playwright smoke that checks one real post-answer Neko response. |
+| `scripts/smoke_neko_local.py` | Opt-in Playwright smoke that checks two real post-answer Neko turns reuse one durable ACP session. |
 | `scripts/check_agent_context.mjs` | Validates the agent context map and key workflow assumptions. |
 | `scripts/check_architecture.mjs` | Enforces DDD-lite source-layer dependency rules. |
 | `tests/unit/*.test.ts` | Vitest unit coverage for review policy/service and mock exam domain behavior. |

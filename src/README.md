@@ -46,6 +46,7 @@ Ports live in `src/application/ports/`:
 App workflow code is split by responsibility:
 
 - `events/app-event-binder.ts`: DOM event binding only; it translates data attributes into typed handlers.
+- `neko-session-state.ts`: bounded browser presentation state for the local tutor transcript, ACP session ID, and AI enabled preference; it is not a second durable AI memory store.
 - `workflows/study-workflow.ts`: transient study queue, selected recall direction, current card, answer feedback, and stroke-character selection.
 - `workflows/mock-exam-workflow.ts`: selected mock set, active exam session, question index, answer storage, submit/reset, and clock state.
 - `workflows/settings-workflow.ts`: settings form normalization and bounds.
@@ -68,7 +69,7 @@ This split keeps render functions mostly pure while the controller keeps side ef
 
 ## AI Boundary
 
-The developer-local pilot has a typed Neko tutor port, a post-answer UI, and a loopback-only Vite/ACP adapter. Production builds still contain no tutor dependency or model credential. Any networked implementation remains gated on the product, pedagogy, security, evaluation, persistence, and licensing contracts in [`docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`](../docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md).
+The developer-local pilot has a typed Neko tutor port, a post-answer multi-turn UI, a bounded local transcript, and a loopback-only Vite/ACP adapter. It reuses Neko's direct durable session ID, supports stop/off/export/confirmed clear, and never treats model text as review data. Production builds still contain no tutor dependency or model credential. Any networked implementation remains gated on the product, pedagogy, security, evaluation, persistence, and licensing contracts in [`docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md`](../docs/architecture/neko-core-hsk4-ai-product-rfc-2026-08-27.md).
 
 If that design is implemented, the static PWA remains separate from the Neko Core process. The browser communicates with a bounded authenticated gateway; a server-side ACP host owns the pinned Neko runtime and exposes only reviewed, read-only HSK tools. Model output never becomes verified vocabulary or review state automatically.
 

@@ -60,6 +60,7 @@ python -m playwright install chromium
 - Mock exam shape, deterministic generation, scoring, and timer formatting.
 - App workflow state for study sessions, mock exams, settings normalization, and starter-data replacement.
 - Application use cases for typed-answer submission and imported-vocabulary replacement.
+- Bounded Neko transcript parsing, same-session continuity across cards, and defensive rejection of malformed browser state.
 
 ## What The Browser Harness Covers
 
@@ -76,6 +77,7 @@ Desktop:
 - Wrong answer creates a wrong-list item.
 - Retired tutor session storage is removed and no legacy tutor control appears after checking an answer.
 - The developer-local Neko card is locked during recall and exposes its question action only after check/reveal.
+- Mocked Neko turns retain one session and transcript across cards, support export and confirmed clear, and preserve normal study when AI is disabled.
 - Correct answer is recognized.
 - Data screen renders.
 
@@ -85,7 +87,7 @@ Mobile/mock:
 - Data count reaches the expected current course count.
 - Mock exam set selection works.
 - Mock runner starts with clock and 100-question flow.
-- Mobile study direction selector, recognition prompt, and mock screens render in a narrow viewport.
+- Mobile study direction selector, recognition prompt, two-turn Neko session, session controls, and mock screens render in a narrow viewport.
 
 ## What The Harness Does Not Prove
 
@@ -93,7 +95,7 @@ Mobile/mock:
 - It does not validate official HSK licensing.
 - It does not guarantee Cloudflare deploy unless `CLOUDFLARE_API_TOKEN` is configured.
 - The normal harness validates only the local Neko control's pedagogical gate; it does not call a provider.
-- The opt-in `npm run test:neko-local` smoke verifies one real browser-to-ACP response, but does not prove factual accuracy, learning outcomes, or production isolation.
+- The opt-in `npm run test:neko-local` smoke verifies two real browser-to-ACP turns retain one ACP session ID, but does not prove factual accuracy, learning outcomes, provider availability, or production isolation.
 - It validates lesson-audio URL wiring and controls but stubs the external MP3 response so CI does not depend on third-party DNS or media availability.
 - It does not replace human mobile UX review on a real phone.
 - It does not prove the current architecture is final; it only prevents obvious inward/outward dependency violations.

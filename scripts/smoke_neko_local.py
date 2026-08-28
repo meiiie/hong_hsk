@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import sys
 
 from playwright.sync_api import expect, sync_playwright
@@ -30,9 +31,29 @@ def main() -> None:
                 raise AssertionError("Neko returned an empty tutor answer")
             if answer.count("法律 (fǎ lǜ)") > 1:
                 raise AssertionError("Neko answer contained a duplicated verification pass")
+
+            first_session = json.loads(
+                page.evaluate("window.localStorage.getItem('hong-hsk4-neko-tutor-session-v1')")
+            )
+            if first_session["turnCount"] != 1 or not first_session.get("conversationId"):
+                raise AssertionError("Neko did not persist the first durable session turn")
+
+            page.locator("#neko-question-input").fill("Cho tôi một câu hỏi ngắn để tự dùng từ này, chưa đưa đáp án.")
+            page.locator("[data-neko-question-form]").get_by_role("button", name="Hỏi").click()
+            expect(page.locator("[data-neko-cancel]")).to_be_visible()
+            expect(page.locator(".neko-message-tutor")).to_have_count(2, timeout=120_000)
+
+            second_session = json.loads(
+                page.evaluate("window.localStorage.getItem('hong-hsk4-neko-tutor-session-v1')")
+            )
+            if second_session["conversationId"] != first_session["conversationId"]:
+                raise AssertionError("Neko follow-up created a different conversation")
+            if second_session["turnCount"] != 2 or len(second_session["messages"]) != 4:
+                raise AssertionError("Neko transcript did not retain both exchanges")
+
             Path("artifacts").mkdir(exist_ok=True)
             page.screenshot(path="artifacts/neko-local-pilot.png", full_page=True)
-            print(answer)
+            print(page.locator(".neko-message-tutor").last.inner_text().strip())
         finally:
             browser.close()
 
