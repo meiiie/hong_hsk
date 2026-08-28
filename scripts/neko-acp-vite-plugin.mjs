@@ -67,10 +67,11 @@ class NekoAcpTutorBridge {
       throw httpError(409, "Phiên Neko đang trả lời một câu hỏi khác.");
     }
     const controller = new AbortController();
-    const pending = { answer: "", controller, sessionId: session.sessionId };
+    const pending = { answer: "", controller, sessionId: session.sessionId, timedOut: false };
     this.pendingByRequest.set(payload.requestId, pending);
     this.pendingBySession.set(session.sessionId, pending);
     const timeout = setTimeout(() => {
+      pending.timedOut = true;
       void this.cancel(payload.requestId);
     }, TURN_TIMEOUT_MS);
 
@@ -86,6 +87,11 @@ class NekoAcpTutorBridge {
         throw new Error(`Neko ACP stopped with '${result.stopReason}' without a tutor answer.`);
       }
       return { answer, conversationId: session.sessionId };
+    } catch (error) {
+      if (!controller.signal.aborted || pending.timedOut) {
+        await this.recycleAfterPromptFailure();
+      }
+      throw error;
     } finally {
       clearTimeout(timeout);
       this.pendingByRequest.delete(payload.requestId);
@@ -121,6 +127,34 @@ class NekoAcpTutorBridge {
       this.sessions.delete(conversationId);
     }
     return { closed: true };
+  }
+
+  async recycleAfterPromptFailure() {
+    if (this.pendingByRequest.size > 1) {
+      return;
+    }
+    this.logger.warn("[neko-acp] Recycling the local ACP process after a failed turn so the next retry reloads the active profile/model.");
+    const connection = this.connection;
+    const child = this.child;
+    this.ready = undefined;
+    this.connection = undefined;
+    this.context = undefined;
+    this.capabilities = undefined;
+    this.child = undefined;
+    this.sessions.clear();
+    this.pendingByRequest.clear();
+    this.pendingBySession.clear();
+    connection?.close();
+    if (child && child.exitCode === null) {
+      await new Promise((resolve) => {
+        const timeout = setTimeout(resolve, 1_500);
+        child.once("exit", () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+        child.kill();
+      });
+    }
   }
 
   async start() {
@@ -453,7 +487,7 @@ function publicError(error) {
   if (error instanceof Error && /ENOENT|not recognized|Failed to start Neko/i.test(error.message)) {
     return "Không tìm thấy Neko trên máy. Hãy kiểm tra `neko --version` rồi khởi động lại Vite.";
   }
-  return "Neko tạm thời chưa trả lời được. Hãy chờ một lúc rồi thử lại; nếu lỗi lặp lại, chạy `neko doctor` và kiểm tra provider/model.";
+  return "Neko chưa trả lời được. Kết nối ACP đã được làm mới; nếu bạn vừa đổi profile hoặc model, hãy bấm Thử lại.";
 }
 
 function sendJson(response, statusCode, payload) {
