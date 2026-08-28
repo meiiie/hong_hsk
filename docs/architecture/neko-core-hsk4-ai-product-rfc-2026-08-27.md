@@ -1,9 +1,9 @@
 # Neko Core AI for Hồng HSK4 Studio — Product and Architecture RFC
 
 - Date: 2026-08-27
-- Status: research complete; legacy AI removed; single-learner host architecture selected; integration not yet implemented
+- Status: research complete; legacy AI removed; developer-local ACP UX pilot implemented; networked integration not yet implemented
 - Scope owner: Hồng HSK4 Studio
-- Upstream examined: `meiiie/neko-core` stable release `v1.2.1`, commit `901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13`
+- Upstream examined: `meiiie/neko-core` stable release `v1.2.2`, commit `80e3ffa6b4c5608eaa59b87822d4bcef877ae679`
 
 ## Decision
 
@@ -21,7 +21,11 @@ The integration must preserve these boundaries:
 - The model may explain, question, scaffold, and propose. It may not silently change vocabulary, translations, review state, scores, or exam records.
 - AI assistance appears only at a pedagogically useful point. It does not interrupt recall or reveal an answer before the learner checks or explicitly reveals it.
 
-No new AI UI should ship until the learning contract, evaluation corpus, Neko host profile, persistence design, and privacy controls below are implemented and tested.
+No networked or production AI UI should ship until the learning contract, evaluation corpus, Neko host profile, persistence design, and privacy controls below are implemented and tested.
+
+A developer-only UX pilot is allowed before that release gate. It may call the owner's installed ordinary `neko acp` process only from loopback Vite, in `plan` mode and an empty workspace with MCP, outside-workspace reads, and the extra verification loop disabled for that child process. This exception is for testing post-answer placement and tutor usefulness; production builds hide it, and it must not be connected to a Tunnel or public host.
+
+As of 2026-08-28, that local pilot supports one continuous tutor session across cards and page reloads. The browser keeps only a bounded recent-message presentation cache; the ACP session ID points back to Neko's normal durable local session, and Neko remains the memory and full-context authority. A floating launcher opens the post-answer panel without shifting the study layout. The UI provides stop, retry, AI off/on, JSON export, and a two-step “new conversation” action. Starting new makes Hồng HSK4 forget its presentation cache and session ID and calls ACP `session/close`; it does not claim to erase Neko's durable file because ACP v1 does not expose session deletion. For responsive local evaluation without token-by-token repainting, the bridge coalesces ACP text deltas into short NDJSON blocks and the UI patches only the active tutor bubble; only a completed turn is written to the presentation cache. Storage/transport details belong in privacy/settings documentation rather than repeated inside the primary tutoring flow.
 
 The learner can install and use Neko Core in its terminal immediately. Integration inside the HSK4 PWA still requires the HSK host profile and bridge because a browser cannot directly launch or speak ACP's local `stdio` transport.
 
@@ -123,7 +127,7 @@ The tutor should optimize learning, not answer throughput or chat engagement.
 6. **Keep cognitive load bounded.** One goal per turn, short examples, no essay when the learner is in a rapid review flow.
 7. **Deepen metacognition.** Help the learner name the error pattern and choose a cue, without inventing psychological traits.
 8. **Ground claims.** Verified HSK data and the active activity are authoritative. Model knowledge is supplementary and labeled.
-9. **Preserve agency.** The learner can stop, clear, export, disable memory, and study fully without AI.
+9. **Preserve agency.** The learner can stop, start a new conversation, export, turn AI off, and study fully without AI.
 10. **Measure delayed learning.** Satisfaction and chat length are secondary to later unaided recall and transfer.
 
 This contract follows the retrieval-practice evidence, LearnLM's learning-science dimensions, and the warning from a preregistered classroom study that an unguarded general assistant can improve assisted performance while harming later unaided performance.
@@ -139,8 +143,10 @@ Sources: [retrieval practice](https://pubmed.ncbi.nlm.nih.gov/16507066/), [Learn
 | CMU LearnLab | Keep fine-grained, longitudinal learning evidence and run in-vivo comparisons. Product telemetry should answer a learning question, not merely report engagement. |
 | ACL BIPED | Select a pedagogical dialogue act before generating prose. HSK actions should be typed, such as `probe`, `hint`, `contrast`, `correct`, `model`, and `retry`. |
 | PNAS guardrail study | Prevent answer outsourcing. Give the agent verified solutions, common mistakes, and hint rules; evaluate later unaided performance. |
+| Microsoft Human-AI Interaction | Make capability and limits clear, invoke AI in context, support efficient dismissal/correction, remember recent interactions, and expose global controls when behavior spans the product. This motivates the locked post-answer placement plus stop/off/new-conversation/export controls. |
+| Anthropic long-running context guidance | Long conversations need explicit context management because irrelevant history can reduce model focus. The UI therefore bounds its presentation transcript while Neko remains responsible for the actual model context and compaction policy. |
 
-Sources: [LearnLM](https://arxiv.org/abs/2412.16429), [Tutor CoPilot](https://scale.stanford.edu/sites/default/files/ai24_1054_v2.pdf), [CMU LearnLab](https://learnlab.org/learnlab-research/), [BIPED at ACL 2024](https://aclanthology.org/2024.acl-long.186/), and [PNAS guardrail study](https://doi.org/10.1073/pnas.2422633122).
+Sources: [LearnLM](https://arxiv.org/abs/2412.16429), [Tutor CoPilot](https://scale.stanford.edu/sites/default/files/ai24_1054_v2.pdf), [CMU LearnLab](https://learnlab.org/learnlab-research/), [BIPED at ACL 2024](https://aclanthology.org/2024.acl-long.186/), [PNAS guardrail study](https://doi.org/10.1073/pnas.2422633122), [Microsoft Guidelines for Human-AI Interaction](https://www.microsoft.com/en-us/research/publication/guidelines-for-human-ai-interaction/), and [Anthropic context editing](https://platform.claude.com/docs/en/build-with-claude/context-editing).
 
 ## Standards and governance baseline
 
@@ -188,7 +194,7 @@ It does not currently provide a drop-in web SDK:
 
 Therefore the PWA must not import Neko Core directly. The integration seam is the unmodified official Neko process plus a small HSK bridge. The trusted computer's normal filesystem is an advantage for this one-learner pilot: Neko can use its existing durable local session store without inventing a cloud persistence adapter.
 
-Sources: [Neko Core](https://github.com/meiiie/neko-core), [Neko ACP contract at the examined commit](https://github.com/meiiie/neko-core/blob/901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13/docs/process/ACP.md), [Neko licensing boundary at the examined commit](https://github.com/meiiie/neko-core/blob/901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13/LICENSING.md), and [ACP v1 overview](https://github.com/agentclientprotocol/agent-client-protocol/blob/main/docs/protocol/v1/overview.mdx).
+Sources: [Neko Core](https://github.com/meiiie/neko-core), [Neko ACP contract at the examined release](https://github.com/meiiie/neko-core/blob/v1.2.2/docs/process/ACP.md), [Neko licensing boundary at the examined release](https://github.com/meiiie/neko-core/blob/v1.2.2/LICENSING.md), [ACP v1 session setup](https://agentclientprotocol.com/protocol/v1/session-setup), and [ACP v1 overview](https://github.com/agentclientprotocol/agent-client-protocol/blob/main/docs/protocol/v1/overview.mdx).
 
 ## Target architecture
 
@@ -225,7 +231,7 @@ This is deliberately smaller than a Worker, Durable Object, Container, and datab
 
 Neko provider credentials remain only in Neko's credential store on the trusted computer. The Cloudflare Tunnel credential also remains only on that computer. Neither belongs in the browser, the Pages bundle, IndexedDB, or the Hồng HSK4 GitHub repository.
 
-Sources: [Neko Core v1.2.1 release](https://github.com/meiiie/neko-core/releases/tag/v1.2.1), [Neko ACP contract at the examined commit](https://github.com/meiiie/neko-core/blob/901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13/docs/process/ACP.md), [Cloudflare Tunnel architecture](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/), and [Cloudflare Access applications](https://developers.cloudflare.com/cloudflare-one/applications/).
+Sources: [Neko Core v1.2.2 release](https://github.com/meiiie/neko-core/releases/tag/v1.2.2), [Neko ACP contract at the examined release](https://github.com/meiiie/neko-core/blob/v1.2.2/docs/process/ACP.md), [Cloudflare Tunnel architecture](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/), and [Cloudflare Access applications](https://developers.cloudflare.com/cloudflare-one/applications/).
 
 ## Required Neko Core upstream work
 
@@ -294,7 +300,7 @@ Excluded by default:
 - inferred health, emotion, personality, or other sensitive traits;
 - raw audio until the later voice contract exists.
 
-The UI must offer `AI off`, `clear session`, and export/delete controls before durable remote memory is enabled. Retention periods and data locations must be shown in Vietnamese.
+The product must offer `AI off`, new conversation, export, and an honest Vietnamese description of whatever deletion the host protocol actually supports before durable remote memory is enabled. Retention periods and data locations belong in an accessible privacy/settings surface, not as repeated infrastructure copy inside each tutoring conversation. In the local pilot, “new conversation” means forget the Hồng HSK4 presentation cache and close in ACP; it is not represented as physical deletion from Neko's local store.
 
 ## Typed tutor protocol
 
@@ -405,12 +411,12 @@ The product should not claim that AI improves learning until delayed unaided out
 - Keep all non-AI learning workflows unchanged.
 - Land this RFC and update agent context.
 
-### Phase 1 — contracts in separate PRs
+### Phase 1 — contracts and local UX in separate PRs
 
 - Build the offline HSK tutor evaluation corpus and typed `TutorTurn` schema.
 - Add the Neko `hsk4-studio` host profile and conformance tests upstream, then publish an official pinned release.
 - Build the smallest browser-to-ACP bridge and package it for the trusted computer.
-- Prototype locally with a fake provider and fixture data only.
+- Validate the local UX with deterministic mocked ACP responses, then run an opt-in two-turn smoke against the owner's installed Neko. Provider throttling remains an external failure and must appear as a retryable error rather than a false success.
 
 ### Phase 2 — private one-learner pilot
 
@@ -444,7 +450,7 @@ The single-learner topology, trusted-computer host, official Neko binary, local 
 
 1. Which trusted computer and operating system will stay online during study sessions?
 2. Which Neko provider route, model, and monthly budget will the private pilot use?
-3. What retention window and supported deletion/export flow should apply to local tutor sessions?
+3. What host-level retention window and explicit physical-deletion flow should supplement ACP `session/close` for the networked pilot?
 4. Which exact learner email is allowlisted by Cloudflare Access?
 5. Which Vietnamese teacher or reviewer owns the verified HSK evaluation corpus and factual-release gate?
 

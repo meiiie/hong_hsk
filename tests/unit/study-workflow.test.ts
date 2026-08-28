@@ -45,4 +45,20 @@ describe("study workflow", () => {
     workflow.recordFeedback("word-1", "毕也", false);
     expect(workflow.feedback).toMatchObject({ itemId: "word-1", input: "毕也", correct: false });
   });
+
+  it("rebuilds the queue and reveals the Vietnamese meaning after changing direction", () => {
+    const state = makeAppState({
+      items: [makeVocabItem({ id: "word-1", hanzi: "法律", meaningVi: "pháp luật" })],
+    });
+    const workflow = new StudyWorkflow();
+
+    workflow.start("all");
+    workflow.ensureQueue(state);
+    workflow.setDirection("zh-to-vi");
+
+    expect(workflow.queue).toEqual([]);
+    workflow.ensureQueue(state);
+    expect(workflow.revealCurrentAnswer()).toBe(true);
+    expect(workflow.feedback).toMatchObject({ input: "pháp luật", revealed: true });
+  });
 });

@@ -1,7 +1,7 @@
 # Neko Core Host Runbook for One Learner
 
 - Date: 2026-08-27
-- Status: Neko can be installed now; HSK4-in-app integration waits for the `hsk4-studio` profile and bridge releases
+- Status: developer-local ACP pilot available; networked learner pilot still waits for the `hsk4-studio` profile and bridge releases
 
 ## Decision
 
@@ -11,7 +11,7 @@ The trusted operator may be the project owner or a trusted friend. The computer 
 
 ## What Can Be Installed Now
 
-Neko Core `v1.2.1` publishes checksummed standalone binaries for Windows x64, Linux x64/arm64, and macOS x64/arm64. Bun and Node.js are not required on the learner's machine.
+Neko Core `v1.2.2` publishes checksummed standalone binaries for Windows x64, Linux x64/arm64, and macOS x64/arm64. Bun and Node.js are not required on the learner's machine.
 
 Windows PowerShell:
 
@@ -33,9 +33,25 @@ neko
 
 Inside Neko, use `/login` to choose a supported provider route and `/model` to choose a model. This credential setup must be performed interactively on the trusted computer. Do not send API keys through chat or add them to this repository.
 
-Direct binaries and their `.sha256` sidecars are available from the [Neko Core v1.2.1 release](https://github.com/meiiie/neko-core/releases/tag/v1.2.1). For the integrated pilot, install the exact release named by Hồng HSK4 rather than silently tracking `latest`.
+Direct binaries and their `.sha256` sidecars are available from the [Neko Core v1.2.2 release](https://github.com/meiiie/neko-core/releases/tag/v1.2.2). For the integrated pilot, install the exact release named by Hồng HSK4 rather than silently tracking `latest`. The developer machine used for the 2026-08-28 local smoke still had `v1.2.1`; `v1.2.2` states that ordinary ACP and durable sessions are unchanged, so updating that machine is not required to review this UI branch.
 
-Installing Neko now enables its normal terminal interface. It does **not** yet add AI buttons to the HSK4 PWA.
+Installing Neko enables its normal terminal interface. On the developer-local pilot branch, Vite also shows a Neko control in the study view after the learner checks or reveals an answer. The production build still contains no active Neko endpoint or control.
+
+## Developer-Local Pilot
+
+The local UX pilot deliberately uses ordinary `neko acp`, as requested by the owner, without copying Neko's runtime. It is a bounded exception for evaluating the learning flow on one trusted machine:
+
+- Vite launches the installed `neko acp` binary on demand and communicates through ACP v1 over `stdio`.
+- The browser can call only the same-origin tutor, cancel, and session-close routes on loopback.
+- The ACP session uses `plan` mode, low reasoning effort, one stable empty workspace, no configured MCP servers, no reads outside that workspace, and no extra verification loop.
+- The Vite launcher removes `NVIDIA_API_KEY`, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID` from the Neko child environment; Neko uses its own selected provider login instead.
+- A floating Neko launcher opens a conversation panel without changing the study layout. During recall the panel shows only the pedagogical lock; questions and history unlock after checking or explicitly revealing the answer.
+- One direct ACP session ID is reused across cards and browser reloads. Hồng HSK4 keeps a bounded recent-message presentation cache; Neko owns the full durable conversation and can resume it after the Vite ACP process restarts.
+- The learner can stop a pending turn, retry, disable AI without affecting study, export the visible transcript, or start a new conversation with confirmation. Starting new calls ACP `session/close` and forgets the ID/presentation cache in Hồng HSK4; it does not physically delete Neko's durable session file because ACP v1 has no delete method.
+- The ordinary ACP child resolves the active Neko profile/model when it starts. If a turn fails for a reason other than learner cancellation, the local bridge discards that child; the next explicit `Thử lại` starts a fresh child and reloads the active profile/model. The bridge does not auto-resubmit because a failed provider call can have an unknown outcome.
+- Provider credentials remain inside Neko. They are never returned to the browser or added to Cloudflare.
+
+Run `npm run dev`, open `http://127.0.0.1:5173/`, then use `npm run test:neko-local` for a real two-turn browser/ACP smoke test that asserts the same durable session ID is retained. This path exists to judge tutoring usefulness and UI placement before a merge. It is not a deployable bridge and must never be exposed with a router port or Tunnel. Provider HTTP 429 or account/model outages are legitimate smoke failures; wait and retry rather than weakening the assertion.
 
 ## What Must Exist Before In-App AI
 
@@ -46,7 +62,7 @@ Two small product-specific releases are still required:
 
 The bridge is not an AI core. Neko still owns provider authentication, model calls, planning, tool dispatch, streaming, cancellation, permissions, checkpoints, and durable sessions.
 
-Do not use ordinary `neko acp` for the PWA pilot. Without the launch-authorized HSK host profile it includes Neko's normal tool environment, which is broader than a language tutor needs. Do not expose ACP or a generic terminal session directly to the internet.
+Do not use ordinary `neko acp` for the networked or production PWA pilot. The developer-local exception above reduces its effective surface for one trusted machine, but only the launch-authorized HSK host profile can make the exact tutor tool surface a Neko-enforced authority ceiling. Do not expose ACP or a generic terminal session directly to the internet.
 
 ## Target Host Layout
 
@@ -88,7 +104,8 @@ Never reuse `CLOUDFLARE_API_TOKEN` as a provider key or a Tunnel credential. Rem
 
 ## Primary References
 
-- [Neko Core installation and provider routes](https://github.com/meiiie/neko-core/blob/901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13/README.md)
-- [Neko ACP and embedded host profiles](https://github.com/meiiie/neko-core/blob/901bce800b3e28c7f3f7d6b2e47d4cd3fa2dea13/docs/process/ACP.md)
+- [Neko Core installation and provider routes](https://github.com/meiiie/neko-core/blob/v1.2.2/README.md)
+- [Neko ACP and embedded host profiles](https://github.com/meiiie/neko-core/blob/v1.2.2/docs/process/ACP.md)
+- [ACP v1 session lifecycle](https://agentclientprotocol.com/protocol/v1/session-setup)
 - [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/)
 - [Cloudflare Access applications](https://developers.cloudflare.com/cloudflare-one/applications/)

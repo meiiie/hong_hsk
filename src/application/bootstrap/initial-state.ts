@@ -196,6 +196,7 @@ export function createInitialState(): AppState {
     items: createExcelCourseItems(),
     attempts: [],
     reviews: {},
+    recognitionReviews: {},
     settings: {
       displayName: "Hồng",
       avatarInitial: "H",
@@ -203,6 +204,8 @@ export function createInitialState(): AppState {
       dailyNewTarget: HSK4_REVIEW_POLICY.dailyNewTarget,
       dailyReviewTarget: HSK4_REVIEW_POLICY.dailyReviewTarget,
       selectedLesson: 1,
+      studyDirection: "vi-to-zh",
+      alternateStudyDirections: true,
       locale: "vi",
       revealPinyin: true,
       revealMeaning: true,
