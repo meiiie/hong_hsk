@@ -55,7 +55,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/domain/hsk4/hsk4-targets.ts` | Target counts for HSK4 data quality messaging. |
 | `src/application/bootstrap/initial-state.ts` | Lesson names and initial app state. |
 | `src/application/ports/*.ts` | Clean architecture ports for state storage, import/export, speech playback, and version checks. |
-| `src/application/ports/neko-tutor.ts` | Typed, provider-neutral request/response boundary for post-answer Neko tutoring. |
+| `src/application/ports/neko-tutor.ts` | Typed, provider-neutral request/stream-block/response boundary for post-answer Neko tutoring. |
 | `src/application/vocab/data-enrichment.ts` | Vietnamese meaning quality and draft detection. |
 | `src/application/vocab/item-collection.ts` | Collection helpers for replacing starter/reference vocabulary safely. |
 | `src/application/vocab/replace-vocabulary.ts` | Use case for replacing starter/reference vocabulary with imported data. |
@@ -65,7 +65,7 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | `src/infrastructure/hanzi/hanzi-stroke-trainer.ts` | Hanzi Writer integration for stroke practice. |
 | `src/infrastructure/speech/chinese-speech.ts` | Browser speech synthesis adapter for Chinese playback. |
 | `src/infrastructure/version/http-version-checker.ts` | Fetches `/version.json` to detect deployed app updates. |
-| `src/infrastructure/neko/http-neko-tutor.ts` | Dev-only browser adapter for the same-origin local Neko tutor route. |
+| `src/infrastructure/neko/http-neko-tutor.ts` | Dev-only browser adapter that reads same-origin Neko NDJSON blocks with JSON fallback for deterministic mocks. |
 | `src/presentation/styles.css` | Mobile-first UI, design tokens, layout, states. |
 | `src/presentation/i18n.ts` | Vietnamese/English UI labels. |
 | `src/presentation/icons.ts` | Lucide icon wrappers. |
@@ -77,11 +77,11 @@ Hồng HSK4 Studio is a static PWA built with Vite and TypeScript. It is optimiz
 | Path | Purpose |
 | --- | --- |
 | `scripts/run_harness.mjs` | Starts/reuses Vite dev server and runs browser checks. |
-| `scripts/neko-acp-vite-plugin.mjs` | Loopback-only Vite middleware that supervises installed ordinary `neko acp` for the local UX pilot. |
+| `scripts/neko-acp-vite-plugin.mjs` | Loopback-only Vite middleware that supervises installed ordinary `neko acp` and coalesces ACP deltas into browser-safe NDJSON blocks. |
 | `scripts/smoke_neko_local.py` | Opt-in Playwright smoke that checks two real post-answer Neko turns reuse one durable ACP session. |
 | `scripts/check_agent_context.mjs` | Validates the agent context map and key workflow assumptions. |
 | `scripts/check_architecture.mjs` | Enforces DDD-lite source-layer dependency rules. |
-| `tests/unit/*.test.ts` | Vitest unit coverage for review policy/service and mock exam domain behavior. |
+| `tests/unit/*.test.{ts,js}` | Vitest unit coverage for review behavior, mock exams, session state, and Neko block buffering. |
 | `tests/unit/factories.ts` | Typed factories for deterministic unit tests. |
 | `tests/verify_hsk_pwa.py` | Desktop learning flow, answer reveal/hide, stroke trainer, wrong-list check. |
 | `tests/verify_hsk_mobile_mock.py` | Data load, mock exam, and mobile viewport checks. |

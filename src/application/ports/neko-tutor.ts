@@ -35,7 +35,7 @@ export interface NekoTutorCancelResponse {
 }
 
 export interface NekoTutor {
-  ask(request: NekoTutorRequest): Promise<NekoTutorResponse>;
+  ask(request: NekoTutorRequest, onBlock?: (block: string) => void): Promise<NekoTutorResponse>;
   cancel(requestId: string): Promise<NekoTutorCancelResponse>;
   closeSession(conversationId: string): Promise<void>;
 }

@@ -2533,6 +2533,14 @@ button:disabled {
   background: #f4f1ef;
 }
 
+.neko-streaming-answer.is-empty {
+  display: none;
+}
+
+.neko-streaming-answer p {
+  white-space: pre-wrap;
+}
+
 .neko-message p,
 .neko-pending-question p,
 .neko-error p {

@@ -742,28 +742,31 @@ class HskApp {
     this.scrollNekoPanelToLatest();
 
     try {
-      const result = await tutor.ask({
-        requestId,
-        card: {
-          id: item.id,
-          book: item.book,
-          lesson: item.lesson,
-          hanzi: item.hanzi,
-          pinyin: item.pinyin,
-          meaningVi: item.meaningVi,
-          meaningEn: item.meaningEn,
-          partOfSpeech: item.partOfSpeech,
-          exampleHan: item.exampleHan,
-          examplePinyin: item.examplePinyin,
-          exampleVi: item.exampleVi,
+      const result = await tutor.ask(
+        {
+          requestId,
+          card: {
+            id: item.id,
+            book: item.book,
+            lesson: item.lesson,
+            hanzi: item.hanzi,
+            pinyin: item.pinyin,
+            meaningVi: item.meaningVi,
+            meaningEn: item.meaningEn,
+            partOfSpeech: item.partOfSpeech,
+            exampleHan: item.exampleHan,
+            examplePinyin: item.examplePinyin,
+            exampleVi: item.exampleVi,
+          },
+          learnerAnswer: feedback.input,
+          direction: this.study.direction,
+          correct: feedback.correct,
+          revealed: Boolean(feedback.revealed),
+          question: trimmedQuestion,
+          conversationId,
         },
-        learnerAnswer: feedback.input,
-        direction: this.study.direction,
-        correct: feedback.correct,
-        revealed: Boolean(feedback.revealed),
-        question: trimmedQuestion,
-        conversationId,
-      });
+        (block) => this.appendNekoStreamBlock(block, itemId, requestId, sessionGeneration),
+      );
       if (
         this.nekoSessionGeneration !== sessionGeneration
         || this.study.currentItem()?.id !== itemId
@@ -802,11 +805,55 @@ class HskApp {
         status: "error",
         question: trimmedQuestion,
         conversationId,
+        answer: this.nekoTutor.answer,
         error: error instanceof Error ? error.message : "Neko chưa trả lời được. Hãy thử lại.",
       };
     }
     this.render();
     this.scrollNekoPanelToLatest();
+  }
+
+  private appendNekoStreamBlock(
+    block: string,
+    itemId: string,
+    requestId: string,
+    sessionGeneration: number,
+  ): void {
+    if (
+      !block
+      || this.nekoSessionGeneration !== sessionGeneration
+      || this.study.currentItem()?.id !== itemId
+      || this.nekoTutor?.requestId !== requestId
+      || this.nekoTutor.status !== "loading"
+    ) {
+      return;
+    }
+    const body = this.root.querySelector<HTMLElement>("[data-neko-conversation]");
+    const followLatest = Boolean(
+      body && body.scrollHeight - body.scrollTop - body.clientHeight < 96,
+    );
+    const previousAnswer = this.nekoTutor.answer ?? "";
+    const answer = `${previousAnswer}${block}`.slice(0, 8_000);
+    const appendedText = answer.slice(previousAnswer.length);
+    if (!appendedText) {
+      return;
+    }
+    this.nekoTutor = { ...this.nekoTutor, answer };
+
+    const message = this.root.querySelector<HTMLElement>("[data-neko-stream-message]");
+    const text = this.root.querySelector<HTMLElement>("[data-neko-stream-answer]");
+    const status = this.root.querySelector<HTMLElement>("[data-neko-stream-status]");
+    if (!message || !text || !status) {
+      this.render();
+      this.scrollNekoPanelToLatest();
+      return;
+    }
+    message.classList.remove("is-empty");
+    text.append(document.createTextNode(appendedText));
+    status.textContent = "Neko đang trả lời…";
+    if (followLatest) {
+      this.scrollNekoPanelToLatest();
+    }
   }
 
   private async cancelNeko(): Promise<void> {

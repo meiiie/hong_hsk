@@ -164,10 +164,53 @@ def main() -> None:
         expect(page.get_by_text("Lượt vừa rồi đã dừng.", exact=False)).to_be_visible()
         expect(page.locator(".neko-error")).to_have_count(0)
         page.evaluate("window.fetch = window.__hskOriginalFetch")
+
+        page.evaluate(
+            """
+            window.__hskOriginalFetch = window.fetch.bind(window);
+            window.fetch = (input, init) => {
+              const url = input && typeof input === "object" && "url" in input
+                ? input.url
+                : String(input ?? "");
+              if (!url.endsWith("/api/neko/tutor")) {
+                return window.__hskOriginalFetch(input, init);
+              }
+              const encoder = new TextEncoder();
+              const stream = new ReadableStream({
+                start(controller) {
+                  window.__hskFinishNekoStream = () => {
+                    controller.enqueue(encoder.encode(JSON.stringify({
+                      type: "delta",
+                      text: "rồi hoàn tất.",
+                    }) + "\\n"));
+                    controller.enqueue(encoder.encode(JSON.stringify({
+                      type: "done",
+                      answer: "Neko đang trả lời theo khối rồi hoàn tất.",
+                      conversationId: "20260828-010203-004-a1b2c3d4e5f60708",
+                    }) + "\\n"));
+                    controller.close();
+                  };
+                  controller.enqueue(encoder.encode(JSON.stringify({
+                    type: "delta",
+                    text: "Neko đang trả lời theo khối ",
+                  }) + "\\n"));
+                },
+              });
+              return Promise.resolve(new Response(stream, {
+                status: 200,
+                headers: { "Content-Type": "application/x-ndjson; charset=utf-8" },
+              }));
+            };
+            """
+        )
         page.locator("#neko-question-input").fill("Chỉ ra lỗi và cho tôi một mẹo nhớ.")
         page.locator("[data-neko-question-form]").get_by_role("button", name="Gửi câu hỏi").click()
+        expect(page.locator("[data-neko-stream-answer]")).to_contain_text("Neko đang trả lời theo khối")
+        expect(page.get_by_role("button", name="Dừng")).to_be_visible()
+        page.evaluate("window.__hskFinishNekoStream()")
         expect(page.locator(".neko-message-learner")).to_have_count(1)
         expect(page.locator(".neko-message-tutor")).to_have_count(1)
+        page.evaluate("window.fetch = window.__hskOriginalFetch")
         page.locator("#neko-question-input").fill("Cho tôi một câu hỏi thử lại.")
         page.locator("[data-neko-question-form]").get_by_role("button", name="Gửi câu hỏi").click()
         expect(page.locator(".neko-message-learner")).to_have_count(2)

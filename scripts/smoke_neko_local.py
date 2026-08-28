@@ -43,6 +43,7 @@ def main() -> None:
             page.locator("#neko-question-input").fill("Cho tôi một câu hỏi ngắn để tự dùng từ này, chưa đưa đáp án.")
             page.locator("[data-neko-question-form]").get_by_role("button", name="Gửi câu hỏi").click()
             expect(page.locator("[data-neko-cancel]")).to_be_visible()
+            expect(page.locator("[data-neko-cancel]")).to_have_count(0, timeout=120_000)
             expect(page.locator(".neko-message-tutor")).to_have_count(2, timeout=120_000)
 
             second_session = json.loads(
@@ -51,7 +52,7 @@ def main() -> None:
             if second_session["conversationId"] != first_session["conversationId"]:
                 raise AssertionError("Neko follow-up created a different conversation")
             if second_session["turnCount"] != 2 or len(second_session["messages"]) != 4:
-                raise AssertionError("Neko transcript did not retain both exchanges")
+                raise AssertionError(f"Neko transcript did not retain both exchanges: {second_session}")
 
             Path("artifacts").mkdir(exist_ok=True)
             page.screenshot(path="artifacts/neko-local-pilot.png", full_page=True)

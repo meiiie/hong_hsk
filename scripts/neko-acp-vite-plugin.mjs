@@ -7,6 +7,8 @@ import { Readable, Writable } from "node:stream";
 
 const BODY_LIMIT = 16 * 1024;
 const TURN_TIMEOUT_MS = 120_000;
+const STREAM_BLOCK_MAX_WAIT_MS = 140;
+const STREAM_BLOCK_TARGET_CHARS = 120;
 const NEKO_SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 export function nekoAcpTutorPlugin() {
@@ -17,7 +19,12 @@ export function nekoAcpTutorPlugin() {
     apply: "serve",
     configureServer(server) {
       bridge = new NekoAcpTutorBridge(server.config.logger);
-      mountLocalJsonPost(server, "/api/neko/tutor", (value) => bridge.ask(validateTutorRequest(value)));
+      mountLocalStreamPost(
+        server,
+        "/api/neko/tutor",
+        validateTutorRequest,
+        (value, onBlock) => bridge.ask(value, onBlock),
+      );
       mountLocalJsonPost(server, "/api/neko/cancel", (value) => bridge.cancel(validateRequestId(value)));
       mountLocalJsonPost(server, "/api/neko/session/close", (value) => bridge.closeSession(validateConversationId(value)));
       server.httpServer?.once("close", () => {
@@ -25,6 +32,50 @@ export function nekoAcpTutorPlugin() {
       });
     },
   };
+}
+
+function mountLocalStreamPost(server, path, validate, handler) {
+  server.middlewares.use(path, async (request, response) => {
+    if (request.method !== "POST") {
+      sendJson(response, 405, { error: "Chỉ hỗ trợ POST." });
+      return;
+    }
+    if (!isSameLocalOrigin(request)) {
+      sendJson(response, 403, { error: "Neko local chỉ nhận yêu cầu từ trang Vite này." });
+      return;
+    }
+
+    let streamStarted = false;
+    try {
+      const value = validate(await readJsonBody(request));
+      response.statusCode = 200;
+      response.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+      response.setHeader("Cache-Control", "no-store, no-transform");
+      response.setHeader("X-Accel-Buffering", "no");
+      response.flushHeaders?.();
+      streamStarted = true;
+      const result = await handler(value, (text) => {
+        if (!response.destroyed && !response.writableEnded) {
+          sendStreamFrame(response, { type: "delta", text });
+        }
+      });
+      if (!response.destroyed && !response.writableEnded) {
+        sendStreamFrame(response, { type: "done", ...result });
+      }
+    } catch (error) {
+      server.config.logger.error(`[neko-acp] ${error instanceof Error ? error.message : String(error)}`);
+      if (!streamStarted) {
+        sendJson(response, error?.statusCode ?? 503, { error: publicError(error) });
+        return;
+      }
+      if (!response.destroyed && !response.writableEnded) {
+        sendStreamFrame(response, { type: "error", error: publicError(error) });
+      }
+    }
+    if (!response.destroyed && !response.writableEnded) {
+      response.end();
+    }
+  });
 }
 
 function mountLocalJsonPost(server, path, handler) {
@@ -60,14 +111,20 @@ class NekoAcpTutorBridge {
     this.capabilities = undefined;
   }
 
-  async ask(payload) {
+  async ask(payload, onBlock) {
     await this.start();
     const session = await this.getSession(payload.conversationId);
     if (this.pendingBySession.has(session.sessionId)) {
       throw httpError(409, "Phiên Neko đang trả lời một câu hỏi khác.");
     }
     const controller = new AbortController();
-    const pending = { answer: "", controller, sessionId: session.sessionId, timedOut: false };
+    const pending = {
+      answer: "",
+      controller,
+      sessionId: session.sessionId,
+      stream: new NekoTextBlockBuffer(onBlock),
+      timedOut: false,
+    };
     this.pendingByRequest.set(payload.requestId, pending);
     this.pendingBySession.set(session.sessionId, pending);
     const timeout = setTimeout(() => {
@@ -88,11 +145,13 @@ class NekoAcpTutorBridge {
       }
       return { answer, conversationId: session.sessionId };
     } catch (error) {
+      pending.stream.finish();
       if (!controller.signal.aborted || pending.timedOut) {
         await this.recycleAfterPromptFailure();
       }
       throw error;
     } finally {
+      pending.stream.finish();
       clearTimeout(timeout);
       this.pendingByRequest.delete(payload.requestId);
       this.pendingBySession.delete(session.sessionId);
@@ -201,7 +260,12 @@ class NekoAcpTutorBridge {
           && update.sessionUpdate === "agent_message_chunk"
           && update.content?.type === "text"
         ) {
-          pending.answer = `${pending.answer}${update.content.text}`.slice(0, 8_000);
+          const remaining = 8_000 - pending.answer.length;
+          const text = update.content.text.slice(0, remaining);
+          if (text) {
+            pending.answer += text;
+            pending.stream.push(text);
+          }
         }
       });
     this.connection = client.connect(acp.ndJsonStream(output, input));
@@ -291,6 +355,52 @@ class NekoAcpTutorBridge {
         child.kill();
       });
     }
+  }
+}
+
+export class NekoTextBlockBuffer {
+  constructor(emit, maxWaitMs = STREAM_BLOCK_MAX_WAIT_MS, targetChars = STREAM_BLOCK_TARGET_CHARS) {
+    this.emit = emit;
+    this.maxWaitMs = maxWaitMs;
+    this.targetChars = targetChars;
+    this.buffer = "";
+    this.timer = undefined;
+    this.finished = false;
+  }
+
+  push(text) {
+    if (this.finished || !text) {
+      return;
+    }
+    this.buffer += text;
+    if (this.buffer.length >= this.targetChars || /(?:\n\n|[.!?。！？]\s*)$/.test(this.buffer)) {
+      this.flush();
+      return;
+    }
+    if (!this.timer) {
+      this.timer = setTimeout(() => this.flush(), this.maxWaitMs);
+    }
+  }
+
+  flush() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+    if (!this.buffer) {
+      return;
+    }
+    const block = this.buffer;
+    this.buffer = "";
+    this.emit?.(block);
+  }
+
+  finish() {
+    if (this.finished) {
+      return;
+    }
+    this.flush();
+    this.finished = true;
   }
 }
 
@@ -495,4 +605,8 @@ function sendJson(response, statusCode, payload) {
   response.setHeader("Content-Type", "application/json; charset=utf-8");
   response.setHeader("Cache-Control", "no-store");
   response.end(JSON.stringify(payload));
+}
+
+function sendStreamFrame(response, payload) {
+  response.write(`${JSON.stringify(payload)}\n`);
 }

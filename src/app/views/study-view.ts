@@ -407,10 +407,29 @@ function renderNekoConversation(
               <strong>Bạn · ${escapeHtml(item.hanzi)}</strong>
               <p>${escapeHtml(current.question)}</p>
             </div>
-            <div class="neko-loading" role="status" aria-live="polite">
+            <div
+              class="neko-message neko-message-tutor neko-streaming-answer ${current.answer ? "" : "is-empty"}"
+              data-neko-stream-message
+              role="status"
+              aria-live="polite"
+              aria-atomic="false"
+              aria-relevant="additions text"
+            >
+              <div><strong>Neko</strong><span>${escapeHtml(item.hanzi)}</span></div>
+              <p data-neko-stream-answer>${escapeHtml(current.answer ?? "")}</p>
+            </div>
+            <div class="neko-loading" role="status">
               <span class="neko-pulse" aria-hidden="true"></span>
-              <span>Neko đang suy nghĩ…</span>
+              <span data-neko-stream-status>${current.answer ? "Neko đang trả lời…" : "Neko đang suy nghĩ…"}</span>
               <button type="button" class="ghost-button compact-button" data-neko-cancel>${labelWithIcon("squareDashed", "Dừng")}</button>
+            </div>`
+          : ""
+      }
+      ${
+        !loading && current?.answer && (current.status === "error" || current.status === "cancelled")
+          ? `<div class="neko-message neko-message-tutor neko-streaming-answer">
+              <div><strong>Neko</strong><span>${escapeHtml(item.hanzi)}</span></div>
+              <p>${escapeHtml(current.answer)}</p>
             </div>`
           : ""
       }
